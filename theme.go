@@ -35,27 +35,37 @@ var (
 // fileTypes maps a family of extensions to its colour. None of them is yellow,
 // so a marked file (yellow) always stands out.
 var fileTypes = []struct {
+	kind  iconKind
 	color tcell.Color
 	exts  string
 }{
-	{rgb(0xFF79C6), ".zip .7z .rar .tar .gz .tgz .bz2 .xz .zst .cab .iso .lz .lzma"},                                                           // archives: pink
-	{rgb(0x5AF78E), ".exe .msi .bat .cmd .ps1 .com .vbs .scr .appx .msix .reg"},                                                                // programs and scripts: green
-	{rgb(0xC792EA), ".jpg .jpeg .png .gif .bmp .tif .tiff .svg .webp .ico .heic .raw .cr2 .nef .psd .ai"},                                      // images: orchid
-	{rgb(0x79C0FF), ".pdf .doc .docx .odt .rtf .txt .md .xls .xlsx .xlsm .ods .csv .ppt .pptx .odp .msg .eml .one"},                            // documents: light blue
-	{rgb(0xFF6B6B), ".mp3 .wav .flac .aac .ogg .m4a .wma .mp4 .mkv .avi .mov .wmv .webm .m4v .mpg .mpeg"},                                      // audio and video: red
-	{rgb(0x4EE6C8), ".go .py .js .ts .c .cpp .h .hpp .cs .java .rs .json .xml .yaml .yml .ini .cfg .conf .toml .html .htm .css .sql .sh .log"}, // code, config, logs: cyan
-	{rgb(0x9AA3B5), ".dll .sys .bak .tmp .old .dat .db .lnk"},                                                                                  // system and support files: grey-blue
+	{kindArchive, rgb(0xFF79C6), ".zip .7z .rar .tar .gz .tgz .bz2 .xz .zst .cab .iso .lz .lzma"},                                                        // archives: pink
+	{kindProgram, rgb(0x5AF78E), ".exe .msi .bat .cmd .ps1 .com .vbs .scr .appx .msix .reg"},                                                             // programs and scripts: green
+	{kindImage, rgb(0xC792EA), ".jpg .jpeg .png .gif .bmp .tif .tiff .svg .webp .ico .heic .raw .cr2 .nef .psd .ai"},                                     // images: orchid
+	{kindDocument, rgb(0x79C0FF), ".pdf .doc .docx .odt .rtf .txt .md .xls .xlsx .xlsm .ods .csv .ppt .pptx .odp .msg .eml .one"},                        // documents: light blue
+	{kindMedia, rgb(0xFF6B6B), ".mp3 .wav .flac .aac .ogg .m4a .wma .mp4 .mkv .avi .mov .wmv .webm .m4v .mpg .mpeg"},                                     // audio and video: red
+	{kindCode, rgb(0x4EE6C8), ".go .py .js .ts .c .cpp .h .hpp .cs .java .rs .json .xml .yaml .yml .ini .cfg .conf .toml .html .htm .css .sql .sh .log"}, // code, config, logs: cyan
+	{kindSystem, rgb(0x9AA3B5), ".dll .sys .bak .tmp .old .dat .db .lnk"},                                                                                // system and support files: grey-blue
 }
 
-var extColor = func() map[string]tcell.Color {
-	m := map[string]tcell.Color{}
-	for _, ft := range fileTypes {
+// extFamily maps a lower-case extension (".zip") to its index in fileTypes.
+var extFamily = func() map[string]int {
+	m := map[string]int{}
+	for i, ft := range fileTypes {
 		for _, e := range strings.Fields(ft.exts) {
-			m[e] = ft.color
+			m[e] = i
 		}
 	}
 	return m
 }()
+
+// family returns the index in fileTypes of a file name's family, or -1.
+func family(name string) int {
+	if i, ok := extFamily[strings.ToLower(filepath.Ext(name))]; ok {
+		return i
+	}
+	return -1
+}
 
 // entryStyle returns the colour and attributes of a row, before the cursor is applied.
 func entryStyle(e entry, marked bool) (tcell.Color, tcell.AttrMask) {
@@ -67,8 +77,8 @@ func entryStyle(e entry, marked bool) (tcell.Color, tcell.AttrMask) {
 	case e.isDir:
 		return rgb(0xFFFFFF), tcell.AttrBold
 	}
-	if c, ok := extColor[strings.ToLower(filepath.Ext(e.name))]; ok {
-		return c, tcell.AttrNone
+	if i := family(e.name); i >= 0 {
+		return fileTypes[i].color, tcell.AttrNone
 	}
 	return colText, tcell.AttrNone
 }

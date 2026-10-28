@@ -40,9 +40,16 @@ const (
 
 var sortLabels = []string{"name", "size", "date"}
 
-// Fixed widths of the size and date columns. tview separates columns with one
-// space, so the name column gets width - sizeColW - dateColW - 2.
+// Columns of a row: mark ("*"), icon, name, size, date. tview separates columns
+// with one space, so the mark and the icon take 4 cells and the name column gets
+// width - leadW - sizeColW - dateColW - 2.
 const (
+	colMark  = 0
+	colIcon  = 1
+	colName  = 2
+	colSize  = 3
+	colDate  = 4
+	leadW    = 4 // mark + space + icon + space
 	sizeColW = 9
 	dateColW = 11
 )
@@ -95,6 +102,7 @@ func (v *panelView) Draw(screen tcell.Screen) {
 		v.p.width = w
 		v.p.render()
 	}
+	v.p.styleCursorIcon()
 	v.Table.Draw(screen)
 	// Files of the folder and free space of the volume on the bottom border, right-aligned.
 	files, size := v.p.folderTotals()
@@ -275,6 +283,22 @@ func (p *Panel) sortEntries(list []entry) {
 	})
 }
 
+// styleCursorIcon gives the icon on the cursor row its colours. The table paints
+// the whole cursor row in one text colour, which suits the active panel (several
+// family colours are unreadable on its cyan cursor); in the inactive panel the
+// icon keeps its family colour on the dark cursor.
+func (p *Panel) styleCursorIcon() {
+	row, _ := p.table.GetSelection()
+	if row < 0 || row >= len(p.entries) || row >= p.table.GetRowCount() {
+		return
+	}
+	st := tcell.StyleDefault.Background(colCursorOffBg).Foreground(iconColor(p.entries[row]))
+	if p.fm != nil && p.fm.active == p {
+		st = tcell.StyleDefault.Background(colCursorBg).Foreground(colCursorFg)
+	}
+	p.table.GetCell(row, colIcon).SetSelectedStyle(st)
+}
+
 func (p *Panel) render() {
 	t := p.table
 	row, _ := t.GetSelection()
@@ -282,19 +306,17 @@ func (p *Panel) render() {
 	t.Clear()
 	nameW := 0 // 0 = no limit (width not known yet)
 	if p.width > 0 {
-		nameW = max(6, p.width-sizeColW-dateColW-2)
+		nameW = max(6, p.width-leadW-sizeColW-dateColW-2)
 	}
+	basic := p.fm != nil && p.fm.basicIcons
 	now := time.Now()
 	for i, e := range p.entries {
 		color, attr := entryStyle(e, p.marked[e.name])
-		prefix := "  "
+		mark := " "
 		if p.marked[e.name] {
-			prefix = "* "
+			mark = "*"
 		}
 		name := e.name
-		if e.isDir && !e.isUp && !e.isDrive {
-			name = string(filepath.Separator) + name
-		}
 		if e.isLink {
 			name += " ~"
 		}
@@ -319,14 +341,16 @@ func (p *Panel) render() {
 		if !e.mod.IsZero() {
 			date = shortDate(e.mod, now)
 		}
-		text := prefix + name
+		text := name
 		if nameW > 0 {
 			text = truncateName(text, nameW)
 		}
-		t.SetCell(i, 0, tview.NewTableCell(tview.Escape(text)).
+		t.SetCell(i, colMark, tview.NewTableCell(mark).SetTextColor(color).SetAttributes(attr))
+		t.SetCell(i, colIcon, tview.NewTableCell(string(iconFor(e, basic))).SetTextColor(iconColor(e)))
+		t.SetCell(i, colName, tview.NewTableCell(tview.Escape(text)).
 			SetTextColor(color).SetAttributes(attr).SetExpansion(1))
-		t.SetCell(i, 1, tview.NewTableCell(fmt.Sprintf("%*s", sizeColW, size)).SetTextColor(color))
-		t.SetCell(i, 2, tview.NewTableCell(fmt.Sprintf("%-*s", dateColW, date)).SetTextColor(color))
+		t.SetCell(i, colSize, tview.NewTableCell(fmt.Sprintf("%*s", sizeColW, size)).SetTextColor(color))
+		t.SetCell(i, colDate, tview.NewTableCell(fmt.Sprintf("%-*s", dateColW, date)).SetTextColor(color))
 	}
 	if row >= len(p.entries) {
 		row = len(p.entries) - 1

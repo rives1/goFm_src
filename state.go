@@ -18,6 +18,9 @@ type savedState struct {
 	Right     string            `json:"right"`
 	Active    string            `json:"active"` // "left" or "right"
 	DriveDirs map[string]string `json:"driveDirs,omitempty"`
+	// BasicIcons: basic symbols instead of Nerd Font icons (Alt+I). Absent = false,
+	// so state files written by older versions keep the default.
+	BasicIcons bool `json:"basicIcons,omitempty"`
 }
 
 // statePath can be overridden with GOFM_STATE (tests, portable use).
@@ -52,7 +55,7 @@ func (p *Panel) panelHome() string { return p.dir }
 
 func (fm *FM) currentState() savedState {
 	st := savedState{Version: 1, Left: fm.left.panelHome(), Right: fm.right.panelHome(),
-		Active: "left", DriveDirs: map[string]string{}}
+		Active: "left", DriveDirs: map[string]string{}, BasicIcons: fm.basicIcons}
 	if fm.active == fm.right {
 		st.Active = "right"
 	}
@@ -70,7 +73,7 @@ func (fm *FM) saveState() {
 	}
 	st := fm.currentState()
 	if st.Left == fm.saved.Left && st.Right == fm.saved.Right && st.Active == fm.saved.Active &&
-		len(st.DriveDirs) == len(fm.saved.DriveDirs) && fm.saved.Version != 0 {
+		st.BasicIcons == fm.saved.BasicIcons && len(st.DriveDirs) == len(fm.saved.DriveDirs) && fm.saved.Version != 0 {
 		same := true
 		for k, v := range st.DriveDirs {
 			if fm.saved.DriveDirs[k] != v {

@@ -2,6 +2,14 @@
 
 All notable changes to gofm. Versions follow the order in which features were added.
 
+## 1.9 — 2026-10-28
+
+- **File-type icons** before each name: one per colour family (archive, program, image, document, audio/video, code, system), plus folder, plain file, `..`, drive and share. Folders lose the `\` prefix.
+- Icons are **Nerd Font** glyphs (needs a font such as *Cascadia Mono NF*); **Alt+I** switches to basic symbols that every console font has. The choice is saved in `state.json` (`basicIcons`).
+- The icon keeps the family colour when the item is marked; on the cursor row of the active panel it takes the cursor text colour (family colours are unreadable on the cyan cursor).
+- The Windows Terminal profile uses **Cascadia Mono NF**; the install script warns if the font is missing. The README explains how to install it.
+- The mark (`*`) and the icon are separate columns: the name column is 2 cells narrower.
+
 ## 1.8 — 2026-10-27
 
 - Drives switch with **Shift+letter** (an upper-case letter) instead of Ctrl+letter; the quick search uses lower-case letters. With Caps Lock on, letters switch drive.

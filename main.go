@@ -15,7 +15,7 @@ import (
 	"github.com/rivo/tview"
 )
 
-const version = "1.8"
+const version = "1.9"
 
 type FM struct {
 	app     *tview.Application
@@ -31,6 +31,8 @@ type FM struct {
 	lastDir map[byte]string // last folder visited on each drive, for Shift+<letter>
 
 	notice string // one-shot message in the status bar, cleared by the next key
+
+	basicIcons bool // Alt+I: basic symbols instead of Nerd Font icons
 
 	saved     savedState // last state written to disk
 	restoring bool       // true while the panels are being set up: no state writes yet
@@ -87,7 +89,8 @@ func absOr(p, fallback string) string {
 func newFM(leftDir, rightDir string, st savedState) *FM {
 	applyTheme() // before any primitive is created
 	fm := &FM{app: tview.NewApplication(), pages: tview.NewPages(),
-		focus: map[string]tview.Primitive{}, lastDir: map[byte]string{}, restoring: true}
+		focus: map[string]tview.Primitive{}, lastDir: map[byte]string{}, restoring: true,
+		basicIcons: st.BasicIcons}
 	for k, d := range st.DriveDirs {
 		if len(k) == 1 && driveLetter(k+":") != 0 {
 			fm.lastDir[driveLetter(k+":")] = d
@@ -137,12 +140,28 @@ func newFM(leftDir, rightDir string, st savedState) *FM {
 	return fm
 }
 
+// toggleIcons (Alt+I) switches between Nerd Font icons and basic symbols. The
+// choice is remembered in state.json.
+func (fm *FM) toggleIcons() {
+	fm.basicIcons = !fm.basicIcons
+	for _, p := range []*Panel{fm.left, fm.right} {
+		p.render()
+	}
+	if fm.basicIcons {
+		fm.notice = "Icons: basic symbols — Alt+I for Nerd Font icons"
+	} else {
+		fm.notice = "Icons: Nerd Font (needs e.g. Cascadia Mono NF) — Alt+I for basic symbols"
+	}
+	fm.saveState()
+	fm.updateStatus()
+}
+
 func keybarText() string {
 	keys := [][2]string{
 		{"F2", "Ren"}, {"F3", "View"}, {"F5", "Copy"}, {"F6", "Move"},
 		{"F7", "MkDir"}, {"F8", "Trash"}, {"F9", "Zip"}, {"F10", "Quit"}, {"F12", "Compare"},
 		{"Ctrl+B", "Flat"}, {"Alt+S", "Find"}, {"Alt+F", "Filter"}, {"Alt+U", "Extract"}, {"Alt+V", "Drives"},
-		{"Shift+X", "Drive X:"},
+		{"Alt+I", "Icons"}, {"Shift+X", "Drive X:"},
 	}
 	var b strings.Builder
 	for _, k := range keys {
@@ -325,6 +344,8 @@ func (fm *FM) keys(ev *tcell.EventKey) *tcell.EventKey {
 			p.invertMarks()
 		case 'e':
 			fm.syncOther()
+		case 'i':
+			fm.toggleIcons()
 		case 'q':
 			fm.app.Stop()
 		}

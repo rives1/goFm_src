@@ -78,7 +78,7 @@ func TestFileColoursNeverLookMarked(t *testing.T) {
 			t.Errorf("%s marked does not use the mark colour", e.name)
 		}
 	}
-	if c, _ := entryStyle(entry{name: "REPORT.PDF"}, false); c != extColor[".pdf"] {
+	if c, _ := entryStyle(entry{name: "REPORT.PDF"}, false); c != fileTypes[family("x.pdf")].color {
 		t.Error("extension match must ignore case")
 	}
 }

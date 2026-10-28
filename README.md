@@ -23,15 +23,27 @@ Without arguments gofm **reopens the folders you were in** last time (see *Remem
 **Windows Terminal** is recommended (full colours and Unicode). Classic `cmd.exe` and PowerShell windows work too.
 To run it from anywhere, copy `gofm.exe` into a folder on your `PATH`.
 
-### Windows Terminal profile (Cascadia Mono)
+### Font with icons (Cascadia Mono NF) — install it first
 
-A terminal program cannot choose its font: the terminal does. The `windows-terminal` folder adds a **gofm** profile to Windows Terminal with the **Cascadia Mono** font (size 11), the **gofm Navy** colour scheme and an underscore cursor:
+gofm shows an **icon** before each name (folder, archive, program, image, document, audio/video, code, system file, other). The icons come from a **Nerd Font**, a font with extra symbols: a terminal program cannot draw pictures, only characters, so the icons are characters of that font. With an ordinary font they appear as **empty boxes**.
+
+Install **Cascadia Mono NF** once, by hand:
+
+1. Download `CascadiaCode-<version>.zip` from <https://github.com/microsoft/cascadia-code/releases> (the asset of the latest release).
+2. Open the zip, go to the `ttf` folder, right-click **`CascadiaMonoNF.ttf`** → **Install** (or *Install for all users*).
+3. Use the gofm profile below, which already selects **Cascadia Mono NF**, or set that font in your own Windows Terminal profile (*Settings → profile → Appearance → Font face*).
+
+No font at hand, or the classic console? Press **Alt+I**: gofm switches to **basic symbols** (`► ¶ ▒ ♦ ☼ ♫ § ◘ ·`) that every console font has. The choice is remembered; Alt+I again switches back.
+
+### Windows Terminal profile (Cascadia Mono NF)
+
+A terminal program cannot choose its font: the terminal does. The `windows-terminal` folder adds a **gofm** profile to Windows Terminal with the **Cascadia Mono NF** font (size 11), the **gofm Navy** colour scheme and an underscore cursor. If the font is not installed, Windows Terminal says so and falls back to its default font (the icons then show as boxes: install the font or press Alt+I).
 
 ```
 powershell -ExecutionPolicy Bypass -File windows-terminal\install-gofm.ps1 [-AddToPath]
 ```
 
-The script copies the right executable to `%LOCALAPPDATA%\Programs\gofm`, installs the profile as a Windows Terminal *fragment* and, with `-AddToPath`, adds the folder to your user PATH. No administrator rights are needed. Restart Windows Terminal and pick **gofm** from the drop-down. If Windows blocks the script because the zip came from the Internet, right-click the zip → Properties → Unblock before extracting.
+The script copies the right executable to `%LOCALAPPDATA%\Programs\gofm`, installs the profile as a Windows Terminal *fragment* and, with `-AddToPath`, adds the folder to your user PATH. It also tells you if Cascadia Mono NF is not installed (it does not install fonts). No administrator rights are needed. Restart Windows Terminal and pick **gofm** from the drop-down. If Windows blocks the script because the zip came from the Internet, right-click the zip → Properties → Unblock before extracting.
 
 Use `gofm-arm64.exe` only on Windows PCs with an ARM processor (e.g. Snapdragon laptops).
 
@@ -74,6 +86,7 @@ uses a function key, **Alt+letter**, **Ctrl+B**, or **Shift+letter** (drives).
 | Alt+H | show/hide hidden and system files (and administrative shares such as `C$`) |
 | Alt+A | invert marks |
 | Alt+R | refresh by hand (panels also refresh automatically) and re-measure marked folders |
+| Alt+I | icons: Nerd Font icons ↔ basic symbols (remembered) |
 
 Operations act on marked items; if nothing is marked, on the item under the cursor.
 
@@ -142,6 +155,7 @@ Copy, move, compress and extract show a progress bar with bytes done, speed (ave
 ## Display
 
 - **Dark-blue theme** everywhere. File names are **coloured by type**: archives pink, programs green, images orchid, documents light blue, audio/video red, code and config aquamarine, system files grey-blue, folders white. **Yellow is reserved for marked items** and no file type uses it.
+- An **icon** before each name shows its type: one icon per colour family, plus folder, `..`, drive and share. The icon keeps the colour of its type **even when the item is marked** (only the name turns yellow); on the cursor row of the active panel it takes the cursor's text colour, because the type colours are unreadable on the cyan cursor. Hidden items have dimmed icons. Nerd Font icons by default, basic symbols with **Alt+I** (see *Font with icons*).
 - Dates: `22/10 16:37` for the current year, `22/10/2024` for older files.
 - Long names are shortened to fit the window, keeping the extension (`a really very extre….pdf`), so size and date always stay visible.
 - The **status bar** follows the same rule: fixed columns on the right (size, date and time, attributes, item count) and a name column that takes the remaining space.
