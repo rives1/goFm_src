@@ -219,18 +219,19 @@ func TestTreeStats(t *testing.T) {
 	}
 }
 
-func TestOnlyOnOneSide(t *testing.T) {
+// Name only (same size and date on both sides): the 1.9 behaviour is kept.
+func TestCompareNames(t *testing.T) {
 	L := []entry{{name: "..", isDir: true, isUp: true}, {name: "sub", isDir: true}, {name: "a.txt"}, {name: "Report.PDF"}, {name: "left.bin"}}
 	R := []entry{{name: "..", isDir: true, isUp: true}, {name: "other", isDir: true}, {name: "a.txt"}, {name: "report.pdf"}, {name: "right.doc"}}
-	l, r := onlyOnOneSide(L, R, true)
-	if strings.Join(l, ",") != "left.bin" || strings.Join(r, ",") != "right.doc" {
-		t.Fatalf("case-insensitive: %v %v", l, r)
+	r := compareSides(L, R, true)
+	if strings.Join(r.markL, ",") != "left.bin" || strings.Join(r.markR, ",") != "right.doc" {
+		t.Fatalf("case-insensitive: %v %v", r.markL, r.markR)
 	}
-	l, r = onlyOnOneSide(L, R, false)
-	if strings.Join(l, ",") != "Report.PDF,left.bin" || strings.Join(r, ",") != "report.pdf,right.doc" {
-		t.Fatalf("case-sensitive: %v %v", l, r)
+	r = compareSides(L, R, false)
+	if strings.Join(r.markL, ",") != "Report.PDF,left.bin" || strings.Join(r.markR, ",") != "report.pdf,right.doc" {
+		t.Fatalf("case-sensitive: %v %v", r.markL, r.markR)
 	}
-	if l, r := onlyOnOneSide(L, L, true); len(l)+len(r) != 0 {
+	if r := compareSides(L, L, true); len(r.markL)+len(r.markR) != 0 {
 		t.Fatal("same folder")
 	}
 }

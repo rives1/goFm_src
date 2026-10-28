@@ -1,12 +1,13 @@
 # gofm — Documentazione di progetto e specifiche
 
-**Versione documentata:** 1.8 · **Data:** 27/10/2026 · **Licenza:** MIT, © 2026 rives
+**Versione documentata:** 1.10 · **Data:** 28/10/2026 · **Licenza:** MIT, © 2026 rives
 **Linguaggio:** Go 1.24 · **Piattaforma bersaglio:** Windows 64 bit (x64, ARM64) · **Interfaccia:** inglese
 
 ---
 
 ## Indice
 
+0. [Regole di lavoro](#0-regole-di-lavoro)
 1. [Panoramica](#1-panoramica)
 2. [Decisioni di progetto](#2-decisioni-di-progetto)
 3. [Interfaccia](#3-interfaccia)
@@ -20,6 +21,21 @@
 11. [Limiti noti e parti non verificate](#11-limiti-noti-e-parti-non-verificate)
 12. [Storico versioni](#12-storico-versioni)
 13. [Prompt per rigenerare il programma](#13-prompt-per-rigenerare-il-programma)
+
+---
+
+## 0. Regole di lavoro
+
+- Risposte in **italiano**; interfaccia del programma e README in **inglese**.
+- Prima di implementare, chiarire con domande i punti ambigui.
+- **A ogni nuova versione** (regola fissata dall'utente nella v1.10) si aggiornano **sempre e tutte**:
+  1. `const version` in `main.go`;
+  2. `CHANGELOG.md` (sezione `## <versione> — <data>` in cima: è anche il testo della Release su GitHub);
+  3. `README.md` (inglese);
+  4. questa documentazione: intestazione, sezioni toccate, test (§10), limiti (§11), storico (§12) e **prompt di rigenerazione** (§13);
+  5. le **specifiche compatte** (`gofm-<versione>-specifiche-compatte.md`, il riepilogo per riprendere il lavoro in una nuova chat);
+  6. la **pubblicazione su GitHub** (§9.5): commit con **tutti** i file del repository e tag annotato `v<versione>`; il workflow pubblica la Release con il **pacchetto compilato** pronto da scaricare.
+- Licenza **MIT**, "Copyright (c) 2026 rives".
 
 ---
 
@@ -38,11 +54,14 @@ Funzioni principali:
 - copia e spostamento **immediati** verso la cartella dell'altro pannello (senza campo destinazione);
 - **totale cumulativo della selezione** sul bordo superiore del pannello, con le cartelle misurate ricorsivamente;
 - **Ctrl+→ / Ctrl+←** per portare il percorso del pannello corrente in quello opposto;
-- **confronto delle due cartelle (F12)**: seleziona da entrambi i lati i file il cui nome esiste in una sola cartella;
+- **confronto delle due cartelle (F12)** per nome, dimensione e data: seleziona da entrambi i lati i file mancanti nell'altra cartella e la copia più recente dei file presenti in entrambe;
 - **copia ottimizzata per la rete**: ogni file è copiato con il motore di Windows (`CopyFileEx`), i file piccoli fino a 4 alla volta, quelli grandi uno alla volta;
 - **tema blu scuro** con **colori per tipo di file**, totale della selezione sul bordo del pannello e dimensione ricorsiva delle cartelle selezionate;
 - **aggiornamento automatico** dei due pannelli con le notifiche di modifica del sistema;
-- **profilo per Windows Terminal** (Cascadia Mono, schema "gofm Navy", cursore a trattino basso) con script di installazione;
+- **riepilogo dei tasti (Alt+F1)** con le scorciatoie che non sono nella barra in basso;
+- **pacchetto scaricabile** pubblicato come Release su GitHub a ogni tag di versione;
+- **icone per tipo di file** davanti ai nomi (glifi Nerd Font, oppure simboli semplici con Alt+I);
+- **profilo per Windows Terminal** (Cascadia Mono NF, schema "gofm Navy", cursore a trattino basso) con script di installazione;
 - **vista piatta (Ctrl+B)**: tutti i file di una cartella e delle sue sottocartelle in un'unica lista, con tutte le operazioni;
 - **spazio libero** del disco o della share sul bordo inferiore di ogni pannello;
 - **memoria delle cartelle**: alla riapertura i pannelli tornano dove erano;
@@ -56,7 +75,7 @@ Avvio:
 gofm.exe                        :: entrambi i pannelli nella cartella corrente
 gofm.exe C:\Progetti D:\Backup  :: pannello sinistro e destro
 gofm.exe \\nas                  :: un pannello sull'elenco delle share di \\nas
-gofm.exe -h | --help | /?       :: stampa "gofm 1.8 — usage: gofm [left_folder] [right_folder]"
+gofm.exe -h | --help | /?       :: stampa "gofm 1.10 — usage: gofm [left_folder] [right_folder]"
 ```
 
 Un argomento non valido (inesistente o non cartella) viene sostituito dalla cartella corrente.
@@ -80,8 +99,10 @@ Ogni scelta è stata presa con l'utente o motivata esplicitamente.
 | Share di rete | Percorsi UNC digitabili **e** elenco share con `NetShareEnum` | Richiesta dell'utente. |
 | Destinazione di F5/F6 | **Sempre la cartella dell'altro pannello, senza campo da confermare** (anche per l'estrazione con F5 dentro un archivio). Resta la domanda sui file omonimi | Richiesta dell'utente (v1.3). La domanda sui conflitti resta perché è l'unica protezione contro la sovrascrittura. |
 | Specchio del percorso | **Ctrl+→ nel pannello sinistro, Ctrl+← nel destro**: la freccia indica il pannello che cambia; nella direzione opposta non succede nulla | Richiesta dell'utente (v1.3); gesto direzionale, Alt+E resta come equivalente non direzionale. |
-| Confronto cartelle | **F12**, per **nome**, **solo file** (le cartelle sono ignorate), seleziona **solo i mancanti** dall'altro lato | Scelte dell'utente (v1.4). |
-| Aiuto | **Eliminato** (F1 non fa nulla) | Richiesta dell'utente (v1.4): la documentazione è il riferimento. |
+| Confronto cartelle | **F12**, **solo file** (le cartelle sono ignorate). Dalla v1.10 per **nome, dimensione e data**: seleziona i mancanti dall'altro lato e, per i file presenti in entrambi, **solo la copia più recente**; stessa data e dimensione diversa → entrambe. **Tolleranza 2 s** sulla data | Scelte dell'utente (v1.4: solo nome e mancanti; v1.10: nome+data+dimensione, la più recente, 2 s). Selezionare la sola copia più recente rende sicuro F5 subito dopo (come la sincronizzazione di Total Commander). 2 s è la risoluzione delle date su FAT/exFAT e su molti NAS; uno scarto di **1 ora esatta** (ora legale su FAT) resta una differenza: ignorarlo nasconderebbe anche modifiche reali. |
+| Aiuto | F1 non fa nulla (dalla v1.4). Dalla v1.10 **Alt+F1** apre un **riepilogo dei tasti** che **esclude** quelli della barra in basso | Scelte dell'utente (v1.4, v1.10): la barra mostra già i suoi tasti; un test verifica che le due liste non si sovrappongano. |
+| Cancellazione di cartelle con sottocartelle | Dopo la conferma normale di F8, una **seconda conferma** con l'**elenco dei nomi** (al massimo 8, poi `… and N more`); pulsante predefinito **Cancel** | Scelta dell'utente (v1.10): solo i nomi, nessun conteggio, così la risposta è immediata anche su share lente. Il controllo legge ogni cartella solo fino alla prima sottocartella, in background. |
+| Pubblicazione | **Release su GitHub** con lo zip compilato e il suo SHA-256, creata dal workflow `release.yml` al push di un tag `v<versione>`. Commit e tag li prepara Claude nella copia locale, il push lo fa l'utente | Scelta dell'utente (v1.10). Lo zip è compilato da GitHub dai sorgenti pubblicati, quindi verificabile; lo stesso script (`scripts/build-release.sh`) produce il pacchetto in locale e nella CI. |
 | Totale della selezione | Cumulativo (in barra di stato fino alla v1.5, sul bordo del pannello dalla v1.6); le cartelle sono misurate **ricorsivamente in background** | Richiesta dell'utente (v1.3); il calcolo asincrono non blocca l'interfaccia su cartelle grandi o di rete. |
 | Spostamento tra unità | Copia + eliminazione dell'origine **solo se la copia è riuscita al 100%** | Nessuna perdita di dati possibile. |
 | Collegamenti | Symlink e junction **non vengono attraversati** | Evita cicli infiniti (es. "Application Data"). |
@@ -93,7 +114,9 @@ Ogni scelta è stata presa con l'utente o motivata esplicitamente.
 | Totale selezione | Spostato dalla barra di stato al **bordo superiore del pannello**, a destra, sulla stessa riga del percorso | Richiesta dell'utente (v1.6). |
 | Tasto `*` | Nessuna selezione → **seleziona file e cartelle**; selezione presente → **deseleziona tutto**. `*` non può comparire nei nomi Windows, quindi non serve alla ricerca digitando | Scelte dell'utente (v1.6). |
 | Cursore | **Trattino basso lampeggiante** (DECSCUSR 3) al posto della barra verticale di Windows Terminal | Scelta dell'utente (v1.6). |
-| Font | **Cascadia Mono** tramite un profilo di Windows Terminal: un programma da terminale non può scegliere il font | Scelta dell'utente (v1.6). Cascadia Mono è installato con Windows Terminal ed è già il suo font predefinito: il cambiamento si vede se finora si usava un altro font o la console classica (Consolas). |
+| Font | **Cascadia Mono NF** (dalla v1.9; Cascadia Mono nella v1.6–1.8) tramite un profilo di Windows Terminal: un programma da terminale non può scegliere il font | Scelta dell'utente. La variante **NF** contiene i glifi Nerd Font delle icone; l'utente la installa **a mano** (README, *Font with icons*). Lo script di installazione si limita a segnalarne l'assenza. |
+| Icone dei file | Un **carattere** per famiglia di colori (+ cartella, file generico, `..`, unità, share). Insieme predefinito: **glifi Nerd Font**; con **Alt+I** **simboli semplici** della codepage 437, ricordati in `state.json` | Scelta dell'utente (v1.9) fra tre opzioni. Le icone di Esplora risorse sono bitmap e in una cella del terminale non si possono disegnare. Le **emoji** sono state scartate: occupano 2 celle con resa diversa da terminale a terminale e nella console classica diventano `??`, disallineando le colonne. Il Nerd Font dà vere icone ma senza il font mostra quadratini, e un programma da terminale **non può accorgersene**: da qui il tasto esplicito e il ripiego. |
+| Colore delle icone | Sempre il **colore della famiglia**, anche sugli elementi selezionati (solo il nome diventa giallo); **sulla riga del cursore del pannello attivo** l'icona prende il colore del testo del cursore `#06122E`; i nascosti hanno l'icona attenuata | Scelta dell'utente (v1.9). Eccezione del cursore: sul ciano `#2AB3C8` **tutte** le famiglie hanno un contrasto fra 1,0:1 e 1,8:1 (illeggibili), mentre `#06122E` arriva a 7,4:1. Sul cursore del pannello inattivo (`#2B3F6E`) le famiglie restano ≥ 3:1 e mantengono il loro colore. |
 | Aggiornamento automatico | **Notifiche del sistema** (`ReadDirectoryChangesW` via `fsnotify`) su **entrambi i pannelli**, raggruppate; nessun polling. Alt+R resta per il refresh manuale | Scelta dell'utente (v1.6): costo quasi nullo a cartella ferma; il ritmo si adatta alla lentezza della cartella. |
 | Vista piatta | **Ctrl+B** dalla v1.8 (Alt+D nella v1.7); l'elenco delle unità è su **Alt+V** | Scelta dell'utente. |
 | Unità su Shift+lettera | La lettera **maiuscola** cambia unità. Il terminale consegna Shift+D come il carattere `D`, senza poterlo distinguere dal Blocco Maiuscole | Scelta dell'utente (v1.8), presa **sapendo le conseguenze**: la ricerca digitando funziona solo con le minuscole (trova comunque i nomi in maiuscolo, perché non distingue maiuscole e minuscole); con il **Blocco Maiuscole attivo** ogni lettera digitata cambia unità. Alternative scartate: Ctrl+lettera (com'era) e Alt+Shift+lettera. |
@@ -111,16 +134,16 @@ Ogni scelta è stata presa con l'utente o motivata esplicitamente.
 
 ```
 ╔ C:\Users\me\Documents ═══ 2 selected · 3.8 MB · 3 files ═╗┌ D:\Backup ──────────────────────────────────┐
-║  ..                                      UP              ║│  ..                                 UP       │
-║* \Progetti                           3.8 MB 22/10 16:37  ║│  \2025                     <DIR> 05/03/2025  │
-║* relazione fin….pdf                  1.2 MB 21/10 09:12  ║│  archivio.zip            412.0 KB 22/10 10:01 │
-║  setup.exe                           85.3 MB 02/01/2024  ║│                                              │
+║  ↑ ..                                    UP              ║│  ↑ ..                               UP       │
+║* ► Progetti                          3.8 MB 22/10 16:37  ║│  ► 2025                    <DIR> 05/03/2025  │
+║* ¶ relazione f….pdf                  1.2 MB 21/10 09:12  ║│  ▒ archivio.zip          412.0 KB 22/10 10:01 │
+║  ♦ setup.exe                        85.3 MB 02/01/2024  ║│                                              │
 ╚══════════════════════════════════════════════════════════╝└──────────────────────────────────────────────┘
  Search: rel  relazione finale.pdf                         1.2 MB │ 21/10/2026 09:12 │ ---A │     3 items
 F2Ren F3View F5Copy F6Move F7MkDir F8Trash F9Zip F10Quit F12Compare Alt+SFind Alt+FFilter Alt+UExtract Ctrl+XDrive X:
 ```
 
-Sfondo blu scuro su tutto; nomi colorati per tipo (§3.5); selezione in giallo. Una schermata reale è nel file `screenshot.png`.
+Sfondo blu scuro su tutto; icona e nome colorati per tipo (§3.5, §3.9); selezione in giallo. Nello schema le icone sono i simboli semplici (Alt+I): i glifi Nerd Font predefiniti non si vedono senza il font. Una schermata reale (v1.8, senza icone) è nel file `screenshot.png`.
 
 ### 3.1 Pannelli
 
@@ -128,16 +151,18 @@ Sfondo blu scuro su tutto; nomi colorati per tipo (§3.5); selezione in giallo. 
 - **Bordo inferiore, a destra** (§6.26): ` 12 files 3.4 MB │ 28.5G free (11%) `, cioè numero e dimensione dei file elencati nel pannello, poi lo spazio libero del disco in forma compatta e la percentuale libera. Se lo spazio manca si toglie prima la parte del disco, poi quella dei file. Negli elenchi unità/share non c'è la parte dei file.
 - **Vista piatta**: nel titolo `[flat view]`, con `, first 200000` se l'elenco è troncato e `, updating…` durante una rilettura.
 - **Totale della selezione** (bordo superiore, a destra, in giallo): ` N selected · <dimensione> · M files ` più ` · counting…` finché una cartella è in misurazione (§6.18). Il percorso viene accorciato per lasciargli spazio; se il pannello è troppo stretto il totale non viene mostrato.
-- Pannello attivo: bordo **giallo** `#FFE14D` (doppio), riga del cursore **sfondo `#2AB3C8`, testo `#06122E`**. Pannello inattivo: bordo `#5A6E9A`, riga del cursore **sfondo `#2B3F6E`, testo bianco**. Sotto il cursore il colore del tipo di file è sostituito da quello del cursore; un elemento selezionato resta riconoscibile dal prefisso `* `.
-- Tre colonne, separate da uno spazio (comportamento di tview):
+- Pannello attivo: bordo **giallo** `#FFE14D` (doppio), riga del cursore **sfondo `#2AB3C8`, testo `#06122E`**. Pannello inattivo: bordo `#5A6E9A`, riga del cursore **sfondo `#2B3F6E`, testo bianco**. Sotto il cursore il colore del tipo di file è sostituito da quello del cursore; un elemento selezionato resta riconoscibile dall'asterisco `*`. Eccezione: sul cursore del pannello **inattivo** l'icona conserva il colore della famiglia (§3.9).
+- Cinque colonne, separate da uno spazio (comportamento di tview):
 
 | Colonna | Larghezza | Contenuto |
 |---|---|---|
-| Nome | `larghezza_interna − 9 − 11 − 2` (minimo 6), si espande | prefisso `* ` se marcato altrimenti due spazi; cartelle precedute dal separatore (`\Progetti`); link seguiti da ` ~` |
+| Marca | 1 | `*` se marcato, altrimenti spazio |
+| Icona | 1 | icona del tipo (§3.9) |
+| Nome | `larghezza_interna − 4 − 9 − 11 − 2` (minimo 6), si espande | il nome, senza prefissi (fino alla v1.8 le cartelle erano precedute da `\`); link seguiti da ` ~` |
 | Dimensione | 9, allineata a destra | `UP` per `..`, `DRIVE`, `SHARE`; per una cartella `<DIR>`, ma se è **selezionata** il **totale ricorsivo** del suo contenuto (`…` durante la misurazione); per un file la dimensione leggibile |
 | Data | 11 | vedi §6.13; vuota se la data è sconosciuta |
 
-- Colori del nome: vedi §3.5. Nascosti `#7F8FB4`; marcati **giallo grassetto** (prevale su tutto). L'intera riga (nome, dimensione, data) usa lo stesso colore.
+- Colori del nome: vedi §3.5. Nascosti `#7F8FB4`; marcati **giallo grassetto** (prevale su tutto). Marca, nome, dimensione e data usano lo stesso colore; l'icona ha il colore della famiglia (§3.9).
 - Ordinamento: cartelle sempre prima; poi per nome (senza distinzione maiuscole), dimensione decrescente o data decrescente. La riga `..` è sempre in cima.
 
 ### 3.2 Barra di stato (penultima riga)
@@ -153,12 +178,12 @@ Stesse regole delle colonne dei pannelli: **colonne a larghezza fissa a destra**
 | Attributi | 4 | `RHSA` (Windows) |
 | Elementi | 11, a destra | `N items` (escluso `..`) |
 
-Le colonne fisse sono separate da ` │ ` e scritte in `#7F8FB4`; il nome in `#D5DEEE`. Dopo F12 un avviso (testo scuro su `#56D4DD`) **sostituisce l'intera riga** fino al tasto successivo (§6.20). Il totale della selezione non è più qui ma sul bordo del pannello (§3.1).
+Le colonne fisse sono separate da ` │ ` e scritte in `#7F8FB4`; il nome in `#D5DEEE`. Dopo F12, Ctrl+B o Alt+I un avviso (testo scuro su `#56D4DD`) **sostituisce l'intera riga** fino al tasto successivo (§6.20). Il totale della selezione non è più qui ma sul bordo del pannello (§3.1).
 
 ### 3.3 Barra dei tasti (ultima riga)
 
 Sfondo `#06122E`; ogni coppia è resa come `[#06122E:#2AB3C8]Tasto[-:-]Etichetta `:
-`F2 Ren · F3 View · F5 Copy · F6 Move · F7 MkDir · F8 Trash · F9 Zip · F10 Quit · F12 Compare · Ctrl+B Flat · Alt+S Find · Alt+F Filter · Alt+U Extract · Alt+V Drives · Shift+X Drive X:`
+`F2 Ren · F3 View · F5 Copy · F6 Move · F7 MkDir · F8 Trash · F9 Zip · F10 Quit · F12 Compare · Ctrl+B Flat · Alt+S Find · Alt+F Filter · Alt+U Extract · Alt+V Drives · Alt+I Icons · Shift+X Drive X:`. Gli altri tasti sono nel riepilogo di **Alt+F1** (§3.4). (le ultime voci si vedono solo nelle finestre larghe)
 
 ### 3.4 Finestre di dialogo
 
@@ -167,7 +192,8 @@ Sfondo `#06122E`; ogni coppia è resa come `[#06122E:#2AB3C8]Tasto[-:-]Etichetta
 - **Richiesta di testo**: Form 76×7 con un campo e i pulsanti `OK` / `Cancel`; Invio conferma, Esc annulla.
 - **Avanzamento**: riquadro 72×12 intitolato ` Working ` con testo e pulsante `Cancel` (anche Esc).
 - Tutto il testo derivato da nomi di file passa per `tview.Escape`, altrimenti `[x].txt` verrebbe interpretato come tag di colore.
-- Le finestre sono una pila: chiudendo una finestra il focus torna a quella sotto, o al pannello attivo.
+- Le finestre sono una pila: chiudendo una finestra il focus torna a quella sotto, o al pannello attivo. **Dettaglio tecnico** (bug corretto nella v1.10): `Pages.RemovePage` restituisce il focus alla pagina principale, il cui `Flex` lo passa al primo elemento, cioè al pannello **sinistro**, e il gestore del focus di quel pannello lo rende attivo. `closeModal` memorizza quindi il pannello attivo **prima** di `RemovePage` e poi lo riattiva con `setActive(active, true)`. Fino alla v1.9 la chiusura di qualsiasi finestra aperta dal pannello destro (avanzamento di Ctrl+B, F5, F8, conferme, F3) spostava il focus a sinistra.
+- **Riepilogo dei tasti (Alt+F1)**: TextView con bordo, titolo ` Keys — Esc to close `, sezioni *Navigation*, *Search and selection*, *Files*, *View*, *Program*; larghezza adattata al testo (righe ≤ 76 celle, quindi entra in 80 colonne), altezza limitata allo schermo con scorrimento (titolo ` Keys — ↑↓ to scroll, Esc to close `). Si chiude con Esc, Invio, F1, Alt+F1 o `q`. Elenca **solo** i tasti che **non** sono nella barra in basso: la barra e il riepilogo leggono due liste nel codice (`keybarKeys`, `helpSections`) e un test verifica che non abbiano voci in comune. `Del` e `Alt+Q` compaiono perché sono tasti diversi da F8 e F10, con l'indicazione `(same as F8)` / `(same as F10)`.
 - Colori dal tema (§3.6): riquadro dei messaggi `#1E3A78` con pulsanti su `#0A1946`; moduli su `#0A1946` con campi e pulsanti `#1E3A78`; etichette `#8FD3FF`; pulsante attivo invertito.
 - **Cursore di testo** nei campi: trattino basso lampeggiante (§3.7).
 
@@ -211,10 +237,38 @@ Prima di ogni ridisegno gofm imposta lo stile **trattino basso lampeggiante** (`
 ### 3.8 Font e profilo di Windows Terminal
 
 Il font è una scelta del terminale. In `windows-terminal/` ci sono:
-- `gofm-terminal-profile.json`, un *fragment* di Windows Terminal che aggiunge il profilo **gofm**: avvia `%LOCALAPPDATA%\Programs\gofm\gofm.exe`, font **Cascadia Mono 11**, schema **gofm Navy** (sfondo `#0A1946` e 16 colori coerenti con il tema), cursore `underscore`, niente acrilico;
-- `install-gofm.ps1`, che copia l'eseguibile giusto (x64 o ARM64) in `%LOCALAPPDATA%\Programs\gofm`, mette il fragment in `%LOCALAPPDATA%\Microsoft\Windows Terminal\Fragments\gofm\gofm.json` e, con `-AddToPath`, aggiunge la cartella al PATH dell'utente. Non servono diritti di amministratore.
+- `gofm-terminal-profile.json`, un *fragment* di Windows Terminal che aggiunge il profilo **gofm**: avvia `%LOCALAPPDATA%\Programs\gofm\gofm.exe`, font **Cascadia Mono NF 11**, schema **gofm Navy** (sfondo `#0A1946` e 16 colori coerenti con il tema), cursore `underscore`, niente acrilico;
+- `install-gofm.ps1`, che copia l'eseguibile giusto (x64 o ARM64) in `%LOCALAPPDATA%\Programs\gofm`, mette il fragment in `%LOCALAPPDATA%\Microsoft\Windows Terminal\Fragments\gofm\gofm.json` e, con `-AddToPath`, aggiunge la cartella al PATH dell'utente. Controlla anche che **Cascadia Mono NF** sia installato (file `CascadiaMonoNF*` in `%WINDIR%\Fonts` o `%LOCALAPPDATA%\Microsoft\Windows\Fonts`) e, se manca, stampa in giallo dove scaricarlo e il suggerimento di Alt+I; **non installa font**. Non servono diritti di amministratore.
 
 Uso: `powershell -ExecutionPolicy Bypass -File install-gofm.ps1 [-AddToPath]`, poi riavviare Windows Terminal e scegliere il profilo **gofm**. File scaricati da Internet possono essere bloccati da Windows: "Proprietà → Sblocca" sullo zip prima di estrarlo, oppure `-ExecutionPolicy Bypass` come sopra.
+
+**Installazione del font (a mano, una volta).** Da <https://github.com/microsoft/cascadia-code/releases> scaricare `CascadiaCode-<versione>.zip`, aprire la cartella `ttf`, clic destro su **`CascadiaMonoNF.ttf`** → **Installa** (o *Installa per tutti gli utenti*). Verificato sulla release 2407.24: il file contiene tutti i 12 glifi usati da gofm, ciascuno largo esattamente una cella (avanzamento 1200 unità come la lettera `M`); il normale `CascadiaMono.ttf` non ne contiene nessuno. Se il profilo indica un font non installato, Windows Terminal lo segnala e usa il font predefinito: le icone appaiono come quadratini finché non si installa il font o si preme Alt+I.
+
+### 3.9 Icone dei file
+
+Davanti a ogni nome c'è un'icona di **una cella**, nella colonna *Icona* (§3.1). Il tipo è quello dei colori (§3.5): stessa tabella di estensioni, senza distinzione di maiuscole.
+
+| Tipo | Nerd Font (predefinito) | Simbolo semplice (Alt+I) | Colore dell'icona |
+|---|---|---|---|
+| Cartella | `U+F07B` nf-fa-folder | `►` | bianco |
+| `..` | `U+F062` nf-fa-arrow_up | `↑` | bianco |
+| Unità | `U+F0A0` nf-fa-hdd_o | `■` | bianco |
+| Share | `U+F233` nf-fa-server | `≡` | bianco (attenuato per `C$`, `ADMIN$`) |
+| Archivi | `U+F1C6` nf-fa-file_archive_o | `▒` | `#FF79C6` |
+| Programmi e script | `U+F120` nf-fa-terminal | `♦` | `#5AF78E` |
+| Immagini | `U+F1C5` nf-fa-file_image_o | `☼` | `#C792EA` |
+| Documenti | `U+F0F6` nf-fa-file_text_o | `¶` | `#79C0FF` |
+| Audio e video | `U+F144` nf-fa-play_circle | `♫` | `#FF6B6B` |
+| Codice, configurazione, log | `U+F1C9` nf-fa-file_code_o | `§` | `#4EE6C8` |
+| Sistema e supporto | `U+F013` nf-fa-cog | `◘` | `#9AA3B5` |
+| Altri file | `U+F016` nf-fa-file_o | `·` | `#D5DEEE` |
+
+- **Glifi Nerd Font**: dall'intervallo Font Awesome (`U+F000`–`U+F2E0`), che i Nerd Font mantengono invariato dalla v2; sono nell'area a uso privato di Unicode, quindi esistono **solo** nei font patchati. Nella variante *Mono* di un Nerd Font sono larghi una cella; la colonna *Icona* è comunque seguita da uno spazio, così anche un glifo che sborda leggermente non copre il nome.
+- **Simboli semplici**: tutti della codepage 437 (presenti in Cascadia Mono, Consolas, Lucida Console), quindi funzionano anche nella **console classica**. Nessuno ha una forma emoji predefinita.
+- **Larghezza**: entrambi gli insiemi misurano 1 cella con `uniseg` (verificato dai test), la stessa misura usata da tview per allineare le colonne.
+- **Colore**: quello della famiglia anche quando l'elemento è **selezionato** (solo marca e nome diventano gialli); icona **attenuata** (`#7F8FB4`) per gli elementi nascosti, come il loro nome; sulla **riga del cursore del pannello attivo** colore del testo del cursore `#06122E`, perché sul ciano tutte le famiglie scendono sotto 2:1 di contrasto; sulla riga del cursore del pannello **inattivo** colore della famiglia su `#2B3F6E` (contrasto ≥ 3:1, verificato dai test).
+- **Alt+I** passa da un insieme all'altro, ridisegna i due pannelli, mostra l'avviso `Icons: basic symbols — Alt+I for Nerd Font icons` (o `Icons: Nerd Font (needs e.g. Cascadia Mono NF) — Alt+I for basic symbols`) e salva subito la scelta in `state.json` (§6.27).
+- **Implementazione**: tview colora tutta la riga del cursore con il colore di primo piano della tabella, a meno che la cella abbia un proprio `SelectedStyle`. Prima di ogni disegno `Panel.styleCursorIcon()` imposta lo `SelectedStyle` della sola cella icona della riga del cursore in base al pannello attivo: costo costante, nessuna ricostruzione delle righe al cambio di pannello.
 
 ---
 
@@ -298,6 +352,7 @@ A ogni cambio di cartella riuscito su un percorso con lettera di unità, `lastDi
 | Ctrl+← | **solo nel pannello destro**: il pannello sinistro mostra lo stesso luogo; nel pannello sinistro non fa nulla |
 | Alt+E | come sopra, verso l'altro pannello in qualunque direzione |
 | Alt+R | aggiorna entrambi i pannelli e rimisura le cartelle selezionate (l'aggiornamento è comunque automatico, §6.22) |
+| Alt+I | icone: glifi Nerd Font ↔ simboli semplici (§3.9); la scelta è ricordata |
 | Mouse | clic per selezionare e attivare un pannello |
 
 ### 5.2 Selezione
@@ -321,11 +376,12 @@ Agiscono sugli elementi marcati; se non ce ne sono, sull'elemento sotto il curso
 | F5 | Copia **subito** nella cartella dell'altro pannello | **Estrae subito** la selezione nella cartella dell'altro pannello |
 | F6 | Sposta **subito** nella cartella dell'altro pannello | rifiutato: `Archives are read-only here: use F5 to extract instead of moving.` |
 | F7 | Nuova cartella (accetta `a\b\c`) | messaggio sola lettura |
-| F8 / Canc | Cestino | messaggio sola lettura |
+| F8 / Canc | Cestino (seconda conferma se ci sono cartelle con sottocartelle, §6.6) | messaggio sola lettura |
 | F9 | Comprimi in ZIP | messaggio sola lettura |
 | F10 / Alt+Q | Esci | Esci |
 | F12 | Confronta le due cartelle (§6.20) | Confronta (funziona anche dentro gli archivi) |
 | F1 | nessuna funzione (l'aiuto è stato eliminato in v1.4) | — |
+| Alt+F1 | Riepilogo dei tasti non presenti nella barra (§3.4) | uguale |
 | Alt+U | Estrae tutto l'archivio sotto il cursore | Estrae la selezione |
 
 Messaggio di sola lettura: `Archives are read-only here.\nUse F5 or Alt+U to extract the selected items.` In elenco share: `Open a share first (→ or Enter).`; in elenco unità: `Open a drive first (→ or Enter).`
@@ -402,7 +458,14 @@ Richiesta `Name:`. Usa `MkdirAll`, quindi accetta percorsi annidati e assoluti; 
 
 ### 6.6 Cestino (F8 / Canc)
 
-Conferma `Move "<nome>" to the Recycle Bin?` con `Yes` / `No`. Poi un'unica chiamata di sistema con tutti i percorsi (§8.2), nella fase `Waiting for Windows…`. Su Linux/macOS segue in forma semplificata la specifica freedesktop (`~/.local/share/Trash/files` + `.trashinfo`).
+Conferma `Move "<nome>" to the Recycle Bin?` con `Yes` / `No` (`Move N items …` per più elementi).
+
+**Seconda conferma (v1.10)** se fra gli elementi ci sono **cartelle che contengono almeno una sottocartella**:
+- il controllo (`foldersWithSubfolders`) gira in una goroutine, così una share lenta non blocca l'interfaccia; per ogni elemento che è una cartella vera (`os.Lstat`: collegamenti e junction esclusi, il Cestino sposta il collegamento e non il contenuto) legge le voci a blocchi di 256 e si ferma alla prima sottocartella;
+- se nessuna cartella ha sottocartelle si procede subito, senza altre domande (anche cartelle con soli file);
+- altrimenti appare `WARNING: this folder contains subfolders:` (oppure `WARNING: N folders contain subfolders:`), l'elenco dei nomi (al massimo 8, poi `… and N more`) e `They will go to the Recycle Bin with everything inside them.`, con i pulsanti **`Cancel`** (predefinito: Invio annulla) e `Move to Recycle Bin`; Esc annulla.
+
+Poi un'unica chiamata di sistema con tutti i percorsi (§8.2), nella fase `Waiting for Windows…`. Su Linux/macOS segue in forma semplificata la specifica freedesktop (`~/.local/share/Trash/files` + `.trashinfo`).
 
 ### 6.7 Compressione ZIP (F9)
 
@@ -553,15 +616,26 @@ Riquadro a tutto schermo, scorrevole, intitolato ` <nome> — Esc/F3 to close ` 
 
 ### 6.20 Confronto delle cartelle (F12)
 
-- Confronta **per nome** gli elementi elencati nei due pannelli e **seleziona, in ciascun pannello, i file il cui nome non esiste nell'altro**.
+- Confronta i **file** elencati nei due pannelli per **nome, dimensione e data di modifica** (v1.10; fino alla v1.9 solo per nome) e **sostituisce la selezione** di ciascun pannello con ciò che conviene copiare nell'altro:
+
+| Il file è… | Selezionato |
+|---|---|
+| solo da questo lato | qui |
+| in entrambi, modificato **più di 2 s dopo** qui | qui (la copia **più recente**) |
+| in entrambi, stessa data (±2 s) ma **dimensione diversa** | in **entrambi** i pannelli (non si sa quale sia giusta) |
+| in entrambi, stessa dimensione e data (±2 s) | in nessuno |
+
+- **Tolleranza di 2 s** (`dateTolerance`): FAT/exFAT e molti NAS salvano le date con risoluzione di 2 secondi. Uno scarto di **1 ora esatta** (ora legale su FAT) è considerato una differenza. Una data sconosciuta (zero, possibile in alcuni archivi) non rende mai un file "più recente": conta solo la dimensione.
+- La data più recente vince **anche se la dimensione è diversa** (es. un file rimpicciolito ma modificato dopo).
+- Il contenuto non viene letto.
 - **Solo file**: cartelle, `..`, unità e share vengono ignorate e non vengono mai selezionate.
-- **Solo nome**: dimensione, data e contenuto non contano. Due file omonimi sono "uguali" anche se diversi.
 - Su Windows il confronto **non distingue maiuscole e minuscole** (`Report.PDF` = `report.pdf`), come il file system; altrove le distingue.
-- Si confronta **ciò che è elencato**: il filtro (Alt+F) e l'impostazione dei nascosti (Alt+H) di ciascun pannello contano.
+- Si confronta **ciò che è elencato**: il filtro (Alt+F) e l'impostazione dei nascosti (Alt+H) di ciascun pannello contano. In vista piatta si confrontano i percorsi relativi.
 - Le selezioni precedenti dei due pannelli vengono **sostituite**, e le misure delle cartelle in corso annullate.
 - Funziona con cartelle su disco, share UNC aperte e interno di archivi, anche misti (es. cartella contro contenuto di uno zip). Con un elenco unità o un elenco share appare `Both panels must show a folder (or the inside of an archive).`
-- Esito in barra di stato, fino al tasto successivo: `Compare: N files only on the left, M files only on the right`, oppure `Compare: both folders contain the same file names`.
-- Uso tipico: F12, poi F5 da un lato per copiare nell'altro i file che gli mancano.
+- Esito in barra di stato, fino al tasto successivo: `Compare: left N only here, M newer · right P only here, Q newer`, più ` · K same date, different size` se ce ne sono; se non c'è nulla da selezionare `Compare: same files on both sides (name, size, date ±2 s)`.
+- Uso tipico: F12, poi F5 in ciascun pannello: ogni lato riceve i file che gli mancano e le versioni più recenti, senza che un file nuovo venga sovrascritto da uno vecchio. F5 chiede comunque conferma prima di sovrascrivere.
+- Implementazione: `compareSides(left, right, foldCase) compareResult` (pura, testata) con `markL`, `markR` e i contatori `onlyL`, `onlyR`, `newerL`, `newerR`, `sizeOnly`; `newer(a, b)` = entrambe le date note e `a − b > 2 s`.
 
 ### 6.21 Motore di copia parallelo
 
@@ -631,8 +705,8 @@ Esempio: cursore su `photo.jpg`, F8 → il cursore passa a `plain`, il file che 
 ### 6.27 Memoria delle cartelle
 
 - **File**: `%APPDATA%\gofm\state.json` (`os.UserConfigDir`); `GOFM_STATE` lo sostituisce (test, uso portatile).
-- **Contenuto** (JSON, `version: 1`): `left`, `right` (cartella del pannello; per un archivio la cartella che lo contiene, per la vista piatta la radice; `""` = elenco unità; `\\server` = elenco share), `active` (`left`/`right`), `driveDirs` (ultima cartella per lettera di unità, usata da Shift+lettera).
-- **Salvataggio**: alla fine di ogni lettura di un pannello e all'uscita, **solo se qualcosa è cambiato**, in modo atomico (file temporaneo + rinomina). Durante la costruzione iniziale dei pannelli non si salva nulla. Gli errori di scrittura sono ignorati.
+- **Contenuto** (JSON, `version: 1`): `left`, `right` (cartella del pannello; per un archivio la cartella che lo contiene, per la vista piatta la radice; `""` = elenco unità; `\\server` = elenco share), `active` (`left`/`right`), `driveDirs` (ultima cartella per lettera di unità, usata da Shift+lettera), `basicIcons` (v1.9: `true` = simboli semplici; assente = glifi Nerd Font, quindi i file delle versioni precedenti restano validi senza cambiare `version`).
+- **Salvataggio**: alla fine di ogni lettura di un pannello, a ogni Alt+I e all'uscita, **solo se qualcosa è cambiato**, in modo atomico (file temporaneo + rinomina). Durante la costruzione iniziale dei pannelli non si salva nulla. Gli errori di scrittura sono ignorati.
 - **Ripristino** all'avvio, prima degli argomenti della riga di comando (che hanno la precedenza):
   - elenco unità ed elenco share: ripristinati così come sono (se l'elenco share non si legge, il pannello ripiega da solo sulla cartella corrente);
   - cartella: controllata con **timeout di 3 s**; se non risponde → cartella corrente; se non esiste più → la **prima cartella padre esistente** (solo per percorsi locali); altrimenti la cartella corrente;
@@ -646,7 +720,9 @@ Esempio: cursore su `photo.jpg`, F8 → il cursore passa a `plain`, il file che 
 gofm/
 ├── main.go          UI: FM, tasti, finestre, runTask/progress, azioni, confronto, expandPath
 ├── panel.go         Panel: luoghi, caricamento, rendering adattivo, totale sul bordo, navigazione, marcatura, cursore dopo rilettura
-├── theme.go         tema blu, colori per estensione, applyTheme
+├── theme.go         tema blu, famiglie per estensione (colore + tipo di icona), applyTheme
+├── icons.go         icone: tipi, glifi Nerd Font, simboli semplici, colore dell'icona
+├── help.go          riepilogo dei tasti (Alt+F1) e tasti della barra in basso
 ├── statusbar.go     barra di stato a colonne fisse
 ├── watch.go         aggiornamento automatico (fsnotify), raggruppamento degli eventi
 ├── flat.go          vista piatta: visita ricorsiva, attivazione, rilettura in background, nomi doppi
@@ -663,6 +739,9 @@ gofm/
 ├── copy_test.go     test del motore di copia: parallelismo, file grandi, annullamento, spostamento parziale
 ├── v16_test.go      test: cursore dopo rilettura, barra di stato, colori, ritmo dell'aggiornamento
 ├── v17_test.go      test: vista piatta, nomi doppi, stato, ripristino, spazio libero
+├── v19_test.go      test: icone (larghezza, insiemi, tipi, colori, contrasto, layout della riga, memoria)
+├── v110_test.go     test: confronto nome/dimensione/data, cartelle con sottocartelle, riepilogo dei tasti, focus alla chiusura delle finestre
+├── scripts/build-release.sh  pacchetto scaricabile (zip, SHA-256, note di rilascio dal CHANGELOG)
 ├── windows-terminal/ profilo di Windows Terminal (fragment JSON) e install-gofm.ps1
 ├── testdata/        single.7z, multi.7z, secret.7z (fixture)
 └── third_party/go4  go4.org/syncutil e readerutil (solo libreria standard, Apache 2.0)
@@ -685,11 +764,11 @@ flowchart TB
 
 | Tipo | Ruolo | Campi chiave |
 |---|---|---|
-| `FM` | applicazione | `app`, `pages`, `left`, `right`, `active`, `status`, pila `modals` + `focus`, `lastDir map[byte]string`, `notice` (avviso in barra di stato), `qs`, `qsTime`, `qsMiss`, `watch *watcher`, `saved` (ultimo stato scritto), `restoring`; `status` è uno `statusBar` |
+| `FM` | applicazione | `app`, `pages`, `left`, `right`, `active`, `status`, pila `modals` + `focus`, `lastDir map[byte]string`, `notice` (avviso in barra di stato), `basicIcons` (Alt+I), `qs`, `qsTime`, `qsMiss`, `watch *watcher`, `saved` (ultimo stato scritto), `restoring`; `status` è uno `statusBar` |
 | `statusBar` | barra di stato | `*tview.Box` con `Draw` che legge lo stato corrente: nessun testo memorizzato |
 | `watcher` | aggiornamento automatico | `fsnotify.Watcher`, `watched` (cartelle osservate), `dirty` + timer, `cost` (durata dell'ultima lettura) |
 | `Panel` | un pannello | `table *panelView`, `dir`, `arch *archView`, `entries`, `marked map[string]bool`, `filter`, `showHidden`, `sortMode`, `width`, `sizes map[string]*dirSize`, `sizesLoc` (luogo a cui si riferiscono le misure), `lastLoad` (durata dell'ultima lettura), `flat`, `flatEntries`, `flatTrunc`, `flatRescan *opCtx`, `diskText`, `diskKey`, `diskAt`, `diskBusy` |
-| `savedState` | stato salvato | `Version`, `Left`, `Right`, `Active`, `DriveDirs` |
+| `savedState` | stato salvato | `Version`, `Left`, `Right`, `Active`, `DriveDirs`, `BasicIcons` |
 | `dirSize` | totale ricorsivo di una cartella marcata | `files, size int64`, `done bool`, `o *opCtx` (per annullare) |
 | `panelView` | `*tview.Table` con `Draw` che ridisegna al cambio di larghezza | `p *Panel` |
 | `entry` | una riga | `name, isDir, isLink, isUp, isDrive, isShare, inArchive, hidden, size, mod, attrs, remark` |
@@ -804,10 +883,12 @@ Struttura pronta per GitHub (zip `gofm-repo`):
 ```
 LICENSE                     MIT, Copyright (c) 2026 rives
 README.md                   uso (inglese), con schermata
-CHANGELOG.md                versioni 1.0 → 1.7
+CHANGELOG.md                versioni 1.0 → 1.10 (la sezione di ogni versione è anche il testo della Release)
 THIRD_PARTY_NOTICES.md      dipendenze incluse nell'eseguibile, licenze e testi completi
 .gitignore                  eseguibili e file di editor
-.github/workflows/ci.yml    CI: go mod verify, vet e test su Windows e Linux (race detector su Linux), build x64/ARM64 come artifact
+.github/workflows/ci.yml    CI a ogni push su un ramo e pull request: go mod verify, vet e test su Windows e Linux (race detector su Linux), pacchetto come artifact
+.github/workflows/release.yml  Release al push di un tag v<versione>: verifiche, pacchetto, pubblicazione
+scripts/build-release.sh    pacchetto scaricabile, usato in locale, dalla CI e dalla Release
 docs/                       questa documentazione e la schermata
 windows-terminal/           profilo e script di installazione
 third_party/go4/            sottoinsieme di go4.org (Apache 2.0) con README di provenienza
@@ -817,7 +898,27 @@ testdata/                   archivi 7z per i test
 
 - **Licenze delle dipendenze** (tutte compatibili con MIT): MIT (tview, uniseg, go-colorful, brotli), BSD-3-Clause (x/sys, x/text, x/term, sevenzip e collegati, fsnotify, lz4, xz, klauspost/compress con parti Apache/MIT), Apache-2.0 (tcell, gdamore/encoding, go4.org), MPL-2.0 (hashicorp errwrap, go-multierror, golang-lru, usati senza modifiche). Chi distribuisce l'eseguibile deve includere `LICENSE` e `THIRD_PARTY_NOTICES.md`, come fa l'artifact della CI.
 - **Test su Windows nella CI**: tre test dipendono da Linux e su Windows vengono saltati: cestino freedesktop, socket Unix come elemento non copiabile, collegamenti simbolici che richiedono privilegi.
+- **Repository pubblico**: <https://github.com/rives1/goFm_src> (ramo `main`).
 - **Percorso del modulo**: `gofm`. Per permettere `go install github.com/<utente>/gofm@latest` va cambiato in `github.com/<utente>/gofm` nella prima riga di `go.mod`; nessun import interno va modificato, perché il programma è un solo pacchetto.
+
+### 9.5 Pubblicazione di una versione (Release con pacchetto scaricabile)
+
+**Pacchetto** (`scripts/build-release.sh [tag]`, bash: Linux, macOS, Git Bash):
+- legge la versione da `const version` in `main.go`; con un tag come argomento si ferma se il tag non è `v<versione>`; si ferma anche se `CHANGELOG.md` non ha la sezione `## <versione> `;
+- compila `gofm.exe` (x64) e `gofm-arm64.exe` con `-trimpath -ldflags="-s -w"`;
+- crea `dist/gofm-<versione>-windows.zip` con la cartella `gofm-<versione>/` che contiene i due eseguibili, `README.md`, `CHANGELOG.md`, `LICENSE`, `THIRD_PARTY_NOTICES.md` e `windows-terminal/` (lo script di installazione trova l'eseguibile un livello sopra);
+- crea `dist/gofm-<versione>-windows.zip.sha256` e `dist/release-notes.md` (la sezione del CHANGELOG più le istruzioni di download, il font e Alt+I).
+
+**Workflow** `.github/workflows/release.yml`, al push di un tag `v*`: checkout, Go dalla versione di `go.mod`, `go mod verify`, `go vet` (anche con `GOOS=windows`), test, `bash scripts/build-release.sh "$GITHUB_REF_NAME"`, poi `gh release create <tag> <zip> <sha256> --title "gofm <versione>" --notes-file dist/release-notes.md --verify-tag` con il token del workflow (`permissions: contents: write`). La CI (`ci.yml`) gira sui rami, non sui tag, per non compilare due volte. Gli script sono lanciati con `bash` perché il repository nasce su Windows (`core.filemode=false`) e il permesso di esecuzione non verrebbe registrato.
+
+**Procedura** a ogni versione (regola di §0):
+1. aggiornare versione, CHANGELOG, README, documentazione e specifiche compatte;
+2. copiare **tutti** i file nella copia locale del repository (`goFm_src`), comprese le cartelle nascoste `.github/` e il file `.gitignore`, e controllare con `git status` che nulla resti fuori;
+3. `git add -A`, commit `versione <x>`, tag **annotato** `git tag -a v<x> -m "gofm <x>"`;
+4. `git push --follow-tags` (spinge solo i tag annotati);
+5. su GitHub, scheda *Actions*: il workflow *Release* deve finire in verde; lo zip compare in *Releases*.
+
+Nota storica: il commit "versione 1.9" del repository non conteneva gli aggiornamenti della 1.9 a documentazione, profilo e script, né `.github/` e `.gitignore` (mai aggiunti a git, quindi la CI non era mai partita); la v1.10 li include. Per la 1.9 non esiste una Release.
 
 ---
 
@@ -838,6 +939,8 @@ Eseguiti su Linux; su Windows è stata verificata solo la compilazione (`go vet`
 | Tasti | Ctrl+lettera nelle due codifiche, Ctrl+H/I/M, Backspace/Tab/Invio non scambiati, AltGr escluso, Alt+lettera |
 | Selezione | `treeStats` (file regolari e byte, ricorsivo), `plural` |
 | Confronto | `onlyOnOneSide`: cartelle e `..` ignorate, maiuscole indifferenti e distinte, cartella identica senza differenze |
+| v1.10 | `compareSides`: solo nome come prima (maiuscole indifferenti e distinte, stessa cartella senza differenze); nome+dimensione+data con stessa data, arrotondamento FAT (2 s → uguali), più recente a sinistra e a destra (anche con dimensione diversa), stessa data e dimensione diversa → entrambi, 1 ora → differenza, data sconosciuta con dimensione uguale e diversa, cartelle ignorate, contatori e testo dell'avviso; `foldersWithSubfolders` (cartella con soli file, con sottocartella, vuota, file, inesistente, 600 file prima della sottocartella, collegamento a cartella escluso) e `subfolderWarning` (singolare, 11 cartelle → `… and 3 more`); riepilogo dei tasti senza voci della barra, con le voci attese, righe ≤ 76 celle; **focus**: con `newFM` reale, per destro → sinistro → destro, due finestre aperte e chiuse, il pannello attivo, il focus e i colori dei bordi restano quelli di partenza |
+| v1.9 | insiemi di icone (una cella con `uniseg`, nessun doppione, Nerd Font nell'area a uso privato e simboli fuori); una famiglia = un tipo di icona (7 tipi distinti); `entryKind` (`..`, unità, share, cartella anche con nome da archivio, maiuscole, nome della vista piatta, estensione sconosciuta); colore dell'icona (famiglia anche se selezionato, mai giallo, attenuato se nascosto); **contrasto WCAG** (≥ 4,5:1 sullo sfondo, ≥ 3:1 sul cursore inattivo, testo del cursore ≥ 4,5:1 sul cursore attivo); layout della riga a 40/60/100 colonne (larghezza, cartella senza `\`, colonna marca, estensione conservata, insieme predefinito, simboli dopo Alt+I, icona della cartella selezionata bianca, `SelectedStyle` del cursore attivo e inattivo); `basicIcons` salvato anche quando cambia solo lui |
 | v1.8 | `bottomLabel` (formato completo, spazio sconosciuto, elenco unità, pannello stretto, nessuno spazio); `compactSize`; `driveKey` (solo `A`–`Z`: minuscole, accentate, cifre, `*`, spazio esclusi) |
 | v1.7 | `flatScan` (solo file, nomi relativi, nascosti esclusi e inclusi con Alt+H, collegamento a cartella non elencato, dimensioni, limite di voci); `duplicateTargets`; stato salvato e riletto (nessuna riscrittura se invariato, nessun salvataggio durante l'avvio); `restoreDir` (cartella esistente, padre più vicino, elenco unità fuori da Windows); `diskSpace` e `diskLabel`. Il modulo pulito per GitHub è stato verificato con `go mod tidy`, build, vet e test in modalità sola lettura |
 | v1.6 | `nextSurvivor` (7 casi: stesso elemento, successivo, più rimossi, ultimo rimosso → precedente, nuovo file prima, tutti rimossi); `layoutStatus` (larghezza esatta della riga a 80/120/200 colonne, colonne fisse invariate, estensione conservata); colori: nessuna famiglia vicina al giallo della selezione, famiglie distinte tra loro, selezione sempre gialla, estensioni senza maiuscole; `refreshDelay` |
@@ -848,6 +951,10 @@ Le fixture 7z sono generate con `py7zr`:
 - `single.7z`: `progetto/città.txt`, `progetto/sub/big.txt` (50 000 righe "riga");
 - `multi.7z`: come `single.7z` più `solo.txt` ("S");
 - `secret.7z`: `solo.txt` con password `pw`.
+
+Prova reale (v1.10) in `tmux` a 120×30: Ctrl+B dal pannello destro → vista piatta nel destro e il bordo attivo resta a destra (prima della correzione passava a sinistra), di nuovo Ctrl+B → resta a destra; Alt+F1 → riepilogo, in 30 righe limitato all'altezza dello schermo con il titolo di scorrimento, End mostra la fine, Esc lo chiude; F8 su `proj` (con `sub/`) → prima conferma, poi l'avviso con il nome e `Cancel` predefinito: Invio annulla e la cartella resta; F8 su `flat` (solo file) → una sola conferma; F8 su `proj` con `Move to Recycle Bin` → spostata; F12 con `same.txt` (uguale), `newer.txt` (più recente a sinistra), `onlyleft.txt`/`onlyright.txt`, `clash.txt` (data 10:00:00 contro 10:00:01, dimensioni 2 e 3 byte) → a sinistra `clash`, `newer`, `onlyleft`; a destra `clash`, `onlyright`. Pacchetto: `scripts/build-release.sh v1.10` produce zip, `.sha256` (verificato con `sha256sum -c`) e note; con `v1.9` si ferma con `tag v1.9 does not match the version in main.go (1.10)`. I file YAML dei workflow sono validati; **i workflow non sono stati eseguiti su GitHub**.
+
+Prova reale (v1.9) in `tmux` a 110 colonne: righe allineate con marca, icona, nome, dimensione e data; cartelle senza `\`; file selezionato con `*` prima dell'icona; nome lungo troncato mantenendo `.pdf`; i byte dei glifi Nerd Font presenti nell'output (es. `U+F062` su `..`); Alt+I mostra i simboli `↑ ► ¶ ▒ ◘ § ☼ · ♦ ♫`, l'avviso in barra di stato e scrive `"basicIcons": true` in `state.json`. Font: `CascadiaMonoNF.ttf` della release 2407.24 analizzato con fontTools (§3.8). **La resa in Windows Terminal non è stata vista**.
 
 Prova reale (v1.8) in `tmux`: `r` minuscola avvia la ricerca (`Search: r` → `readme.md`); `D` maiuscola chiama il cambio di unità (su Linux il messaggio dedicato); Ctrl+B apre e chiude la vista piatta; Alt+D non fa più nulla; il bordo inferiore mostra `1 file 2 B │ 27.2G free (10%)`, e `5 files 13 B │ …` in vista piatta.
 
@@ -878,13 +985,17 @@ Prove precedenti: navigazione con le frecce, ricerca digitando, larghezza delle 
 - **Shift+lettera = unità**: la ricerca digitando funziona solo con le minuscole, e con il **Blocco Maiuscole attivo** ogni lettera cambia unità (limite del terminale, scelta consapevole).
 - Nessuna richiesta di credenziali per le share.
 - Vista piatta: limite di 200 000 file; le modifiche esterne nelle sottocartelle compaiono solo con Alt+R.
+- Icone: senza un Nerd Font i glifi appaiono come quadratini e gofm non può rilevarlo: serve Alt+I. Un'icona per famiglia, non per singola estensione.
 - `go.sum` costruito con un metodo verificato ma senza accesso a `sum.golang.org` (§9.2): la prima compilazione su una macchina normale, o la CI, lo confermano.
 
 **Non verificato su Windows reale** (logica testata solo dove è portabile):
+- Alt+F1 nei vari terminali (decodifica di F1 con il modificatore Alt) e la seconda conferma di F8 con il Cestino reale;
+- il workflow di Release su GitHub (prima esecuzione al primo tag `v1.10`);
 - Cestino (`SHFileOperationW`), elenco share (`NetShareEnum`), unità, attributi, data di creazione, `ShellExecute`;
 - **copia con `CopyFileExW`** (callback, annullamento, I/O senza cache, percorsi lunghi) e il **guadagno reale di velocità** in rete: il motore parallelo è testato su Linux con la copia Go, la parte Windows è solo compilata. Su Windows reale va verificato in particolare che l'annullamento elimini il file parziale e che la copia lato server si attivi tra cartelle dello stesso server.
 - codifica effettiva di Ctrl+B e Shift+lettera nei vari terminali (analizzata sul codice di tcell, coperta da test unitari);
-- resa grafica in `cmd.exe` / conhost legacy;
+- resa grafica in `cmd.exe` / conhost legacy, compresi i simboli semplici delle icone;
+- resa delle icone Nerd Font in Windows Terminal con Cascadia Mono NF (glifi e larghezze verificati sul file del font, non a schermo) e controllo del font nello script di installazione;
 - spazio libero con `GetDiskFreeSpaceExW` su share UNC; posizione reale di `state.json` (`%APPDATA%`); tempo di avvio con una share non raggiungibile.
 
 ---
@@ -895,6 +1006,8 @@ Prove precedenti: navigazione con le frecce, ricerca digitando, larghezza delle 
 |---|---|
 | 1.0 | Doppio pannello, operazioni di base, Cestino, ZIP, ricerca, filtro, anteprima; interfaccia in italiano |
 | 1.1 | Frecce ←/→, interfaccia in inglese, anteprima ed estrazione 7z |
+| 1.10 | Correzione: chiudendo una finestra aperta dal pannello destro il focus passava al sinistro (visibile con Ctrl+B); **seconda conferma di F8** per cartelle con sottocartelle (elenco dei nomi, `Cancel` predefinito); **Alt+F1** riepilogo dei tasti non presenti nella barra; **F12 per nome, dimensione e data** (±2 s; selezionata la copia più recente, entrambe se stessa data e dimensione diversa); **Release su GitHub** con pacchetto compilato e SHA-256 (`release.yml`, `scripts/build-release.sh`); regola di lavoro sugli aggiornamenti a ogni versione; nel repository i file della 1.9 che mancavano |
+| 1.9 | **Icone per tipo di file** davanti ai nomi (una per famiglia di colori, più cartella, file generico, `..`, unità, share): glifi Nerd Font, oppure simboli semplici con **Alt+I** (ricordato in `state.json`); colore della famiglia anche sui selezionati, colore del cursore sulla riga del cursore attivo; cartelle senza prefisso `\`; profilo Windows Terminal con **Cascadia Mono NF** e controllo del font nello script |
 | 1.8 | Unità su **Shift+lettera** (lettera maiuscola; ricerca digitando con le minuscole); vista piatta su **Ctrl+B**; bordo inferiore con file e dimensione della cartella e spazio libero compatto (` 12 files 3.4 MB │ 28.5G free (11%) `) |
 | 1.7 | Memoria delle cartelle (`%APPDATA%\gofm\state.json`, ripristino con timeout); spazio libero sul bordo inferiore di ogni pannello; vista piatta su Alt+D (copia/sposta nella stessa cartella con controllo dei nomi doppi); elenco unità spostato su Alt+V; repository open source: licenza MIT (rives), note di terze parti, CHANGELOG, CI, `go.mod`/`go.sum` standard |
 | 1.6 | Totale ricorsivo nella colonna dimensione delle cartelle selezionate; colori per tipo di file (giallo riservato alla selezione); cursore sul file seguente dopo spostamento/cancellazione; totale della selezione sul bordo del pannello; `*` seleziona tutto / niente; cursore a trattino basso lampeggiante; barra di stato a colonne fisse; tema blu scuro; profilo Windows Terminal con Cascadia Mono e script di installazione; aggiornamento automatico con le notifiche del sistema |
@@ -907,7 +1020,7 @@ Prove precedenti: navigazione con le frecce, ricerca digitando, larghezza delle 
 
 ## 13. Prompt per rigenerare il programma
 
-Il prompt seguente è autosufficiente: incollato a un assistente di programmazione con accesso a Go, dovrebbe produrre un programma equivalente alla versione 1.2. Le stringhe dell'interfaccia sono indicate testualmente.
+Il prompt seguente è autosufficiente: incollato a un assistente di programmazione con accesso a Go, dovrebbe produrre un programma equivalente alla versione 1.10. Le stringhe dell'interfaccia sono indicate testualmente.
 
 ````text
 Crea "gofm", un file manager a doppio pannello per il terminale di Windows, in Go 1.24,
@@ -917,15 +1030,15 @@ golang.org/x/text (charmap CP437/850/852/858/866 e Windows1252, unicode UTF-16),
 github.com/rivo/uniseg e github.com/bodgit/sevenzip v1.6 (7z in sola lettura).
 Interfaccia interamente in INGLESE. Deve compilare e girare anche su Linux per i test
 (file sys_windows.go e sys_other.go con build tag). Scrivi test unitari per tutta la
-logica portabile. Versione "1.8".
+logica portabile. Versione "1.10".
 
 AVVIO: gofm [left_folder] [right_folder]; -h/--help//? stampa
-"gofm 1.8 — usage: gofm [left_folder] [right_folder]". Argomento non valido -> cartella corrente.
+"gofm 1.10 — usage: gofm [left_folder] [right_folder]". Argomento non valido -> cartella corrente.
 Un argomento \\server apre l'elenco share.
 MEMORIA (state.go): stato JSON {version:1, left, right, active "left"|"right", driveDirs
-{lettera: cartella}} in os.UserConfigDir()/gofm/state.json (GOFM_STATE lo sostituisce),
-scritto in modo atomico (tmp + rename) alla fine di ogni load() e all'uscita, solo se
-cambiato, mai durante la costruzione iniziale. All'avvio, prima degli argomenti (che
+{lettera: cartella}, basicIcons bool omitempty} in os.UserConfigDir()/gofm/state.json (GOFM_STATE lo sostituisce),
+scritto in modo atomico (tmp + rename) alla fine di ogni load(), a ogni Alt+I e all'uscita,
+solo se cambiato (basicIcons compreso), mai durante la costruzione iniziale. All'avvio, prima degli argomenti (che
 vincono): "" (unità) e \\server ripristinati come sono; una cartella è controllata con
 os.Stat in goroutine e timeout di 3 s (timeout -> cartella corrente; inesistente e locale
 -> primo padre esistente; altrimenti cartella corrente); pannello attivo e memoria per unità
@@ -949,13 +1062,26 @@ fargli posto), in giallo: " N selected · <dimensione> · M files " + " · count
 cartella è in misurazione; nascosto se il pannello è troppo stretto.
 Mouse attivo. Titolo = percorso (tagliato a sinistra con "…" se lungo) + eventuale
 "  [filter: X, sort: size|date, hidden shown]".
-Colonne: nome (si espande), dimensione (9, a destra), data (11). tview separa le colonne
-con uno spazio: il nome va troncato a larghezza_interna-9-11-2 (min 6) misurando in celle
+Colonne: marca (1: "*" se marcato, altrimenti spazio), icona (1), nome (si espande),
+dimensione (9, a destra), data (11). tview separa le colonne con uno spazio: il nome va
+troncato a larghezza_interna-4-9-11-2 (min 6) misurando in celle
 con uniseg; se l'estensione è <=6 celle e c'è spazio (w>=ext+4) mantienila: "testa….ext",
 altrimenti "…" finale. Ricalcola quando cambia la larghezza: incapsula la Table in un tipo
 con Draw() che confronta la larghezza interna con l'ultima e ridisegna le righe.
-Riga: prefisso "* " se marcato, altrimenti due spazi; cartelle precedute dal separatore
-("\nome"); link con " ~". Colonna dimensione: "UP" per "..", "DRIVE", "SHARE"; cartella
+Riga: nome senza prefissi (nessun "\" davanti alle cartelle); link con " ~".
+ICONE (icons.go): tipi kindFile, kindArchive, kindProgram, kindImage, kindDocument,
+kindMedia, kindCode, kindSystem, kindFolder, kindUp, kindDrive, kindShare; ogni famiglia di
+theme.go porta il suo tipo (struct {kind, color, exts}); entryKind: isUp > isDrive > isShare
+> isDir > famiglia dell'estensione > kindFile. Glifi Nerd Font (predefiniti) nello stesso
+ordine: U+F016 U+F1C6 U+F120 U+F1C5 U+F0F6 U+F144 U+F1C9 U+F013 U+F07B U+F062 U+F0A0
+U+F233; simboli semplici (codepage 437): · ▒ ♦ ☼ ¶ ♫ § ◘ ► ↑ ■ ≡. Colore dell'icona: colore
+della famiglia ANCHE se l'elemento è marcato; bianco per cartelle/../unità/share; #7F8FB4
+se nascosto; #D5DEEE per gli altri file. Riga del cursore: tview ricolora tutta la riga con
+il selectedStyle della tabella; prima di ogni Draw imposta il SelectedStyle della SOLA cella
+icona della riga del cursore: pannello attivo sfondo #2AB3C8 testo #06122E, inattivo
+sfondo #2B3F6E testo = colore dell'icona. Alt+I alterna glifi/simboli, ridisegna i pannelli,
+avviso "Icons: basic symbols — Alt+I for Nerd Font icons" oppure "Icons: Nerd Font (needs
+e.g. Cascadia Mono NF) — Alt+I for basic symbols", salva lo stato. Colonna dimensione: "UP" per "..", "DRIVE", "SHARE"; cartella
 "<DIR>" ma, se SELEZIONATA, il suo totale ricorsivo ("…" durante la misurazione); file:
 dimensione leggibile (B, KB, MB… base 1024, una cifra decimale).
 Data: "02/01 15:04" se dell'anno corrente, altrimenti "02/01/2006"; vuota se sconosciuta.
@@ -971,7 +1097,7 @@ Dopo F12 un avviso (testo scuro su #56D4DD) sostituisce tutta la riga fino al ta
 successivo. Il totale della selezione NON sta qui (sta sul bordo del pannello).
 Barra tasti (sfondo #06122E): "[#06122E:#2AB3C8]Tasto[-:-]Etichetta " per F2 Ren, F3 View, F5 Copy,
 F6 Move, F7 MkDir, F8 Trash, F9 Zip, F10 Quit, F12 Compare, Ctrl+B Flat, Alt+S Find, Alt+F Filter,
-Alt+U Extract, Alt+V Drives, Shift+X Drive X:.
+Alt+U Extract, Alt+V Drives, Alt+I Icons, Shift+X Drive X: (lista keybarKeys in help.go).
 
 LUOGHI di un pannello: elenco unità (dir=""; GetLogicalDrives), elenco share
 (dir="\\server"; NetShareEnum livello 1, solo tipo disco, speciali C$/ADMIN$ nascoste
@@ -1008,7 +1134,7 @@ TASTI (cattura a livello di Application, solo quando la pagina in primo piano è
 - Alt+lettera (KeyRune+ModAlt senza Ctrl): S cerca, F filtro, U estrai, L vai a percorso,
   V elenco unità (cursore sull'unità corrente), R aggiorna, O ordina (nome→dimensione→data),
   H nascosti, A inverti marcatura, E stesso luogo nell'altro pannello (anche dentro un
-  archivio), Q esci.
+  archivio), I icone (Nerd Font <-> simboli), Q esci.
 - Lettere semplici = ricerca digitando: si accumula il testo (ricomincia dopo 1,5 s di
   inattività); salta alla prima voce (esclusa "..") che INIZIA con il testo, altrimenti che
   lo CONTIENE, senza maiuscole; se nessuna corrisponde ignora il carattere e mostra
@@ -1043,14 +1169,30 @@ sempre. Il risultato fa ridisegnare la riga e il totale sul bordo.
   QueueUpdateDraw, rilegge una volta ogni pannello la cui cartella è dirty. Errori del
   watcher -> rilegge entrambi. Se il watcher non si crea o Add fallisce: nessun messaggio,
   resta Alt+R.
-- NESSUN aiuto: F1 non fa nulla.
-- F12 CONFRONTO: confronta per nome gli elementi elencati nei due pannelli e, in ciascuno,
-  sostituisce la selezione con i soli FILE (mai cartelle, "..", unità, share) il cui nome non
-  esiste nell'altro; senza maiuscole su Windows. Funziona su cartelle, share aperte e interno
-  di archivi; con un elenco unità/share: "Both panels must show a folder (or the inside of an
-  archive).". Esito in barra di stato (testo scuro su #56D4DD, occupa tutta la riga, sparisce al tasto successivo):
-  "Compare: N files only on the left, M files only on the right" ("1 file" al singolare) o
-  "Compare: both folders contain the same file names".
+- F1 non fa nulla. ALT+F1 (KeyF1 con ModAlt, controllato prima degli altri tasti speciali):
+  RIEPILOGO DEI TASTI (help.go) in una TextView con bordo e colori dinamici, titolo
+  " Keys — Esc to close " (se l'altezza supera lo schermo: altezza = schermo, scorrevole, titolo
+  " Keys — ↑↓ to scroll, Esc to close "), larghezza = riga più lunga + 4 (righe <= 76 celle);
+  chiusura con Esc, Invio, F1, q. Sezioni (titolo giallo grassetto, tasto #8FD3FF allineato):
+  Navigation (↑ ↓ con PgUp PgDn Home End, →, ←, Backspace, Enter, Tab / Shift+Tab, Ctrl+→,
+  Ctrl+←, Alt+E, Alt+L, Mouse click), Search and selection (a–z 0–9 …, Space / Ins, *, Alt+A,
+  Esc), Files (Del "same as F8"), View (Alt+O, Alt+H, Alt+R), Program (Alt+F1, Alt+Q "same as
+  F10"); in fondo "The keys in the bar at the bottom are not repeated here." in #7F8FB4.
+  NESSUN tasto della barra in basso: la barra legge keybarKeys, il riepilogo helpSections, e
+  un test verifica che non abbiano voci in comune.
+- F12 CONFRONTO (compareSides, pura e testata): solo FILE (mai cartelle, "..", unità, share),
+  per nome (senza maiuscole su Windows), dimensione e data con tolleranza 2 s. In ciascun
+  pannello sostituisce la selezione con: i file che mancano nell'altro; per i file presenti
+  in entrambi, la copia modificata più di 2 s dopo (anche se la dimensione è diversa); se la
+  data è uguale (±2 s) ma la dimensione no, il file in ENTRAMBI; data zero = mai più recente.
+  Funziona su cartelle, share aperte, interno di archivi e vista piatta (percorsi relativi);
+  con un elenco unità/share: "Both panels must show a folder (or the inside of an archive).".
+  Esito in barra di stato (testo scuro su #56D4DD, tutta la riga, fino al tasto successivo):
+  "Compare: left N only here, M newer · right P only here, Q newer" + " · K same date,
+  different size" se K > 0, oppure "Compare: same files on both sides (name, size, date ±2 s)".
+- FINESTRE: closeModal memorizza fm.active PRIMA di pages.RemovePage (che rimette il focus
+  sul primo elemento del layout, il pannello sinistro, rendendolo attivo) e, se non restano
+  finestre, chiama setActive(active, true); altrimenti focus alla finestra sottostante.
 - F2 rinomina, F3 anteprima, F5 copia (nell'archivio: estrai la
   selezione), F6 sposta (nell'archivio: "Archives are read-only here: use F5 to extract
   instead of moving."), F7 nuova cartella, F8/Canc cestino, F9 zip, F10 esci.
@@ -1104,7 +1246,12 @@ mancanti. Niente COPY_FILE_FAIL_IF_EXISTS (la scelta Overwrite/Skip è già fatt
 RINOMINA "New name: ": vieta \ / . .. e su Windows : * ? " < > |; nome esistente vietato
 salvo cambio solo di maiuscole. NUOVA CARTELLA "Name: " con MkdirAll, cursore sul primo
 segmento.
-CESTINO: "Move \"nome\" to the Recycle Bin?" Yes/No; un'unica chiamata SHFileOperationW
+CESTINO: "Move \"nome\" to the Recycle Bin?" Yes/No. Poi, in una goroutine, cerca fra gli
+elementi le cartelle vere (os.Lstat, niente link) con almeno una sottocartella (ReadDir a
+blocchi di 256, stop alla prima): se ce ne sono, seconda conferma "WARNING: this folder
+contains subfolders:" / "WARNING: N folders contain subfolders:", i nomi (max 8, poi "… and N
+more"), "They will go to the Recycle Bin with everything inside them.", pulsanti "Cancel"
+(primo, predefinito) e "Move to Recycle Bin"; altrimenti procede. Un'unica chiamata SHFileOperationW
 (FO_DELETE, flag ALLOWUNDO|NOCONFIRMATION|SILENT|NOERRORUI|WANTNUKEWARNING, pFrom con
 percorsi assoluti UTF-16 terminati da zero più uno zero finale, struttura a 64 bit;
 rifiuta i 32 bit), fase "Waiting for Windows…", in una goroutine con LockOSThread. Fuori
@@ -1176,13 +1323,15 @@ contenuto con le stesse regole; cartella dell'archivio: numero di file e dimensi
 
 PROFILO WINDOWS TERMINAL (windows-terminal/): fragment gofm-terminal-profile.json con un
 profilo "gofm" (guid fisso, commandline %LOCALAPPDATA%\Programs\gofm\gofm.exe,
-startingDirectory %USERPROFILE%, font Cascadia Mono 11, colorScheme "gofm Navy",
+startingDirectory %USERPROFILE%, font "Cascadia Mono NF" 11, colorScheme "gofm Navy",
 cursorShape "underscore", useAcrylic false) e lo schema "gofm Navy" (background #0A1946,
 foreground #D5DEEE, 16 colori coerenti con il tema); install-gofm.ps1 [-AddToPath] copia
 gofm.exe o gofm-arm64.exe (in base a PROCESSOR_ARCHITECTURE) in
 %LOCALAPPDATA%\Programs\gofm, il fragment in %LOCALAPPDATA%\Microsoft\Windows Terminal\
 Fragments\gofm\gofm.json e, a richiesta, la cartella nel PATH utente; nessun privilegio
-di amministratore.
+di amministratore. Lo script controlla anche se esiste CascadiaMonoNF* in %WINDIR%\Fonts o
+%LOCALAPPDATA%\Microsoft\Windows\Fonts e, se manca, stampa in giallo dove scaricarlo e il
+suggerimento di Alt+I (non installa font).
 VISTA PIATTA (flat.go, Ctrl+B): solo in cartelle su disco ("The flat view works in folders
 on disk."). Costruita con runTask ("Flat view of <dir>", annullabile) da flatScan: WalkDir
 ricorsivo, solo FILE con nome relativo alla radice, cartelle attraversate ma non elencate,
@@ -1214,7 +1363,7 @@ entra in larghezza-4 togli prima lo spazio libero, poi i file; negli elenchi uni
 lo spazio (se noto).
 ELENCO UNITÀ: Alt+V.
 ARCHITETTURA FILE: main.go (FM, tasti, finestre, runTask, azioni, confronto, expandPath),
-theme.go, statusbar.go, watch.go, copy.go, flat.go, state.go,
+theme.go, icons.go, help.go, statusbar.go, watch.go, copy.go, flat.go, state.go,
 panel.go (Panel, luoghi, rendering, navigazione, marcatura, jumpTo), ops.go (opCtx,
 percorsi, copia/sposta/zip/ricerca), archive.go (ZIP/7z, estrazione, albero, anteprima
 voci), preview.go, unc.go (regole Windows/UNC in pura logica di stringhe, driveLetter),
@@ -1229,7 +1378,11 @@ Ctrl+lettera nelle due codifiche e Backspace/Tab/Invio non confusi, AltGr, Alt+l
 driveKey (solo A-Z), bottomLabel/compactSize,
 troncamento (estensione, CJK), date compatte, velocità/ETA (50% a 10 MB/s -> "0:05 left"),
 formatDuration, nextSurvivor, layoutStatus, distanza dei colori, refreshDelay, flatScan,
-duplicateTargets, stato salvato/riletto, restoreDir, diskSpace/diskLabel; i test che
+duplicateTargets, stato salvato/riletto, restoreDir, diskSpace/diskLabel; icone (larghezza 1
+cella, nessun doppione, una per famiglia, entryKind, colore, contrasto WCAG, layout della
+riga, SelectedStyle del cursore, basicIcons salvato); compareSides (tutti i casi della tabella,
+2 s, 1 ora, data zero), foldersWithSubfolders/subfolderWarning, riepilogo senza tasti della
+barra, focus che resta sul pannello attivo dopo la chiusura di finestre (newFM reale); i test che
 dipendono da Linux (cestino freedesktop, socket Unix, symlink senza privilegi) si saltano
 o tollerano Windows. Fixture 7z generate con py7zr (single.7z, multi.7z, secret.7z con
 password "pw").
@@ -1237,7 +1390,13 @@ Compila: GOOS=windows GOARCH=amd64|arm64 go build -trimpath -ldflags="-s -w". Co
 gofm.exe, gofm-arm64.exe, la cartella windows-terminal, README in inglese e sorgenti come
 repository open source: LICENSE MIT "Copyright (c) 2026 rives", THIRD_PARTY_NOTICES.md
 (tabella e testi completi delle licenze delle dipendenze e della libreria standard Go),
-CHANGELOG.md, .gitignore, .github/workflows/ci.yml (go mod verify, vet, test su
-windows-latest e ubuntu-latest, -race su Linux, build x64/ARM64 come artifact), docs/,
+CHANGELOG.md, .gitignore, .github/workflows/ci.yml (sui rami e le pull request: go mod
+verify, vet, test su windows-latest e ubuntu-latest, -race su Linux, pacchetto come artifact),
+.github/workflows/release.yml (al push di un tag v*: verifiche, bash scripts/build-release.sh
+"$GITHUB_REF_NAME", gh release create con zip e .sha256, note da dist/release-notes.md,
+permissions contents: write), scripts/build-release.sh (versione da main.go, controllo
+tag = v<versione> e sezione nel CHANGELOG, build x64/arm64, dist/gofm-<v>-windows.zip con
+cartella gofm-<v>/ contenente gli exe, README, CHANGELOG, LICENSE, THIRD_PARTY_NOTICES e
+windows-terminal/, file .sha256, note di rilascio), docs/,
 third_party/go4/README.md; go.mod senza replace tranne go4.org => ./third_party/go4.
 ````

@@ -2,6 +2,15 @@
 
 All notable changes to gofm. Versions follow the order in which features were added.
 
+## 1.10 — 2026-10-28
+
+- **Fix**: closing any dialog (progress, confirmation, message, preview) opened from the right panel moved the focus to the left panel — most visible with Ctrl+B. The active panel is now kept.
+- **F8 / Del**: when the items include folders that contain subfolders, a second confirmation lists them; its default button is *Cancel*.
+- **Alt+F1**: summary of the shortcuts that are not in the key bar.
+- **F12 compares name, size and date** (±2 s, the resolution of FAT/exFAT and many NAS). On each side it marks the files missing on the other side and, for files on both sides, the **newer** copy; same date but different size marks both. F5 after F12 copies only what is new or newer.
+- **GitHub releases**: pushing a tag `v<version>` builds the Windows package and publishes it as a Release with a SHA-256 checksum (`.github/workflows/release.yml`, `scripts/build-release.sh`). The CI builds the same package as an artifact.
+- The 1.9 files missing from the repository (documentation, Windows Terminal profile, install script, CI workflow, `.gitignore`) are included.
+
 ## 1.9 — 2026-10-28
 
 - **File-type icons** before each name: one per colour family (archive, program, image, document, audio/video, code, system), plus folder, plain file, `..`, drive and share. Folders lose the `\` prefix.

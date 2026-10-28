@@ -15,7 +15,7 @@ import (
 	"github.com/rivo/tview"
 )
 
-const version = "1.9"
+const version = "1.10"
 
 type FM struct {
 	app     *tview.Application
@@ -157,12 +157,7 @@ func (fm *FM) toggleIcons() {
 }
 
 func keybarText() string {
-	keys := [][2]string{
-		{"F2", "Ren"}, {"F3", "View"}, {"F5", "Copy"}, {"F6", "Move"},
-		{"F7", "MkDir"}, {"F8", "Trash"}, {"F9", "Zip"}, {"F10", "Quit"}, {"F12", "Compare"},
-		{"Ctrl+B", "Flat"}, {"Alt+S", "Find"}, {"Alt+F", "Filter"}, {"Alt+U", "Extract"}, {"Alt+V", "Drives"},
-		{"Alt+I", "Icons"}, {"Shift+X", "Drive X:"},
-	}
+	keys := keybarKeys
 	var b strings.Builder
 	for _, k := range keys {
 		fmt.Fprintf(&b, "[#06122E:#2AB3C8]%s[-:-]%s ", k[0], k[1])
@@ -378,6 +373,12 @@ func (fm *FM) keys(ev *tcell.EventKey) *tcell.EventKey {
 		return nil
 	}
 
+	if ev.Key() == tcell.KeyF1 && ev.Modifiers()&tcell.ModAlt != 0 {
+		fm.resetQuickSearch()
+		fm.showKeys()
+		return nil
+	}
+
 	switch ev.Key() {
 	case tcell.KeyBackspace, tcell.KeyBackspace2:
 		if fm.qs != "" {
@@ -443,9 +444,12 @@ func (fm *FM) keys(ev *tcell.EventKey) *tcell.EventKey {
 	return nil
 }
 
-// compareFolders (F12) marks, in both panels, the files whose name exists on one side
-// only. Folders are ignored; the comparison uses what the panels list (filter and hidden
-// files setting included). Existing marks are replaced.
+// compareFolders (F12) compares the files listed in the two panels by name, size and
+// date, and marks on each side what is worth copying to the other: the files missing on
+// the other side and, for files on both sides, the newer copy. Same date but different
+// size marks both copies (it cannot tell which one is right). Folders are ignored; the
+// comparison uses what the panels list (filter and hidden files setting included).
+// Existing marks are replaced.
 func (fm *FM) compareFolders() {
 	fm.resetQuickSearch()
 	for _, p := range []*Panel{fm.left, fm.right} {
@@ -454,48 +458,94 @@ func (fm *FM) compareFolders() {
 			return
 		}
 	}
-	onlyL, onlyR := onlyOnOneSide(fm.left.entries, fm.right.entries, onWindows)
-	fm.left.setMarks(onlyL)
-	fm.right.setMarks(onlyR)
-	if len(onlyL)+len(onlyR) == 0 {
-		fm.notice = "Compare: both folders contain the same file names"
-	} else {
-		fm.notice = fmt.Sprintf("Compare: %s only on the left, %s only on the right",
-			plural(int64(len(onlyL)), "file"), plural(int64(len(onlyR)), "file"))
-	}
+	r := compareSides(fm.left.entries, fm.right.entries, onWindows)
+	fm.left.setMarks(r.markL)
+	fm.right.setMarks(r.markR)
+	fm.notice = r.summary()
 	fm.updateStatus()
 }
 
-// onlyOnOneSide returns the names of files (not folders) listed on one side only.
-// foldCase makes the match case-insensitive, as file names are on Windows.
-func onlyOnOneSide(left, right []entry, foldCase bool) (onlyLeft, onlyRight []string) {
+// dateTolerance: FAT/exFAT and many NAS store times with a 2-second resolution.
+const dateTolerance = 2 * time.Second
+
+type compareResult struct {
+	markL, markR   []string // names to mark on each side
+	onlyL, onlyR   int      // files missing on the other side
+	newerL, newerR int      // files on both sides, newer here
+	sizeOnly       int      // same date (±2 s), different size: marked on both sides
+}
+
+func (r compareResult) summary() string {
+	if len(r.markL)+len(r.markR) == 0 {
+		return "Compare: same files on both sides (name, size, date ±2 s)"
+	}
+	s := fmt.Sprintf("Compare: left %d only here, %d newer · right %d only here, %d newer",
+		r.onlyL, r.newerL, r.onlyR, r.newerR)
+	if r.sizeOnly > 0 {
+		s += fmt.Sprintf(" · %d same date, different size", r.sizeOnly)
+	}
+	return s
+}
+
+// compareSides compares files (not folders) by name; foldCase makes the name match
+// case-insensitive, as file names are on Windows. An unknown date (zero) compares by
+// size only.
+func compareSides(left, right []entry, foldCase bool) (r compareResult) {
 	key := func(s string) string {
 		if foldCase {
 			return strings.ToLower(s)
 		}
 		return s
 	}
-	names := func(es []entry) map[string]bool {
-		set := map[string]bool{}
+	isFile := func(e entry) bool { return !e.isDir && !e.isUp && !e.isDrive && !e.isShare }
+	index := func(es []entry) map[string]entry {
+		m := map[string]entry{}
 		for _, e := range es {
-			if !e.isDir && !e.isUp && !e.isDrive && !e.isShare {
-				set[key(e.name)] = true
+			if isFile(e) {
+				m[key(e.name)] = e
 			}
 		}
-		return set
+		return m
 	}
-	l, r := names(left), names(right)
+	L, R := index(left), index(right)
 	for _, e := range left {
-		if !e.isDir && !e.isUp && !r[key(e.name)] {
-			onlyLeft = append(onlyLeft, e.name)
+		if !isFile(e) {
+			continue
+		}
+		o, ok := R[key(e.name)]
+		switch {
+		case !ok:
+			r.onlyL++
+			r.markL = append(r.markL, e.name)
+		case newer(e, o):
+			r.newerL++
+			r.markL = append(r.markL, e.name)
+		case newer(o, e):
+			r.newerR++
+			r.markR = append(r.markR, o.name)
+		case e.size != o.size:
+			r.sizeOnly++
+			r.markL = append(r.markL, e.name)
+			r.markR = append(r.markR, o.name)
 		}
 	}
 	for _, e := range right {
-		if !e.isDir && !e.isUp && !l[key(e.name)] {
-			onlyRight = append(onlyRight, e.name)
+		if isFile(e) {
+			if _, ok := L[key(e.name)]; !ok {
+				r.onlyR++
+				r.markR = append(r.markR, e.name)
+			}
 		}
 	}
-	return
+	return r
+}
+
+// newer reports whether a was modified more than dateTolerance after b.
+func newer(a, b entry) bool {
+	if a.mod.IsZero() || b.mod.IsZero() {
+		return false
+	}
+	return a.mod.Sub(b.mod) > dateTolerance
 }
 
 func (fm *FM) gotoDrive(l byte) {
@@ -575,6 +625,11 @@ func (fm *FM) closeModal(name string) {
 		return // already closed
 	}
 	delete(fm.focus, name)
+	// RemovePage gives the focus back to the main page, whose layout focuses its first
+	// item, the LEFT panel, and that panel's focus handler makes it the active one.
+	// Remember the active panel to restore it (bug of 1.9 and earlier: closing any
+	// dialog opened from the right panel moved the focus to the left one).
+	active := fm.active
 	fm.pages.RemovePage(name)
 	for i, n := range fm.modals {
 		if n == name {
@@ -583,7 +638,9 @@ func (fm *FM) closeModal(name string) {
 		}
 	}
 	if len(fm.modals) == 0 {
-		fm.app.SetFocus(fm.active.table)
+		if active != nil {
+			fm.setActive(active, true)
+		}
 	} else {
 		fm.app.SetFocus(fm.focus[fm.modals[len(fm.modals)-1]])
 	}
@@ -1018,17 +1075,91 @@ func (fm *FM) trash() {
 	if len(items) == 0 {
 		return
 	}
-	fm.confirm("Move "+describe(items)+" to the Recycle Bin?", []string{"Yes", "No"}, func(choice string) {
-		if choice != "Yes" {
-			return
-		}
+	run := func() {
 		fm.runTask("Moving "+describe(items)+" to the Recycle Bin", func(o *opCtx) {
 			o.setPhase("Waiting for Windows…")
 			if err := moveToTrash(items); err != nil {
 				o.fail("Recycle Bin", err)
 			}
 		}, func(*opCtx) { p.marked = map[string]bool{}; p.reload() })
+	}
+	fm.confirm("Move "+describe(items)+" to the Recycle Bin?", []string{"Yes", "No"}, func(choice string) {
+		if choice != "Yes" {
+			return
+		}
+		// Folders with subfolders need a second confirmation. Reading a folder on a
+		// slow share must not freeze the interface: check in the background.
+		go func() {
+			deep := foldersWithSubfolders(items)
+			fm.app.QueueUpdateDraw(func() {
+				if len(deep) == 0 {
+					run()
+					return
+				}
+				fm.confirm(subfolderWarning(deep), []string{"Cancel", "Move to Recycle Bin"}, func(choice string) {
+					if choice == "Move to Recycle Bin" {
+						run()
+					}
+				})
+			})
+		}()
 	})
+}
+
+// foldersWithSubfolders returns the items that are folders (not links) containing at
+// least one subfolder. Each folder is read only until the first subfolder is found.
+func foldersWithSubfolders(items []string) []string {
+	var deep []string
+	for _, it := range items {
+		if st, err := os.Lstat(it); err != nil || !st.IsDir() {
+			continue
+		}
+		if hasSubfolder(it) {
+			deep = append(deep, it)
+		}
+	}
+	return deep
+}
+
+func hasSubfolder(dir string) bool {
+	f, err := os.Open(dir)
+	if err != nil {
+		return false
+	}
+	defer f.Close()
+	for {
+		list, err := f.ReadDir(256)
+		for _, de := range list {
+			if de.IsDir() {
+				return true
+			}
+		}
+		if err != nil || len(list) == 0 {
+			return false
+		}
+	}
+}
+
+// maxWarnNames limits the folder names listed in the subfolder warning.
+const maxWarnNames = 8
+
+// subfolderWarning is the text of the second confirmation of F8.
+func subfolderWarning(deep []string) string {
+	var b strings.Builder
+	if len(deep) == 1 {
+		b.WriteString("WARNING: this folder contains subfolders:\n\n")
+	} else {
+		fmt.Fprintf(&b, "WARNING: %d folders contain subfolders:\n\n", len(deep))
+	}
+	for i, d := range deep {
+		if i == maxWarnNames {
+			fmt.Fprintf(&b, "… and %d more\n", len(deep)-maxWarnNames)
+			break
+		}
+		b.WriteString(filepath.Base(d) + "\n")
+	}
+	b.WriteString("\nThey will go to the Recycle Bin with everything inside them.")
+	return b.String()
 }
 
 func (fm *FM) zip() {

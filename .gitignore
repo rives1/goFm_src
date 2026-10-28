@@ -1,0 +1,14 @@
+# Build output
+/gofm
+/gofm.exe
+/gofm-*.exe
+/dist/
+*.test
+*.out
+
+# Editors and OS files
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db

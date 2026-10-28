@@ -11,6 +11,10 @@ browse and extract ZIP and 7z archives · flat view of a whole folder tree · ne
 (UNC) with share lists · Recycle Bin · folder comparison · type-to-jump · automatic refresh ·
 free space per panel · remembers your folders.
 
+## Download
+
+Get **`gofm-<version>-windows.zip`** from the [latest release](https://github.com/rives1/goFm_src/releases/latest) (a `.sha256` checksum is published next to it). The zip contains `gofm.exe` (x64), `gofm-arm64.exe` (ARM), this README, the changelog, the licences and the `windows-terminal` folder with the install script.
+
 ## Running
 
 ```
@@ -72,10 +76,10 @@ uses a function key, **Alt+letter**, **Ctrl+B**, or **Shift+letter** (drives).
 | F5 | copy to the other panel's folder, **at once** — inside an archive: **extract** the marked items there |
 | F6 | move to the other panel's folder, **at once** |
 | F7 | new folder (accepts `a\b\c`) |
-| F8 / Del | move to the **Recycle Bin** |
+| F8 / Del | move to the **Recycle Bin** (a second confirmation if folders with subfolders are included) |
 | F9 | compress to ZIP |
 | F10 / Alt+Q | quit |
-| F12 | **compare** the two panels: marks, on each side, the files whose name is missing on the other side |
+| F12 | **compare** the two panels by name, size and date: marks, on each side, the files missing on the other side and the **newer** copy of files on both sides (see *Comparing folders*) |
 | Alt+S | search subfolders by name and/or content |
 | Alt+F | filter the panel (`text` or `*.pdf`) |
 | Alt+U | extract the whole archive under the cursor (or the marked items while browsing one) |
@@ -87,6 +91,7 @@ uses a function key, **Alt+letter**, **Ctrl+B**, or **Shift+letter** (drives).
 | Alt+A | invert marks |
 | Alt+R | refresh by hand (panels also refresh automatically) and re-measure marked folders |
 | Alt+I | icons: Nerd Font icons ↔ basic symbols (remembered) |
+| Alt+F1 | summary of the shortcuts that are not in the key bar |
 
 Operations act on marked items; if nothing is marked, on the item under the cursor.
 
@@ -136,9 +141,18 @@ The folder of each panel, the active panel and the last folder used on each driv
 
 ## Comparing folders (F12)
 
-F12 compares the two panels **by file name** and marks, in each panel, the **files** that do not exist in the other one. Folders are ignored; size, date and content are not compared. On Windows the match is case-insensitive. The comparison uses what each panel lists, so the filter (Alt+F) and the hidden-files setting (Alt+H) count. Previous marks are replaced, and the result is shown in the status bar until the next key — e.g. `Compare: 2 files only on the left, 1 file only on the right`. Typical use: F12, then F5 to copy the missing files across. It also works inside archives.
+F12 compares the **files** of the two panels by **name, size and date** and marks, in each panel, what is worth copying to the other one:
 
-There is no in-app help screen: this README and the project documentation are the reference.
+| The file is… | Marked |
+|---|---|
+| only on this side | here |
+| on both sides, modified more than 2 seconds later here | here (the **newer** copy) |
+| on both sides, same date (±2 s) but a different size | on **both** sides (gofm cannot tell which one is right) |
+| on both sides, same size and date (±2 s) | nowhere |
+
+The 2-second tolerance covers FAT/exFAT drives and many NAS, which store times with that resolution; a difference of exactly one hour (daylight saving on FAT drives) counts as a difference. Folders are ignored and the content is not read. On Windows names match case-insensitively. The comparison uses what each panel lists, so the filter (Alt+F) and the hidden-files setting (Alt+H) count. Previous marks are replaced, and the result is shown in the status bar until the next key — e.g. `Compare: left 2 only here, 1 newer · right 1 only here, 0 newer`. Typical use: F12, then F5 in each panel to bring the other side up to date without overwriting newer files with older ones (F5 still asks before overwriting). It also works inside archives and in the flat view (relative paths).
+
+**Alt+F1** shows a summary of the shortcuts that are not in the key bar.
 
 ## Fast copying over the network
 
@@ -169,7 +183,7 @@ Both panels refresh by themselves when files are added, removed or changed, usin
 
 - **Conflicts** when copying, moving or extracting (the only question F5/F6 ask): choose *Overwrite*, *Skip existing* or *Cancel*. Folders with the same name are **merged**.
 - **Moving between drives** = copy + delete the source, and the source is deleted **only if the copy fully succeeded**.
-- **Recycle Bin**: uses the Windows API. If an item cannot be recycled (network share, file too large), Windows shows its own warning before deleting it permanently.
+- **Recycle Bin**: F8 asks for confirmation; if the items include **folders that contain subfolders**, a second warning lists them and its default button is *Cancel*. Uses the Windows API. If an item cannot be recycled (network share, file too large), Windows shows its own warning before deleting it permanently.
 - ZIP names are written as UTF-8 (Explorer-compatible); old archives with OEM code-page names (e.g. CP850) are decoded.
 - Symbolic links and junctions are not followed (avoids endless loops); in archives they are skipped and reported.
 - Long operations run in the background with a **Cancel** button; half-written files are removed.
@@ -197,7 +211,21 @@ The program also builds and runs on Linux and macOS, which is how most of the te
 
 `third_party/go4` holds two small, standard-library-only packages from go4.org (Apache 2.0) used by the 7z reader, vendored to avoid pulling in the large go4.org dependency graph (see `third_party/go4/README.md`).
 
-The GitHub Actions workflow in `.github/workflows/ci.yml` runs `go vet` and the tests on Windows and Linux, and builds `gofm.exe` and `gofm-arm64.exe` as downloadable artifacts.
+`scripts/build-release.sh` builds the download package (`dist/gofm-<version>-windows.zip`, its `.sha256` and the release notes taken from `CHANGELOG.md`); it runs on Linux, macOS and Git Bash.
+
+The GitHub Actions workflows:
+- `.github/workflows/ci.yml` — on every push to a branch and on pull requests: `go mod verify`, `go vet` and the tests on Windows and Linux (with the race detector on Linux), then the package as a downloadable artifact;
+- `.github/workflows/release.yml` — on a pushed tag `v<version>`: the same checks, then a **GitHub Release** with the zip and its checksum.
+
+### Publishing a release
+
+1. Set the version in `main.go` (`const version`), add its section at the top of `CHANGELOG.md` (`## <version> — <date>`) and update the README and `docs/gofm-documentazione.md`.
+2. Commit, then create an **annotated** tag and push both:
+   ```
+   git tag -a v1.10 -m "gofm 1.10"
+   git push --follow-tags
+   ```
+   (`--follow-tags` pushes annotated tags only.) The release appears under *Releases* a few minutes later; the workflow stops if the tag does not match the version in `main.go` or the changelog has no section for it.
 
 ## Documentation
 

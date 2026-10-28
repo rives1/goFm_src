@@ -1,5 +1,6 @@
 # Installs gofm for the current user and adds a "gofm" profile to Windows Terminal
-# (Cascadia Mono font, dark-blue colour scheme, underscore cursor).
+# (Cascadia Mono NF font, dark-blue colour scheme, underscore cursor).
+# The font itself is not installed: see "Font with icons" in README.md.
 #
 #   powershell -ExecutionPolicy Bypass -File install-gofm.ps1 [-AddToPath]
 #
@@ -32,6 +33,20 @@ if ($AddToPath) {
         [Environment]::SetEnvironmentVariable('Path', ($userPath.TrimEnd(';') + ';' + $dest), 'User')
         Write-Host "Added $dest to your user PATH (open a new window to use it)."
     }
+}
+
+# 4. The icon font is installed by hand: only check that it is there.
+$fontDirs = @((Join-Path $env:WINDIR 'Fonts'), (Join-Path $env:LOCALAPPDATA 'Microsoft\Windows\Fonts'))
+$hasFont = $false
+foreach ($d in $fontDirs) {
+    if (Test-Path $d) {
+        if (Get-ChildItem -Path $d -Filter 'CascadiaMonoNF*' -ErrorAction SilentlyContinue) { $hasFont = $true }
+    }
+}
+if (-not $hasFont) {
+    Write-Host "NOTE: the font 'Cascadia Mono NF' is not installed. gofm's icons need it:" -ForegroundColor Yellow
+    Write-Host "      https://github.com/microsoft/cascadia-code/releases -> zip -> ttf\CascadiaMonoNF.ttf -> Install." -ForegroundColor Yellow
+    Write-Host "      Without it, press Alt+I in gofm to use basic symbols." -ForegroundColor Yellow
 }
 
 Write-Host "gofm installed in:        $dest"

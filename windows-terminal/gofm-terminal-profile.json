@@ -6,7 +6,7 @@
       "commandline": "%LOCALAPPDATA%\\Programs\\gofm\\gofm.exe",
       "startingDirectory": "%USERPROFILE%",
       "font": {
-        "face": "Cascadia Mono",
+        "face": "Cascadia Mono NF",
         "size": 11
       },
       "colorScheme": "gofm Navy",
