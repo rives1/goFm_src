@@ -6,7 +6,12 @@
 #   dist/gofm-<version>-windows.zip.sha256
 #   dist/release-notes.md             the CHANGELOG section of the version
 # The version is read from main.go. With a tag argument (e.g. v1.10, as in the GitHub
-# workflow) the script stops if the tag and the version do not match.
+# workflow) the script stops if the tag and the version do not match. It also stops if
+# the Go in use is not the toolchain pinned in go.mod, so every release is built with
+# the same compiler and can be rebuilt byte for byte.
+# The executables carry Windows resources (version information, manifest, icon) made by
+# go-winres from winres/winres.json; the .syso files are generated here and removed at
+# the end.
 # Needs Go, zip and sha256sum (Linux, macOS, Git Bash on Windows).
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -18,10 +23,19 @@ if [ $# -gt 0 ] && [ "$1" != "v$version" ]; then
 	exit 1
 fi
 grep -q "^## $version " CHANGELOG.md || { echo "CHANGELOG.md has no section for $version" >&2; exit 1; }
+toolchain=$(sed -n 's/^toolchain \(go.*\)$/\1/p' go.mod)
+goversion=$(go env GOVERSION)
+if [ "$goversion" != "$toolchain" ]; then
+	echo "Go in use is $goversion, go.mod pins $toolchain: use that one (GOTOOLCHAIN=auto downloads it)" >&2
+	exit 1
+fi
+commit=$(git rev-parse --short=12 HEAD 2>/dev/null || echo unknown)
 
 name="gofm-$version"
 rm -rf dist
 mkdir -p "dist/$name"
+trap 'rm -f rsrc_windows_*.syso' EXIT
+go tool go-winres make --arch amd64,arm64 --product-version "$version" --file-version "$version"
 GOOS=windows GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o "dist/$name/gofm.exe" .
 GOOS=windows GOARCH=arm64 go build -trimpath -ldflags="-s -w" -o "dist/$name/gofm-arm64.exe" .
 cp README.md CHANGELOG.md LICENSE THIRD_PARTY_NOTICES.md "dist/$name/"
@@ -36,5 +50,12 @@ cat >> dist/release-notes.md <<NOTES
 **Download:** \`$name-windows.zip\` (64-bit Windows: \`gofm.exe\` for x64, \`gofm-arm64.exe\` for ARM).
 Unzip, then run \`windows-terminal\\install-gofm.ps1\` or start \`gofm.exe\` directly — see the README.
 The icons need the *Cascadia Mono NF* font (README, "Font with icons"); without it press Alt+I.
+
+Built with **$goversion** from commit \`$commit\` (\`-trimpath -ldflags="-s -w"\`): the build is reproducible, so anyone can rebuild the same bytes and compare them with the SHA-256 below. If an antivirus reports the executable, see "Antivirus warnings" in the README.
+
+SHA-256 of the executables:
+\`\`\`
+$(cd "dist/$name" && sha256sum gofm.exe gofm-arm64.exe)
+\`\`\`
 NOTES
 echo "dist/$name-windows.zip"

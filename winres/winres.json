@@ -1,0 +1,61 @@
+{
+  "RT_GROUP_ICON": {
+    "APP": {
+      "0000": [
+        "icon.png",
+        "icon16.png"
+      ]
+    }
+  },
+  "RT_MANIFEST": {
+    "#1": {
+      "0409": {
+        "identity": {
+          "name": "rives.gofm",
+          "version": ""
+        },
+        "description": "gofm - dual-pane file manager for the Windows console",
+        "minimum-os": "win10",
+        "execution-level": "as invoker",
+        "ui-access": false,
+        "auto-elevate": false,
+        "dpi-awareness": "system",
+        "disable-theming": false,
+        "disable-window-filtering": false,
+        "high-resolution-scrolling-aware": false,
+        "ultra-high-resolution-scrolling-aware": false,
+        "long-path-aware": true,
+        "printer-driver-isolation": false,
+        "gdi-scaling": false,
+        "segment-heap": false,
+        "use-common-controls-v6": false
+      }
+    }
+  },
+  "RT_VERSION": {
+    "#1": {
+      "0000": {
+        "fixed": {
+          "file_version": "0.0.0.0",
+          "product_version": "0.0.0.0"
+        },
+        "info": {
+          "0409": {
+            "Comments": "Open source (MIT): https://github.com/rives1/goFm_src",
+            "CompanyName": "rives",
+            "FileDescription": "gofm - dual-pane file manager",
+            "FileVersion": "",
+            "InternalName": "gofm",
+            "LegalCopyright": "Copyright (c) 2026 rives",
+            "LegalTrademarks": "",
+            "OriginalFilename": "gofm.exe",
+            "PrivateBuild": "",
+            "ProductName": "gofm",
+            "ProductVersion": "",
+            "SpecialBuild": ""
+          }
+        }
+      }
+    }
+  }
+}

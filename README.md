@@ -15,6 +15,23 @@ free space per panel · remembers your folders.
 
 Get **`gofm-<version>-windows.zip`** from the [latest release](https://github.com/rives1/goFm_src/releases/latest) (a `.sha256` checksum is published next to it). The zip contains `gofm.exe` (x64), `gofm-arm64.exe` (ARM), this README, the changelog, the licences and the `windows-terminal` folder with the install script.
 
+To check a download, compare its hash with the one on the release page (PowerShell):
+
+```
+Get-FileHash .\gofm-1.11-windows.zip     # the zip: see the .sha256 file
+Get-FileHash .\gofm.exe                  # the program: see the release notes
+```
+
+### Antivirus warnings
+
+Some antivirus programs — Microsoft Defender in particular, with names ending in `!ml` such as `Trojan:Win32/Bearfoos.B!ml` — flag new, unsigned Go executables by **machine-learning heuristics**, not because they recognise malware. The Go FAQ calls this "almost always a false positive". gofm 1.10 was reported this way.
+
+What you can rely on:
+- every release is built by GitHub Actions from the public source, with the compiler pinned in `go.mod`, and the build is **reproducible**: rebuilding the tagged commit with `scripts/build-release.sh` on Linux (or WSL) gives the same bytes as the published executables (the release notes list their SHA-256);
+- since 1.11 the executables carry version information, a manifest that never asks for administrator rights, and an icon.
+
+If your antivirus quarantines gofm: check the hash as above, report the false positive to the vendor (Microsoft: <https://www.microsoft.com/en-us/wdsi/filesubmission>, "Incorrectly detected"), and restore the file only if the hash matches. Please do not disable your antivirus.
+
 ## Running
 
 ```
@@ -197,21 +214,24 @@ Both panels refresh by themselves when files are added, removed or changed, usin
 
 ## Building from source
 
-Requires **Go 1.24 or later**.
+Requires **Go 1.24 or later**. Releases are built with the toolchain pinned in `go.mod` (**go1.27.3**); with the default `GOTOOLCHAIN=auto`, an older `go` downloads it by itself.
 
 ```
-git clone <this repository>
-cd gofm
+git clone https://github.com/rives1/goFm_src
+cd goFm_src
 go build -trimpath -ldflags="-s -w" -o gofm.exe .        # on Windows
 GOOS=windows GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o gofm.exe .   # from Linux/macOS
 go test ./...
+bash scripts/build-release.sh                            # the release package, with Windows metadata
 ```
+
+A plain `go build` makes a working program without the Windows metadata (version information, manifest, icon): those come from `winres/winres.json` through [go-winres](https://github.com/tc-hib/go-winres), a build tool pinned in `go.mod` (`go tool go-winres`), which `scripts/build-release.sh` runs before compiling.
 
 The program also builds and runs on Linux and macOS, which is how most of the tests run; drives, share lists, attributes and the Recycle Bin are Windows features.
 
 `third_party/go4` holds two small, standard-library-only packages from go4.org (Apache 2.0) used by the 7z reader, vendored to avoid pulling in the large go4.org dependency graph (see `third_party/go4/README.md`).
 
-`scripts/build-release.sh` builds the download package (`dist/gofm-<version>-windows.zip`, its `.sha256` and the release notes taken from `CHANGELOG.md`); it runs on Linux, macOS and Git Bash.
+`scripts/build-release.sh` builds the download package (`dist/gofm-<version>-windows.zip`, its `.sha256` and the release notes taken from `CHANGELOG.md`); it runs on Linux, macOS and Git Bash, and stops if the Go in use is not the one pinned in `go.mod`.
 
 The GitHub Actions workflows:
 - `.github/workflows/ci.yml` — on every push to a branch and on pull requests: `go mod verify`, `go vet` and the tests on Windows and Linux (with the race detector on Linux), then the package as a downloadable artifact;
@@ -219,7 +239,7 @@ The GitHub Actions workflows:
 
 ### Publishing a release
 
-1. Set the version in `main.go` (`const version`), add its section at the top of `CHANGELOG.md` (`## <version> — <date>`) and update the README and `docs/gofm-documentazione.md`.
+1. Set the version in `main.go` (`const version`); to change compiler, update the `toolchain` line of `go.mod` and `GO_VERSION` in both workflows together (a test checks it). Add its section at the top of `CHANGELOG.md` (`## <version> — <date>`) and update the README and `docs/gofm-documentazione.md`.
 2. Commit, then create an **annotated** tag and push both:
    ```
    git tag -a v1.10 -m "gofm 1.10"

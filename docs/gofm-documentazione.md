@@ -1,7 +1,7 @@
 # gofm — Documentazione di progetto e specifiche
 
-**Versione documentata:** 1.10 · **Data:** 28/10/2026 · **Licenza:** MIT, © 2026 rives
-**Linguaggio:** Go 1.24 · **Piattaforma bersaglio:** Windows 64 bit (x64, ARM64) · **Interfaccia:** inglese
+**Versione documentata:** 1.11 · **Data:** 28/10/2026 · **Licenza:** MIT, © 2026 rives
+**Linguaggio:** Go (minimo 1.24; release compilate con **Go 1.27.3**) · **Piattaforma bersaglio:** Windows 64 bit (x64, ARM64) · **Interfaccia:** inglese
 
 ---
 
@@ -59,7 +59,8 @@ Funzioni principali:
 - **tema blu scuro** con **colori per tipo di file**, totale della selezione sul bordo del pannello e dimensione ricorsiva delle cartelle selezionate;
 - **aggiornamento automatico** dei due pannelli con le notifiche di modifica del sistema;
 - **riepilogo dei tasti (Alt+F1)** con le scorciatoie che non sono nella barra in basso;
-- **pacchetto scaricabile** pubblicato come Release su GitHub a ogni tag di versione;
+- **pacchetto scaricabile** pubblicato come Release su GitHub a ogni tag di versione, compilato con un compilatore fissato e **riproducibile byte per byte**;
+- **metadati di Windows** negli eseguibili: informazioni di versione, manifest (*asInvoker*) e icona;
 - **icone per tipo di file** davanti ai nomi (glifi Nerd Font, oppure simboli semplici con Alt+I);
 - **profilo per Windows Terminal** (Cascadia Mono NF, schema "gofm Navy", cursore a trattino basso) con script di installazione;
 - **vista piatta (Ctrl+B)**: tutti i file di una cartella e delle sue sottocartelle in un'unica lista, con tutte le operazioni;
@@ -75,7 +76,7 @@ Avvio:
 gofm.exe                        :: entrambi i pannelli nella cartella corrente
 gofm.exe C:\Progetti D:\Backup  :: pannello sinistro e destro
 gofm.exe \\nas                  :: un pannello sull'elenco delle share di \\nas
-gofm.exe -h | --help | /?       :: stampa "gofm 1.10 — usage: gofm [left_folder] [right_folder]"
+gofm.exe -h | --help | /?       :: stampa "gofm 1.11 — usage: gofm [left_folder] [right_folder]"
 ```
 
 Un argomento non valido (inesistente o non cartella) viene sostituito dalla cartella corrente.
@@ -102,6 +103,8 @@ Ogni scelta è stata presa con l'utente o motivata esplicitamente.
 | Confronto cartelle | **F12**, **solo file** (le cartelle sono ignorate). Dalla v1.10 per **nome, dimensione e data**: seleziona i mancanti dall'altro lato e, per i file presenti in entrambi, **solo la copia più recente**; stessa data e dimensione diversa → entrambe. **Tolleranza 2 s** sulla data | Scelte dell'utente (v1.4: solo nome e mancanti; v1.10: nome+data+dimensione, la più recente, 2 s). Selezionare la sola copia più recente rende sicuro F5 subito dopo (come la sincronizzazione di Total Commander). 2 s è la risoluzione delle date su FAT/exFAT e su molti NAS; uno scarto di **1 ora esatta** (ora legale su FAT) resta una differenza: ignorarlo nasconderebbe anche modifiche reali. |
 | Aiuto | F1 non fa nulla (dalla v1.4). Dalla v1.10 **Alt+F1** apre un **riepilogo dei tasti** che **esclude** quelli della barra in basso | Scelte dell'utente (v1.4, v1.10): la barra mostra già i suoi tasti; un test verifica che le due liste non si sovrappongano. |
 | Cancellazione di cartelle con sottocartelle | Dopo la conferma normale di F8, una **seconda conferma** con l'**elenco dei nomi** (al massimo 8, poi `… and N more`); pulsante predefinito **Cancel** | Scelta dell'utente (v1.10): solo i nomi, nessun conteggio, così la risposta è immediata anche su share lente. Il controllo legge ogni cartella solo fino alla prima sottocartella, in background. |
+| Compilatore | **Go 1.27.3** fissato in `go.mod` (`toolchain go1.27.3`) e in `GO_VERSION` dei due workflow, con `GOTOOLCHAIN=local`; lo script di build rifiuta un altro compilatore e un test controlla che `go.mod` e workflow coincidano. La riga `go 1.24.0` resta come versione **minima** del linguaggio | Richiesta dell'utente (v1.11). Fino alla 1.10 `setup-go` leggeva `go-version-file: go.mod`, cioè la riga `go 1.24.0`, e installava **esattamente Go 1.24.0**, la prima versione della serie, senza le correzioni di sicurezza successive; la serie 1.24 non è più supportata (Go supporta le due ultime versioni maggiori, ora 1.26 e 1.27). Un compilatore esatto rende anche la build **riproducibile**: chiunque può ricompilare gli stessi byte. Scelta la 1.27.3 (ultima stabile) dopo vet, test e race detector superati. |
+| Metadati di Windows | Informazioni di versione (`ProductName gofm`, `CompanyName rives`, `FileDescription`, `LegalCopyright`, `OriginalFilename gofm.exe`, `Comments` con il link ai sorgenti, versione `1.11` / `1.11.0.0`), **manifest** (`asInvoker`, nessuna elevazione, `longPathAware`, Windows 10 come sistema supportato) e **icona** (due pannelli nei colori del tema, 256 px e 16 px disegnata a pixel). Generati da **go-winres** v0.3.3 (licenza 0BSD), registrato come `tool` in `go.mod`, da `winres/winres.json`; i `.syso` sono creati dallo script di build e non stanno nel repository | Richiesta dell'utente (v1.11) dopo che Defender ha segnalato la 1.10 come `Trojan:Win32/Bearfoos.B!ml`. Gli eseguibili senza firma e senza metadati sono più spesso colpiti dalle euristiche ML degli antivirus: i metadati riducono la probabilità, **non la azzerano**. La soluzione stabile è la **firma del codice** (es. SignPath Foundation, gratuita per l'open source, o Azure Trusted Signing), che richiede un account dell'utente: non ancora attivata. go-winres è uno strumento di build: non finisce nell'eseguibile, quindi non serve in `THIRD_PARTY_NOTICES.md`. |
 | Pubblicazione | **Release su GitHub** con lo zip compilato e il suo SHA-256, creata dal workflow `release.yml` al push di un tag `v<versione>`. Commit e tag li prepara Claude nella copia locale, il push lo fa l'utente | Scelta dell'utente (v1.10). Lo zip è compilato da GitHub dai sorgenti pubblicati, quindi verificabile; lo stesso script (`scripts/build-release.sh`) produce il pacchetto in locale e nella CI. |
 | Totale della selezione | Cumulativo (in barra di stato fino alla v1.5, sul bordo del pannello dalla v1.6); le cartelle sono misurate **ricorsivamente in background** | Richiesta dell'utente (v1.3); il calcolo asincrono non blocca l'interfaccia su cartelle grandi o di rete. |
 | Spostamento tra unità | Copia + eliminazione dell'origine **solo se la copia è riuscita al 100%** | Nessuna perdita di dati possibile. |
@@ -741,7 +744,9 @@ gofm/
 ├── v17_test.go      test: vista piatta, nomi doppi, stato, ripristino, spazio libero
 ├── v19_test.go      test: icone (larghezza, insiemi, tipi, colori, contrasto, layout della riga, memoria)
 ├── v110_test.go     test: confronto nome/dimensione/data, cartelle con sottocartelle, riepilogo dei tasti, focus alla chiusura delle finestre
-├── scripts/build-release.sh  pacchetto scaricabile (zip, SHA-256, note di rilascio dal CHANGELOG)
+├── v111_test.go     test: compilatore fissato uguale in go.mod e nei workflow, risorse Windows (manifest, versione, icone)
+├── scripts/build-release.sh  pacchetto scaricabile (risorse Windows, zip, SHA-256, note di rilascio dal CHANGELOG)
+├── winres/          winres.json, icon.png, icon16.png (metadati Windows, go-winres)
 ├── windows-terminal/ profilo di Windows Terminal (fragment JSON) e install-gofm.ps1
 ├── testdata/        single.7z, multi.7z, secret.7z (fixture)
 └── third_party/go4  go4.org/syncutil e readerutil (solo libreria standard, Apache 2.0)
@@ -856,6 +861,9 @@ CopyFileExW(longPath(src), longPath(dst), copyCallback, id, NULL /* pbCancel */,
 | `golang.org/x/sys` | v0.38.0 | API Windows |
 | `golang.org/x/text` | v0.31.0 | codepage (CP850, Windows-1252), UTF-16 |
 | `github.com/fsnotify/fsnotify` | v1.8.0 | notifiche di modifica delle cartelle (aggiornamento automatico) |
+| `github.com/tc-hib/go-winres` | v0.3.3 (`tool`, solo per la build) | risorse Windows: versione, manifest, icona; dipendenze solo dello strumento: `tc-hib/winres`, `urfave/cli/v2`, `golang.org/x/image`, `nfnt/resize`… |
+
+**Compilatore**: `go 1.24.0` in `go.mod` è la versione minima del linguaggio; `toolchain go1.27.3` è il compilatore delle release. Con `GOTOOLCHAIN=auto` (predefinito) un `go` più vecchio scarica da solo la 1.27.3; i workflow usano `GOTOOLCHAIN=local` con Go 1.27.3 installato da `setup-go`.
 
 ### 9.2 Moduli e `go.sum`
 
@@ -863,16 +871,18 @@ Il `go.mod` pubblicato è quello standard: nessuna redirezione, tranne `replace 
 
 **Come è stato prodotto `go.sum`.** L'ambiente di sviluppo non raggiungeva `golang.org`, `gopkg.in` né il database dei checksum (`sum.golang.org`). Per questo i moduli `golang.org/x/*`, `gopkg.in/yaml.v3` e `gopkg.in/check.v1` sono stati ricostruiti dai loro mirror GitHub, con `git archive` della stessa revisione e `golang.org/x/mod/zip.CreateFromDir`, in un proxy locale (`GOPROXY=file://…`). Poi `go mod tidy` ha calcolato i checksum. Il metodo è stato **verificato**: ricostruendo allo stesso modo tre moduli GitHub (tview, fsnotify, sevenzip) si ottengono esattamente i checksum che Go calcola scaricandoli direttamente, sia `h1:` sia `/go.mod`. Al primo `go build` su una macchina normale Go confronta comunque `go.sum` con `sum.golang.org`, e il comando `go mod verify` della CI lo controlla.
 
-Per lo sviluppo in quella sandbox restano in uso le vecchie `replace` verso i mirror; non fanno parte del repository.
+Per lo sviluppo in quella sandbox restano in uso le vecchie `replace` verso i mirror; non fanno parte del repository. Dalla v1.11 la sandbox usa invece un proxy locale (`GOPROXY=file://…,direct`) con i moduli `golang.org/x/*` e `gopkg.in/*` ricostruiti dai mirror GitHub, senza toccare `go.mod`; nella v1.11 vi sono stati aggiunti `golang.org/x/image` v0.15.0 e `golang.org/x/text` v0.14.0 per go-winres. I checksum di `go.sum` sono verificati da GitHub contro `sum.golang.org` al primo download: un errore farebbe fallire la CI, non passerebbe in silenzio.
 
 ### 9.3 Comandi
 
 ```bash
 go vet ./...
 go test ./...
-GOOS=windows GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o gofm.exe .
-GOOS=windows GOARCH=arm64 go build -trimpath -ldflags="-s -w" -o gofm-arm64.exe .
+GOOS=windows GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o gofm.exe .   # senza metadati Windows
+bash scripts/build-release.sh                                                  # pacchetto completo, con metadati
 ```
+
+Le risorse Windows si generano con `go tool go-winres make --arch amd64,arm64 --product-version <v> --file-version <v>` (crea `rsrc_windows_amd64.syso` e `rsrc_windows_arm64.syso`, che `go build` incorpora automaticamente per `GOOS=windows`). La generazione è deterministica: due build consecutive producono gli stessi byte (verificato).
 
 Il programma compila e funziona anche su Linux/macOS, ma senza unità, share e attributi; questo serve solo per lo sviluppo.
 
@@ -889,6 +899,7 @@ THIRD_PARTY_NOTICES.md      dipendenze incluse nell'eseguibile, licenze e testi 
 .github/workflows/ci.yml    CI a ogni push su un ramo e pull request: go mod verify, vet e test su Windows e Linux (race detector su Linux), pacchetto come artifact
 .github/workflows/release.yml  Release al push di un tag v<versione>: verifiche, pacchetto, pubblicazione
 scripts/build-release.sh    pacchetto scaricabile, usato in locale, dalla CI e dalla Release
+winres/                     winres.json (versione, manifest), icon.png (256 px), icon16.png (16 px)
 docs/                       questa documentazione e la schermata
 windows-terminal/           profilo e script di installazione
 third_party/go4/            sottoinsieme di go4.org (Apache 2.0) con README di provenienza
@@ -904,12 +915,13 @@ testdata/                   archivi 7z per i test
 ### 9.5 Pubblicazione di una versione (Release con pacchetto scaricabile)
 
 **Pacchetto** (`scripts/build-release.sh [tag]`, bash: Linux, macOS, Git Bash):
-- legge la versione da `const version` in `main.go`; con un tag come argomento si ferma se il tag non è `v<versione>`; si ferma anche se `CHANGELOG.md` non ha la sezione `## <versione> `;
+- legge la versione da `const version` in `main.go`; con un tag come argomento si ferma se il tag non è `v<versione>`; si ferma anche se `CHANGELOG.md` non ha la sezione `## <versione> ` o se `go env GOVERSION` non è il `toolchain` di `go.mod` (v1.11);
+- genera le risorse Windows con go-winres (versione = quella di `main.go`) e le cancella alla fine;
 - compila `gofm.exe` (x64) e `gofm-arm64.exe` con `-trimpath -ldflags="-s -w"`;
 - crea `dist/gofm-<versione>-windows.zip` con la cartella `gofm-<versione>/` che contiene i due eseguibili, `README.md`, `CHANGELOG.md`, `LICENSE`, `THIRD_PARTY_NOTICES.md` e `windows-terminal/` (lo script di installazione trova l'eseguibile un livello sopra);
-- crea `dist/gofm-<versione>-windows.zip.sha256` e `dist/release-notes.md` (la sezione del CHANGELOG più le istruzioni di download, il font e Alt+I).
+- crea `dist/gofm-<versione>-windows.zip.sha256` e `dist/release-notes.md` (la sezione del CHANGELOG più le istruzioni di download, il font, Alt+I e, dalla v1.11, compilatore, commit e SHA-256 dei due eseguibili).
 
-**Workflow** `.github/workflows/release.yml`, al push di un tag `v*`: checkout, Go dalla versione di `go.mod`, `go mod verify`, `go vet` (anche con `GOOS=windows`), test, `bash scripts/build-release.sh "$GITHUB_REF_NAME"`, poi `gh release create <tag> <zip> <sha256> --title "gofm <versione>" --notes-file dist/release-notes.md --verify-tag` con il token del workflow (`permissions: contents: write`). La CI (`ci.yml`) gira sui rami, non sui tag, per non compilare due volte. Gli script sono lanciati con `bash` perché il repository nasce su Windows (`core.filemode=false`) e il permesso di esecuzione non verrebbe registrato.
+**Workflow** `.github/workflows/release.yml`, al push di un tag `v*`: checkout, Go `GO_VERSION` (1.27.3, `GOTOOLCHAIN=local`), `go mod verify`, `go vet` (anche con `GOOS=windows`), test, `bash scripts/build-release.sh "$GITHUB_REF_NAME"`, poi `gh release create <tag> <zip> <sha256> --title "gofm <versione>" --notes-file dist/release-notes.md --verify-tag` con il token del workflow (`permissions: contents: write`). La CI (`ci.yml`) gira sui rami, non sui tag, per non compilare due volte. Gli script sono lanciati con `bash` perché il repository nasce su Windows (`core.filemode=false`) e il permesso di esecuzione non verrebbe registrato.
 
 **Procedura** a ogni versione (regola di §0):
 1. aggiornare versione, CHANGELOG, README, documentazione e specifiche compatte;
@@ -917,6 +929,10 @@ testdata/                   archivi 7z per i test
 3. `git add -A`, commit `versione <x>`, tag **annotato** `git tag -a v<x> -m "gofm <x>"`;
 4. `git push --follow-tags` (spinge solo i tag annotati);
 5. su GitHub, scheda *Actions*: il workflow *Release* deve finire in verde; lo zip compare in *Releases*.
+
+**Verifica della 1.10 (riproducibilità)**: dopo la segnalazione di Defender sono stati scaricati dalla Release gli eseguibili della 1.10 (SHA-256 `b2b5eafa…4398f` x64, `1e77b1e9…9063` ARM64); le informazioni di build incorporate indicano Go 1.24.0, commit `febe430`, `vcs.modified=false`. Ricompilando quel commit, clonato da GitHub, con Go 1.24.0 ufficiale e le dipendenze verificate da `go mod verify`, si ottengono **gli stessi byte** per entrambi: gli eseguibili pubblicati contengono solo il codice del repository.
+
+**Segnalazione dei falsi positivi**: a Microsoft su <https://www.microsoft.com/en-us/wdsi/filesubmission> (tipo *Incorrectly detected*), allegando lo zip della Release e indicando nome della rilevazione, link al repository, SHA-256 e la riproducibilità della build. Il testo pronto è in `microsoft-false-positive-submission.md` accanto alle specifiche compatte.
 
 Nota storica: il commit "versione 1.9" del repository non conteneva gli aggiornamenti della 1.9 a documentazione, profilo e script, né `.github/` e `.gitignore` (mai aggiunti a git, quindi la CI non era mai partita); la v1.10 li include. Per la 1.9 non esiste una Release.
 
@@ -939,6 +955,7 @@ Eseguiti su Linux; su Windows è stata verificata solo la compilazione (`go vet`
 | Tasti | Ctrl+lettera nelle due codifiche, Ctrl+H/I/M, Backspace/Tab/Invio non scambiati, AltGr escluso, Alt+lettera |
 | Selezione | `treeStats` (file regolari e byte, ricorsivo), `plural` |
 | Confronto | `onlyOnOneSide`: cartelle e `..` ignorate, maiuscole indifferenti e distinte, cartella identica senza differenze |
+| v1.11 | `TestPinnedToolchain` (riga `toolchain` in `go.mod`, `tool github.com/tc-hib/go-winres`, `GO_VERSION` uguale nei due workflow, nessun `go-version-file`); `TestWindowsResources` (manifest `as invoker` senza ui-access né auto-elevate e con long-path-aware, campi di versione, esistenza delle icone). Tutti i test, vet (anche `GOOS=windows`) e race detector superati con **Go 1.27.3** |
 | v1.10 | `compareSides`: solo nome come prima (maiuscole indifferenti e distinte, stessa cartella senza differenze); nome+dimensione+data con stessa data, arrotondamento FAT (2 s → uguali), più recente a sinistra e a destra (anche con dimensione diversa), stessa data e dimensione diversa → entrambi, 1 ora → differenza, data sconosciuta con dimensione uguale e diversa, cartelle ignorate, contatori e testo dell'avviso; `foldersWithSubfolders` (cartella con soli file, con sottocartella, vuota, file, inesistente, 600 file prima della sottocartella, collegamento a cartella escluso) e `subfolderWarning` (singolare, 11 cartelle → `… and 3 more`); riepilogo dei tasti senza voci della barra, con le voci attese, righe ≤ 76 celle; **focus**: con `newFM` reale, per destro → sinistro → destro, due finestre aperte e chiuse, il pannello attivo, il focus e i colori dei bordi restano quelli di partenza |
 | v1.9 | insiemi di icone (una cella con `uniseg`, nessun doppione, Nerd Font nell'area a uso privato e simboli fuori); una famiglia = un tipo di icona (7 tipi distinti); `entryKind` (`..`, unità, share, cartella anche con nome da archivio, maiuscole, nome della vista piatta, estensione sconosciuta); colore dell'icona (famiglia anche se selezionato, mai giallo, attenuato se nascosto); **contrasto WCAG** (≥ 4,5:1 sullo sfondo, ≥ 3:1 sul cursore inattivo, testo del cursore ≥ 4,5:1 sul cursore attivo); layout della riga a 40/60/100 colonne (larghezza, cartella senza `\`, colonna marca, estensione conservata, insieme predefinito, simboli dopo Alt+I, icona della cartella selezionata bianca, `SelectedStyle` del cursore attivo e inattivo); `basicIcons` salvato anche quando cambia solo lui |
 | v1.8 | `bottomLabel` (formato completo, spazio sconosciuto, elenco unità, pannello stretto, nessuno spazio); `compactSize`; `driveKey` (solo `A`–`Z`: minuscole, accentate, cifre, `*`, spazio esclusi) |
@@ -951,6 +968,8 @@ Le fixture 7z sono generate con `py7zr`:
 - `single.7z`: `progetto/città.txt`, `progetto/sub/big.txt` (50 000 righe "riga");
 - `multi.7z`: come `single.7z` più `solo.txt` ("S");
 - `secret.7z`: `solo.txt` con password `pw`.
+
+Prova reale (v1.11): eseguibile x64 analizzato con `pefile`: `StringFileInfo` con `ProductName gofm`, `FileVersion 1.11`, `CompanyName rives`, `LegalCopyright`, `OriginalFilename gofm.exe`, `Comments` con il link; versione fissa `1.11.0.0`; risorse `RT_ICON`, `RT_GROUP_ICON`, `RT_VERSION`, `RT_MANIFEST`; manifest con `requestedExecutionLevel level="asInvoker" uiAccess="false"`, `longPathAware true` e Windows 10 tra i sistemi supportati; sottosistema console. Due build consecutive (con risorse rigenerate) identiche byte per byte. Icona controllata a vista a 256 e 16 px. **Non verificato**: come Windows mostra icona e proprietà, e se Defender segnala ancora la 1.11.
 
 Prova reale (v1.10) in `tmux` a 120×30: Ctrl+B dal pannello destro → vista piatta nel destro e il bordo attivo resta a destra (prima della correzione passava a sinistra), di nuovo Ctrl+B → resta a destra; Alt+F1 → riepilogo, in 30 righe limitato all'altezza dello schermo con il titolo di scorrimento, End mostra la fine, Esc lo chiude; F8 su `proj` (con `sub/`) → prima conferma, poi l'avviso con il nome e `Cancel` predefinito: Invio annulla e la cartella resta; F8 su `flat` (solo file) → una sola conferma; F8 su `proj` con `Move to Recycle Bin` → spostata; F12 con `same.txt` (uguale), `newer.txt` (più recente a sinistra), `onlyleft.txt`/`onlyright.txt`, `clash.txt` (data 10:00:00 contro 10:00:01, dimensioni 2 e 3 byte) → a sinistra `clash`, `newer`, `onlyleft`; a destra `clash`, `onlyright`. Pacchetto: `scripts/build-release.sh v1.10` produce zip, `.sha256` (verificato con `sha256sum -c`) e note; con `v1.9` si ferma con `tag v1.9 does not match the version in main.go (1.10)`. I file YAML dei workflow sono validati; **i workflow non sono stati eseguiti su GitHub**.
 
@@ -985,12 +1004,13 @@ Prove precedenti: navigazione con le frecce, ricerca digitando, larghezza delle 
 - **Shift+lettera = unità**: la ricerca digitando funziona solo con le minuscole, e con il **Blocco Maiuscole attivo** ogni lettera cambia unità (limite del terminale, scelta consapevole).
 - Nessuna richiesta di credenziali per le share.
 - Vista piatta: limite di 200 000 file; le modifiche esterne nelle sottocartelle compaiono solo con Alt+R.
+- Eseguibili **non firmati**: alcuni antivirus (es. Defender, rilevazioni `!ml`) possono segnalarli come falsi positivi; la firma del codice non è ancora attiva.
 - Icone: senza un Nerd Font i glifi appaiono come quadratini e gofm non può rilevarlo: serve Alt+I. Un'icona per famiglia, non per singola estensione.
 - `go.sum` costruito con un metodo verificato ma senza accesso a `sum.golang.org` (§9.2): la prima compilazione su una macchina normale, o la CI, lo confermano.
 
 **Non verificato su Windows reale** (logica testata solo dove è portabile):
 - Alt+F1 nei vari terminali (decodifica di F1 con il modificatore Alt) e la seconda conferma di F8 con il Cestino reale;
-- il workflow di Release su GitHub (prima esecuzione al primo tag `v1.10`);
+- l'aspetto di icona e proprietà del file in Esplora risorse; l'effetto dei metadati sulle segnalazioni degli antivirus (riducono la probabilità di un falso positivo, non la escludono);
 - Cestino (`SHFileOperationW`), elenco share (`NetShareEnum`), unità, attributi, data di creazione, `ShellExecute`;
 - **copia con `CopyFileExW`** (callback, annullamento, I/O senza cache, percorsi lunghi) e il **guadagno reale di velocità** in rete: il motore parallelo è testato su Linux con la copia Go, la parte Windows è solo compilata. Su Windows reale va verificato in particolare che l'annullamento elimini il file parziale e che la copia lato server si attivi tra cartelle dello stesso server.
 - codifica effettiva di Ctrl+B e Shift+lettera nei vari terminali (analizzata sul codice di tcell, coperta da test unitari);
@@ -1006,6 +1026,7 @@ Prove precedenti: navigazione con le frecce, ricerca digitando, larghezza delle 
 |---|---|
 | 1.0 | Doppio pannello, operazioni di base, Cestino, ZIP, ricerca, filtro, anteprima; interfaccia in italiano |
 | 1.1 | Frecce ←/→, interfaccia in inglese, anteprima ed estrazione 7z |
+| 1.11 | **Compilatore aggiornato a Go 1.27.3**, fissato in `go.mod` e nei workflow (la 1.10 era stata compilata con Go 1.24.0); **metadati di Windows** negli eseguibili (versione, manifest *asInvoker*, icona) con go-winres; note di rilascio con compilatore, commit e SHA-256; README con verifica dei download e avvisi degli antivirus; verificata la riproducibilità degli eseguibili della 1.10 segnalati da Defender |
 | 1.10 | Correzione: chiudendo una finestra aperta dal pannello destro il focus passava al sinistro (visibile con Ctrl+B); **seconda conferma di F8** per cartelle con sottocartelle (elenco dei nomi, `Cancel` predefinito); **Alt+F1** riepilogo dei tasti non presenti nella barra; **F12 per nome, dimensione e data** (±2 s; selezionata la copia più recente, entrambe se stessa data e dimensione diversa); **Release su GitHub** con pacchetto compilato e SHA-256 (`release.yml`, `scripts/build-release.sh`); regola di lavoro sugli aggiornamenti a ogni versione; nel repository i file della 1.9 che mancavano |
 | 1.9 | **Icone per tipo di file** davanti ai nomi (una per famiglia di colori, più cartella, file generico, `..`, unità, share): glifi Nerd Font, oppure simboli semplici con **Alt+I** (ricordato in `state.json`); colore della famiglia anche sui selezionati, colore del cursore sulla riga del cursore attivo; cartelle senza prefisso `\`; profilo Windows Terminal con **Cascadia Mono NF** e controllo del font nello script |
 | 1.8 | Unità su **Shift+lettera** (lettera maiuscola; ricerca digitando con le minuscole); vista piatta su **Ctrl+B**; bordo inferiore con file e dimensione della cartella e spazio libero compatto (` 12 files 3.4 MB │ 28.5G free (11%) `) |
@@ -1020,20 +1041,21 @@ Prove precedenti: navigazione con le frecce, ricerca digitando, larghezza delle 
 
 ## 13. Prompt per rigenerare il programma
 
-Il prompt seguente è autosufficiente: incollato a un assistente di programmazione con accesso a Go, dovrebbe produrre un programma equivalente alla versione 1.10. Le stringhe dell'interfaccia sono indicate testualmente.
+Il prompt seguente è autosufficiente: incollato a un assistente di programmazione con accesso a Go, dovrebbe produrre un programma equivalente alla versione 1.11. Le stringhe dell'interfaccia sono indicate testualmente.
 
 ````text
-Crea "gofm", un file manager a doppio pannello per il terminale di Windows, in Go 1.24,
+Crea "gofm", un file manager a doppio pannello per il terminale di Windows, in Go (go.mod:
+"go 1.24.0" e "toolchain go1.27.3"; le release si compilano con Go 1.27.3),
 compilabile in un unico gofm.exe (GOOS=windows, amd64 e arm64, senza CGO) con
 github.com/rivo/tview v0.42 e github.com/gdamore/tcell/v2 v2.13, golang.org/x/sys/windows,
 golang.org/x/text (charmap CP437/850/852/858/866 e Windows1252, unicode UTF-16),
 github.com/rivo/uniseg e github.com/bodgit/sevenzip v1.6 (7z in sola lettura).
 Interfaccia interamente in INGLESE. Deve compilare e girare anche su Linux per i test
 (file sys_windows.go e sys_other.go con build tag). Scrivi test unitari per tutta la
-logica portabile. Versione "1.10".
+logica portabile. Versione "1.11".
 
 AVVIO: gofm [left_folder] [right_folder]; -h/--help//? stampa
-"gofm 1.10 — usage: gofm [left_folder] [right_folder]". Argomento non valido -> cartella corrente.
+"gofm 1.11 — usage: gofm [left_folder] [right_folder]". Argomento non valido -> cartella corrente.
 Un argomento \\server apre l'elenco share.
 MEMORIA (state.go): stato JSON {version:1, left, right, active "left"|"right", driveDirs
 {lettera: cartella}, basicIcons bool omitempty} in os.UserConfigDir()/gofm/state.json (GOFM_STATE lo sostituisce),
@@ -1394,9 +1416,20 @@ CHANGELOG.md, .gitignore, .github/workflows/ci.yml (sui rami e le pull request: 
 verify, vet, test su windows-latest e ubuntu-latest, -race su Linux, pacchetto come artifact),
 .github/workflows/release.yml (al push di un tag v*: verifiche, bash scripts/build-release.sh
 "$GITHUB_REF_NAME", gh release create con zip e .sha256, note da dist/release-notes.md,
-permissions contents: write), scripts/build-release.sh (versione da main.go, controllo
-tag = v<versione> e sezione nel CHANGELOG, build x64/arm64, dist/gofm-<v>-windows.zip con
+permissions contents: write; in entrambi i workflow env GO_VERSION '1.27.3' e
+GOTOOLCHAIN local, setup-go con go-version: ${{ env.GO_VERSION }}), scripts/build-release.sh
+(versione da main.go, controllo tag = v<versione>, sezione nel CHANGELOG e go env GOVERSION
+uguale al toolchain di go.mod; risorse Windows con "go tool go-winres make --arch
+amd64,arm64 --product-version <v> --file-version <v>" da winres/winres.json, .syso
+cancellati alla fine e ignorati da git; build x64/arm64, dist/gofm-<v>-windows.zip con
 cartella gofm-<v>/ contenente gli exe, README, CHANGELOG, LICENSE, THIRD_PARTY_NOTICES e
-windows-terminal/, file .sha256, note di rilascio), docs/,
+windows-terminal/, file .sha256, note di rilascio con compilatore, commit e SHA-256 degli
+exe). RISORSE WINDOWS (winres/winres.json): manifest identity "rives.gofm", execution-level
+"as invoker", ui-access false, auto-elevate false, long-path-aware true, minimum-os win10;
+versione con ProductName gofm, CompanyName rives, FileDescription "gofm - dual-pane file
+manager", InternalName gofm, OriginalFilename gofm.exe, LegalCopyright "Copyright (c) 2026
+rives", Comments "Open source (MIT): https://github.com/rives1/goFm_src"; icona originale a
+due pannelli (bordo sinistro #FFE14D, destro #5A6E9A, righe nei colori delle famiglie, sfondo
+#0A1946) a 256 px e 16 px. go.mod: "tool github.com/tc-hib/go-winres" (v0.3.3). docs/,
 third_party/go4/README.md; go.mod senza replace tranne go4.org => ./third_party/go4.
 ````

@@ -2,6 +2,13 @@
 
 All notable changes to gofm. Versions follow the order in which features were added.
 
+## 1.11 — 2026-10-28
+
+- **Compiler updated**: releases are built with **Go 1.27.3**, pinned in `go.mod` (`toolchain go1.27.3`) and in both workflows. 1.10 had been built with Go 1.24.0, because the workflows took the minimum version from `go.mod`; the Go 1.24 series no longer receives security fixes. A test keeps the workflows and `go.mod` in step, and the build script refuses any other compiler.
+- **Windows metadata** in `gofm.exe` and `gofm-arm64.exe`: version information (product, version, description, copyright, link to the source), an application manifest (*asInvoker*: never asks for administrator rights; long-path aware) and an icon. Made by go-winres (0BSD), pinned as a `tool` in `go.mod`, from `winres/winres.json`. Unsigned executables without metadata are more often reported by antivirus heuristics.
+- The release notes list the compiler, the commit and the SHA-256 of both executables; the README explains how to check a download and what to do about antivirus warnings.
+- 1.10 (built from the same kind of source) was reported by Microsoft Defender as `Trojan:Win32/Bearfoos.B!ml`, a machine-learning detection that also hits other Go programs. The published 1.10 executables were rebuilt byte for byte from the public commit: they contain nothing but the source code.
+
 ## 1.10 — 2026-10-28
 
 - **Fix**: closing any dialog (progress, confirmation, message, preview) opened from the right panel moved the focus to the left panel — most visible with Ctrl+B. The active panel is now kept.
