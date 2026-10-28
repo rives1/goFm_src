@@ -1,0 +1,43 @@
+{
+  "profiles": [
+    {
+      "guid": "{2eea3aa6-b5e3-5007-a9a6-4d2c7341d3e7}",
+      "name": "gofm",
+      "commandline": "%LOCALAPPDATA%\\Programs\\gofm\\gofm.exe",
+      "startingDirectory": "%USERPROFILE%",
+      "font": {
+        "face": "Cascadia Mono",
+        "size": 11
+      },
+      "colorScheme": "gofm Navy",
+      "cursorShape": "underscore",
+      "padding": "2",
+      "useAcrylic": false
+    }
+  ],
+  "schemes": [
+    {
+      "name": "gofm Navy",
+      "background": "#0A1946",
+      "foreground": "#D5DEEE",
+      "cursorColor": "#FFFFFF",
+      "selectionBackground": "#2B3F6E",
+      "black": "#06122E",
+      "red": "#FF6B6B",
+      "green": "#5AF78E",
+      "yellow": "#FFE14D",
+      "blue": "#79C0FF",
+      "purple": "#C792EA",
+      "cyan": "#4EE6C8",
+      "white": "#D5DEEE",
+      "brightBlack": "#5A6E9A",
+      "brightRed": "#FF8F8F",
+      "brightGreen": "#8CFFB0",
+      "brightYellow": "#FFF08A",
+      "brightBlue": "#A8D5FF",
+      "brightPurple": "#DDB6F2",
+      "brightCyan": "#8FF5E0",
+      "brightWhite": "#FFFFFF"
+    }
+  ]
+}
