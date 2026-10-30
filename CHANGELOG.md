@@ -2,6 +2,14 @@
 
 All notable changes to gofm. Versions follow the order in which features were added.
 
+## 1.13 — 2026-10-30
+
+- **Portable**: the settings and the remembered state now live **next to `gofm.exe`** (`gofm.ini`, `state.json`) instead of `%APPDATA%\gofm`, so the program folder can be copied anywhere with its settings. If that folder is not writable (e.g. `C:\Program Files`) gofm saves nothing and says so at start. The old `%APPDATA%\gofm\state.json` is not imported.
+- **Settings file `gofm.ini`**: a commented text file, created at the first start, never rewritten by gofm. Settings: `editor` (F4), `colorScheme`, `icons`, `showHidden`, `sortBy`, `deleteDefault`, `networkDelete` (`permanent` or `off`), `networkDeleteDefault`. Read at start and again with **Alt+R**, which applies only the values changed in the file. `GOFM_EDITOR` still wins over `editor`.
+- **Folders with the same name** at the destination of a copy, move (F5/F6) or extraction: gofm lists them and asks *Merge* or *Cancel*; *Cancel* stops the whole operation. After *Merge* the questions about existing files follow as before.
+- **Delete confirmations**: the button selected at first (Enter) is now the delete button, also for permanent deletion on network drives and for the warning about folders with subfolders; `gofm.ini` can set *Cancel* instead, separately for local and network drives.
+- **Icon**: added 32 and 48 pixel versions, drawn pixel by pixel, used by Explorer in the medium and large views (before, only 16 and 256 pixels).
+
 ## 1.12 — 2026-10-30
 
 - **Keys**: Ctrl+A marks everything, or inverts the marks (`*` and Alt+A removed); **F4** edits the file with an external editor (Notepad, or the one in `GOFM_EDITOR`); **F8 no longer deletes** (Del only); find moves to **Alt+F7**, filter to **Ctrl+F7**, the key summary to **Ctrl+F2**, now listing every key; **Alt+D** reverses the sort, with an arrow in the title (`sort: name ↑`); **Ctrl+F9** cycles three colour schemes.

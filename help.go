@@ -57,7 +57,7 @@ var helpSections = []helpSection{
 		{"Alt+O", "sort by name → size → date"},
 		{"Alt+D", "reverse the sort direction (↑ ↓ in the title)"},
 		{"Alt+H", "show/hide hidden files and admin shares"},
-		{"Alt+R", "refresh both panels, re-measure marked folders"},
+		{"Alt+R", "refresh, re-measure marked folders, re-read gofm.ini"},
 		{"Alt+I", "icons: Nerd Font ↔ basic symbols"},
 		{"Ctrl+F9", "next colour scheme: navy → dark → light"},
 	}},

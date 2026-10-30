@@ -18,7 +18,7 @@ Get **`gofm-<version>-windows.zip`** from the [latest release](https://github.co
 To check a download, compare its hash with the one on the release page (PowerShell):
 
 ```
-Get-FileHash .\gofm-1.12-windows.zip     # the zip: see the .sha256 file
+Get-FileHash .\gofm-1.13-windows.zip     # the zip: see the .sha256 file
 Get-FileHash .\gofm.exe                  # the program: see the release notes
 ```
 
@@ -28,7 +28,7 @@ Some antivirus programs — Microsoft Defender in particular, with names ending 
 
 What you can rely on:
 - every release is built by GitHub Actions from the public source, with the compiler pinned in `go.mod`, and the build is **reproducible**: rebuilding the tagged commit with `scripts/build-release.sh` on Linux (or WSL) gives the same bytes as the published executables (the release notes list their SHA-256);
-- since 1.11 the executables carry version information, a manifest that never asks for administrator rights, and an icon.
+- since 1.11 the executables carry version information, a manifest that never asks for administrator rights, and an icon (since 1.13 in 16, 32, 48 and 256 pixels, so Explorer shows it sharp in every view).
 
 If your antivirus quarantines gofm: check the hash as above, report the false positive to the vendor (Microsoft: <https://www.microsoft.com/en-us/wdsi/filesubmission>, "Incorrectly detected"), and restore the file only if the hash matches. Please do not disable your antivirus.
 
@@ -42,7 +42,7 @@ gofm.exe C:\Projects D:\Backup  :: left and right panel
 Without arguments gofm **reopens the folders you were in** last time (see *Remembered folders*).
 
 **Windows Terminal** is recommended (full colours and Unicode). Classic `cmd.exe` and PowerShell windows work too.
-To run it from anywhere, copy `gofm.exe` into a folder on your `PATH`.
+To run it from anywhere, add the folder of `gofm.exe` to your `PATH` (keep `gofm.exe` in its own writable folder: its settings live next to it, see *Settings*).
 
 ### Font with icons (Cascadia Mono NF) — install it first
 
@@ -91,7 +91,7 @@ uses a function key, **Alt+letter**, **Ctrl+letter**, or **Shift+letter** (drive
 | Esc | end quick search, then clear the filter, then the marks |
 | F2 | rename |
 | F3 | preview / properties (text, archive listing, hex, folder size) |
-| F4 | **edit** the file with an external editor (Notepad, or the one in `GOFM_EDITOR`) |
+| F4 | **edit** the file with an external editor (Notepad, or the one set in `gofm.ini`) |
 | F5 | copy to the other panel's folder, **at once** — inside an archive: **extract** the marked items there |
 | F6 | move to the other panel's folder, **at once** |
 | F7 | new folder (accepts `a\b\c`) |
@@ -108,7 +108,7 @@ uses a function key, **Alt+letter**, **Ctrl+letter**, or **Shift+letter** (drive
 | Alt+O | sort by name → size → date (names start A→Z, sizes and dates largest/newest first) |
 | Alt+D | reverse the sort direction; the title shows e.g. `sort: name ↑` (↑ ascending, ↓ descending) |
 | Alt+H | show/hide hidden and system files (and administrative shares such as `C$`) |
-| Alt+R | refresh by hand (panels also refresh automatically) and re-measure marked folders |
+| Alt+R | refresh by hand (panels also refresh automatically), re-measure marked folders and **re-read `gofm.ini`** |
 | Alt+I | icons: Nerd Font icons ↔ basic symbols (remembered) |
 | Ctrl+F9 | next colour scheme: **navy** (default) → **dark** → **light** (remembered) |
 | Ctrl+F2 | summary of all the keys |
@@ -138,7 +138,8 @@ Operations act on marked items; if nothing is marked, on the item under the curs
 ## Copy, move and selection
 
 - **F5/F6 do not ask for a destination**: the destination is always the folder shown in the other panel. If the other panel shows the drive list, a share list or the inside of an archive, gofm asks you to open a folder there first. To copy under a different name, copy and then rename with F2.
-- **Files that already exist** at the destination, also inside folders with the same name (which are merged): after counting the files, gofm asks about each one, showing size and date of both copies — *Skip* (the default button), *Skip all*, *Overwrite*, *Overwrite all*, *Cancel*. Every other file is copied or moved anyway. A skipped file stays where it is: in a move, the source keeps only the skipped files.
+- **Folders with the same name** at the destination (F5 and F6): gofm first lists them and asks *Merge* (the default button) or *Cancel*. *Cancel* (or Esc) stops the **whole** operation: nothing is copied or moved.
+- **Files that already exist** at the destination, also inside the merged folders: after counting the files, gofm asks about each one, showing size and date of both copies — *Skip* (the default button), *Skip all*, *Overwrite*, *Overwrite all*, *Cancel*. Every other file is copied or moved anyway. A skipped file stays where it is: in a move, the source keeps only the skipped files.
 - While you mark items, the **top border of the panel** (right side, on the path line) shows ` N selected · <size> · M files `. Marked folders are measured recursively in the background and their **size column shows the total** (`…` while measuring); ` · counting…` is shown until every folder has been measured. Unmarking a folder stops its measurement.
 - After a move or a delete the cursor goes to the **next item** (or the previous one at the end of the list).
 - **Ctrl+→ / Ctrl+←**: the arrow points at the panel that changes, so Ctrl+→ works from the left panel and Ctrl+← from the right one. The cursor lands on the same item, and an archive being browsed is opened on the other side too.
@@ -157,9 +158,37 @@ Ctrl+B lists **every file of the current folder and of all its subfolders** in o
 
 The bottom border of each panel shows the **files listed** in it (count and total size, folders excluded) and the **space available** on its drive or network share, in compact form: ` 12 files 3.4 MB │ 28.5G free (11%) `. In the flat view the file part covers the whole tree. On a narrow panel the free-space part is dropped first. Free space is measured in the background when the panel changes folder and after operations (at most every 2 seconds).
 
+## Settings (gofm.ini) and portable use
+
+gofm is **portable**: it keeps its two files **in the same folder as `gofm.exe`**, so you can copy that folder anywhere (a USB stick, another PC) and the settings travel with it. Nothing is written to `%APPDATA%` or the registry.
+
+| File | Written by | Content |
+|---|---|---|
+| `gofm.ini` | **you** (gofm creates it, fully commented, if it is missing, and never rewrites it) | your settings |
+| `state.json` | gofm | folders of the panels, active panel, last folder of each drive, icon set, colour scheme |
+
+**gofm.ini** is a plain text file: open it with Notepad, change a value, save, and press **Alt+R** in gofm (or restart it). Each setting is explained by the comments in the file. Lines are `key = value`; `#` or `;` starts a comment; every setting starts commented out, which means "use the default".
+
+| Setting | Values (default first) | Meaning |
+|---|---|---|
+| `editor` | `notepad.exe`, or a path with optional arguments | the F4 editor; the `GOFM_EDITOR` environment variable, if set, wins |
+| `colorScheme` | `navy`, `dark`, `light` | colours at every start (not set: the last choice made with Ctrl+F9) |
+| `icons` | `nerd`, `basic` | icon set at every start (not set: the last choice made with Alt+I) |
+| `showHidden` | `no`, `yes` | hidden files in both panels at start (Alt+H toggles) |
+| `sortBy` | `name`, `size`, `date` | sort order of both panels at start (Alt+O, Alt+D) |
+| `deleteDefault` | `delete`, `cancel` | the button Enter presses in the Del confirmations on local drives |
+| `networkDelete` | `permanent`, `off` | Del on network drives: delete permanently after a confirmation, or do nothing |
+| `networkDeleteDefault` | `delete`, `cancel` | the button Enter presses in the Del confirmations on network drives |
+
+On Alt+R only the settings whose value **changed in the file** are applied, so a refresh does not undo what you changed with the keys. An unknown key or a wrong value is shown in the status bar and ignored; the other lines still apply.
+
+**Read-only folder**: if gofm cannot write in its own folder (for example when it is copied to `C:\Program Files`), it saves nothing — no `gofm.ini` is created and `state.json` is not written — and says so in the status bar at start; every start uses the defaults (a `gofm.ini` already in that folder is still read). The install script puts gofm in `%LOCALAPPDATA%\Programs\gofm`, which is writable.
+
+Up to 1.12 the state was kept in `%APPDATA%\gofm\state.json`; it is not imported, and that folder can be deleted. `GOFM_STATE` and `GOFM_CONFIG` set other paths for the two files (tests, special set-ups).
+
 ## Remembered folders
 
-The folder of each panel, the active panel and the last folder used on each drive (for Shift+letter) are saved in `%APPDATA%\gofm\state.json` whenever you change folder, and restored at the next start. Folders given on the command line take precedence. A folder that no longer exists is replaced by its nearest existing parent; a network folder that does not answer within 3 seconds (e.g. VPN not connected) is replaced by the current folder, so start-up never hangs. An archive or flat view is remembered as its folder. Set `GOFM_STATE` to use another file.
+The folder of each panel, the active panel and the last folder used on each drive (for Shift+letter) are saved in `state.json` next to `gofm.exe` whenever you change folder, and restored at the next start. Folders given on the command line take precedence. A folder that no longer exists is replaced by its nearest existing parent; a network folder that does not answer within 3 seconds (e.g. VPN not connected) is replaced by the current folder, so start-up never hangs. An archive or flat view is remembered as its folder.
 
 ## Comparing folders (F12)
 
@@ -201,10 +230,10 @@ Both panels refresh by themselves when files are added, removed or changed, usin
 
 ## Behaviour worth knowing
 
-- **Conflicts** when copying or moving: one question per existing file (see *Copy, move and selection*). When **extracting**, a single question covers all the files: *Overwrite*, *Skip existing* or *Cancel*. Folders with the same name are **merged**.
+- **Conflicts** when copying, moving or extracting: if folders with the same name already exist at the destination, gofm asks first *Merge* or *Cancel* (which stops the whole operation). Then, when copying or moving, one question per existing file (see *Copy, move and selection*); when **extracting**, a single question covers all the files: *Overwrite*, *Skip existing* or *Cancel*.
 - **Moving between drives** = copy + delete the source, and the source is deleted **only if the copy fully succeeded**.
-- **Deleting (Del)**: on local drives the items go to the **Recycle Bin** (Windows API; if an item cannot be recycled, e.g. a file too large, Windows shows its own warning). On **network drives** — `\\server\share` paths and mapped drives — there is no Recycle Bin, so gofm says so and **deletes permanently** after a confirmation whose default button is *Cancel*. In both cases, if the items include **folders that contain subfolders**, a second warning lists them (default *Cancel*). Read-only files are deleted too.
-- **Editing (F4)**: Notepad by default. To use another editor set the `GOFM_EDITOR` environment variable to its path, optionally with arguments, e.g. `C:\Program Files\Notepad++\notepad++.exe` or `"C:\Program Files\Microsoft VS Code\Code.exe" --reuse-window`. gofm does not wait for the editor and starts it detached from its console, so use a windowed editor (console editors such as vim are not supported). Saved changes appear by themselves.
+- **Deleting (Del)**: on local drives the items go to the **Recycle Bin** (Windows API; if an item cannot be recycled, e.g. a file too large, Windows shows its own warning). On **network drives** — `\\server\share` paths and mapped drives — there is no Recycle Bin, so gofm says so and **deletes permanently** after a confirmation. In both cases, if the items include **folders that contain subfolders**, a second warning lists them. The button selected in these confirmations — the one **Enter** presses — is the delete button (since 1.13; *Cancel* before); `deleteDefault` and `networkDeleteDefault` in `gofm.ini` can select *Cancel* instead, and `networkDelete = off` turns Del off on network drives. Read-only files are deleted too.
+- **Editing (F4)**: Notepad by default. To use another editor set `editor` in `gofm.ini` (or the `GOFM_EDITOR` environment variable, which wins) to its path, optionally with arguments, e.g. `C:\Program Files\Notepad++\notepad++.exe` or `"C:\Program Files\Microsoft VS Code\Code.exe" --reuse-window`. gofm does not wait for the editor and starts it detached from its console, so use a windowed editor (console editors such as vim are not supported). Saved changes appear by themselves.
 - ZIP names are written as UTF-8 (Explorer-compatible); old archives with OEM code-page names (e.g. CP850) are decoded.
 - Symbolic links and junctions are not followed (avoids endless loops); in archives they are skipped and reported.
 - Long operations run in the background with a **Cancel** button; half-written files are removed.

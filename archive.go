@@ -247,6 +247,30 @@ func archiveSingleRoot(path string) bool {
 	return root != ""
 }
 
+// archiveTopFolders returns the names of the folders at the root of an archive
+// (explicit folder entries, or the first part of a path with subfolders).
+func archiveTopFolders(path string) []string {
+	entries, closer, err := openArchive(path)
+	if err != nil {
+		return nil
+	}
+	defer closer.Close()
+	seen := map[string]bool{}
+	var out []string
+	for _, e := range entries {
+		name := strings.Trim(strings.ReplaceAll(e.name, `\`, "/"), "/")
+		first, _, found := strings.Cut(name, "/")
+		if (!found && !e.isDir) || first == "" || first == "." || first == ".." {
+			continue
+		}
+		if k := strings.ToLower(first); !seen[k] {
+			seen[k] = true
+			out = append(out, first)
+		}
+	}
+	return out
+}
+
 func previewArchive(path string) string {
 	entries, closer, err := openArchive(path)
 	if err != nil {

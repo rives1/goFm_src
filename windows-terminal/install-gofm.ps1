@@ -6,6 +6,8 @@
 #
 # Nothing needs administrator rights. To uninstall, delete the two folders printed below
 # (and remove the folder from your user PATH if you used -AddToPath).
+# gofm is portable: its settings (gofm.ini) and memory (state.json) live next to
+# gofm.exe in the program folder. Installing again replaces only gofm.exe and keeps them.
 
 param([switch]$AddToPath)
 $ErrorActionPreference = 'Stop'
@@ -50,5 +52,6 @@ if (-not $hasFont) {
 }
 
 Write-Host "gofm installed in:        $dest"
+Write-Host "Settings (created at the first start): $(Join-Path $dest 'gofm.ini')"
 Write-Host "Terminal profile in:      $frag"
 Write-Host "Restart Windows Terminal and choose the 'gofm' profile from the drop-down menu."

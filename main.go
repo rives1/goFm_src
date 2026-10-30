@@ -15,7 +15,7 @@ import (
 	"github.com/rivo/tview"
 )
 
-const version = "1.12"
+const version = "1.13"
 
 type FM struct {
 	app     *tview.Application
@@ -36,6 +36,8 @@ type FM struct {
 
 	root, panelsBox *tview.Flex // kept to recolour them (Ctrl+F9)
 	keybar          *keyBar
+
+	cfg settings // gofm.ini as last read (start, Alt+R)
 
 	saved     savedState // last state written to disk
 	restoring bool       // true while the panels are being set up: no state writes yet
@@ -90,10 +92,19 @@ func absOr(p, fallback string) string {
 }
 
 func newFM(leftDir, rightDir string, st savedState) *FM {
+	store := findStorage()
+	cfg, cfgProblem := loadSettings(store)
+	// gofm.ini wins over what state.json remembers, when the setting is present.
+	if cfg.colorScheme != "" {
+		st.ColorScheme = cfg.colorScheme
+	}
+	if cfg.icons != "" {
+		st.BasicIcons = cfg.icons == "basic"
+	}
 	applyScheme(schemeIndex(st.ColorScheme)) // before any primitive is created
 	fm := &FM{app: tview.NewApplication(), pages: tview.NewPages(),
 		focus: map[string]tview.Primitive{}, lastDir: map[byte]string{}, restoring: true,
-		basicIcons: st.BasicIcons}
+		basicIcons: st.BasicIcons, cfg: cfg}
 	for k, d := range st.DriveDirs {
 		if len(k) == 1 && driveLetter(k+":") != 0 {
 			fm.lastDir[driveLetter(k+":")] = d
@@ -103,6 +114,7 @@ func newFM(leftDir, rightDir string, st savedState) *FM {
 	fm.left = newPanel(fm, leftDir)
 	fm.right = newPanel(fm, rightDir)
 	for _, p := range []*Panel{fm.left, fm.right} {
+		p.applyViewSettings(cfg)
 		if err := p.load(""); err != nil {
 			p.dir, _ = os.Getwd()
 			_ = p.load("")
@@ -139,7 +151,65 @@ func newFM(leftDir, rightDir string, st savedState) *FM {
 	fm.restoring = false
 	fm.syncWatches()
 	fm.saveState()
+	switch {
+	case cfgProblem != "":
+		fm.notice = cfgProblem
+	case store.readOnlyDir != "":
+		fm.notice = "The gofm folder is read-only: settings and folders are not saved"
+	}
 	return fm
+}
+
+// applyViewSettings sets the hidden files and the sort order of gofm.ini, when present.
+func (p *Panel) applyViewSettings(s settings) {
+	if s.showHidden != "" {
+		p.showHidden = s.showHidden == "yes"
+	}
+	if s.sortBy != "" {
+		for i, l := range sortLabels {
+			if l == s.sortBy {
+				p.sortMode, p.sortAsc = i, defaultAsc(i)
+			}
+		}
+	}
+}
+
+// reloadSettings (Alt+R) reads gofm.ini again. Only the settings whose value changed
+// in the file are applied, so a refresh keeps what was changed with the keys.
+func (fm *FM) reloadSettings() {
+	cfg, problem := loadSettings(findStorage())
+	old := fm.cfg
+	fm.cfg = cfg
+	changed := false
+	if cfg.colorScheme != old.colorScheme && cfg.colorScheme != "" {
+		applyScheme(schemeIndex(cfg.colorScheme))
+		fm.recolor()
+		changed = true
+	}
+	if cfg.icons != old.icons && cfg.icons != "" {
+		fm.basicIcons = cfg.icons == "basic"
+		changed = true
+	}
+	view := settings{}
+	if cfg.showHidden != old.showHidden {
+		view.showHidden = cfg.showHidden
+	}
+	if cfg.sortBy != old.sortBy {
+		view.sortBy = cfg.sortBy
+	}
+	for _, p := range []*Panel{fm.left, fm.right} {
+		p.applyViewSettings(view)
+	}
+	changed = changed || view.showHidden != "" || view.sortBy != "" || cfg != old
+	if changed {
+		fm.saveState()
+	}
+	switch {
+	case problem != "":
+		fm.notice = problem
+	case changed:
+		fm.notice = "Settings reloaded from " + configName
+	}
 }
 
 // toggleIcons (Alt+I) switches between Nerd Font icons and basic symbols. The
@@ -366,6 +436,7 @@ func (fm *FM) keys(ev *tcell.EventKey) *tcell.EventKey {
 				p.chdir("", sel)
 			}
 		case 'r':
+			fm.reloadSettings() // gofm.ini (v1.13), before the panels are read again
 			for _, q := range []*Panel{fm.left, fm.right} {
 				q.resetSizes() // a manual refresh also re-measures marked folders
 			}
@@ -689,8 +760,13 @@ func (fm *FM) showMessage(title, text string) {
 }
 
 func (fm *FM) confirm(text string, buttons []string, cb func(string)) {
+	fm.confirmDefault(text, buttons, 0, cb)
+}
+
+// confirmDefault is confirm with the button selected at first (the one Enter presses).
+func (fm *FM) confirmDefault(text string, buttons []string, def int, cb func(string)) {
 	var name string
-	m := tview.NewModal().SetText(tview.Escape(text)).AddButtons(buttons).
+	m := tview.NewModal().SetText(tview.Escape(text)).AddButtons(buttons).SetFocus(def).
 		SetDoneFunc(func(_ int, label string) {
 			fm.closeModal(name)
 			cb(label) // empty label = Esc
@@ -1013,40 +1089,97 @@ func (fm *FM) copyOrMove(move bool) {
 				}
 			}
 		}
-		fm.runTask(verb+" "+describe(items), func(o *opCtx) {
-			o.setPhase("Counting files…")
-			var total int64
-			for i := range pairs {
-				pairs[i].size = o.treeSize(pairs[i].from)
-				total += pairs[i].size
-			}
-			o.total.Store(total)
-			// Files that already exist at the destination, also inside folders that
-			// will be merged: one question each (v1.12), until an "all" answer.
-			o.setPhase("Checking the destination…")
-			conflicts := o.findConflicts(pairs)
-			if o.cancelled() {
-				return
-			}
-			skip, ok := resolveConflicts(conflicts, func(i int) string {
-				return fm.askSync(conflictText(conflicts[i], i, len(conflicts), dest), conflictButtons)
-			})
-			if !ok {
-				o.cancel.Store(true)
-				return
-			}
-			o.skip = skip
-			o.setPhase("")
-			// One shared engine for all the items: small files are copied in parallel
-			// across the whole selection, big files one at a time. Skipped files stay
-			// where they are; the others go on.
-			if move {
-				o.moveAll(pairs)
-			} else {
-				o.copyAll(pairs)
-			}
-		}, func(*opCtx) { src.marked = map[string]bool{}; src.reload() })
+		start := func() {
+			fm.runTask(verb+" "+describe(items), func(o *opCtx) {
+				o.setPhase("Counting files…")
+				var total int64
+				for i := range pairs {
+					pairs[i].size = o.treeSize(pairs[i].from)
+					total += pairs[i].size
+				}
+				o.total.Store(total)
+				// Files that already exist at the destination, also inside folders that
+				// will be merged: one question each (v1.12), until an "all" answer.
+				o.setPhase("Checking the destination…")
+				conflicts := o.findConflicts(pairs)
+				if o.cancelled() {
+					return
+				}
+				skip, ok := resolveConflicts(conflicts, func(i int) string {
+					return fm.askSync(conflictText(conflicts[i], i, len(conflicts), dest), conflictButtons)
+				})
+				if !ok {
+					o.cancel.Store(true)
+					return
+				}
+				o.skip = skip
+				o.setPhase("")
+				// One shared engine for all the items: small files are copied in parallel
+				// across the whole selection, big files one at a time. Skipped files stay
+				// where they are; the others go on.
+				if move {
+					o.moveAll(pairs)
+				} else {
+					o.copyAll(pairs)
+				}
+			}, func(*opCtx) { src.marked = map[string]bool{}; src.reload() })
+		}
+		// Folders with the same name at the destination (v1.13): merge them, or cancel
+		// the whole operation. After Merge, existing files are asked one by one.
+		var srcDirs, dstDirs []string
+		for _, pr := range pairs {
+			srcDirs, dstDirs = append(srcDirs, pr.from), append(dstDirs, pr.to)
+		}
+		fm.askMerge(sameNameFolders(srcDirs, dstDirs), dest, "Files that exist in both are asked about one by one.", start)
 	}(dest)
+}
+
+// sameNameFolders returns the destinations that already exist as folders, for the
+// sources that are folders (links are not folders here: they are copied as links).
+func sameNameFolders(from, to []string) []string {
+	var out []string
+	for i := range from {
+		if sfi, err := os.Lstat(from[i]); err != nil || !sfi.IsDir() {
+			continue
+		}
+		if dfi, err := os.Lstat(to[i]); err == nil && dfi.IsDir() {
+			out = append(out, to[i])
+		}
+	}
+	return out
+}
+
+// mergeText is the question asked when folders with the same name already exist.
+func mergeText(folders []string, dest, then string) string {
+	var b strings.Builder
+	if len(folders) == 1 {
+		b.WriteString("A folder with the same name already exists in\n" + dest + ":\n\n")
+	} else {
+		fmt.Fprintf(&b, "%d folders with the same name already exist in\n%s:\n\n", len(folders), dest)
+	}
+	for i, f := range folders {
+		if i == maxWarnNames {
+			fmt.Fprintf(&b, "… and %d more\n", len(folders)-maxWarnNames)
+			break
+		}
+		b.WriteString(filepath.Base(f) + "\n")
+	}
+	b.WriteString("\nMerge the contents? " + then + "\nCancel stops the whole operation.")
+	return b.String()
+}
+
+// askMerge runs start at once when no folder exists already, otherwise after Merge;
+// Cancel or Esc abort the operation.
+func (fm *FM) askMerge(folders []string, dest, then string, start func()) {
+	if len(folders) == 0 {
+		start()
+		return
+	}
+	fm.confirm(mergeText(folders, dest, then), []string{"Merge", "Cancel"}, func(choice string) {
+		if choice == "Merge" {
+			start()
+		}
+	})
 }
 
 // noDestMsg explains why F5/F6 cannot run: they always target the other panel's folder.
@@ -1115,6 +1248,9 @@ func (fm *FM) mkdir() {
 // drives (UNC paths and mapped drives) they are deleted permanently, after an explicit
 // warning (v1.12): Windows would delete them permanently anyway, since network
 // folders have no Recycle Bin. F8 no longer deletes (v1.12).
+// v1.13: the button selected in the confirmations (Enter) is the delete button, or
+// Cancel, as set in gofm.ini (deleteDefault, networkDeleteDefault); networkDelete=off
+// disables Del on network drives.
 func (fm *FM) trash() {
 	if fm.readOnlyHere() {
 		return
@@ -1125,6 +1261,10 @@ func (fm *FM) trash() {
 		return
 	}
 	network := isNetworkLocation(p.dir)
+	if network && fm.cfg.networkDeleteMode() == "off" {
+		fm.showMessage("Delete", "Deleting on network drives is turned off\n(networkDelete = off in "+configName+").")
+		return
+	}
 	run := func() {
 		if network {
 			fm.runTask("Deleting "+describe(items)+" permanently", func(o *opCtx) {
@@ -1139,13 +1279,10 @@ func (fm *FM) trash() {
 			}
 		}, func(*opCtx) { p.marked = map[string]bool{}; p.reload() })
 	}
-	text, buttons, yes := "Move "+describe(items)+" to the Recycle Bin?", []string{"Yes", "No"}, "Yes"
-	deepYes := "Move to Recycle Bin"
-	if network {
-		text = "Delete " + describe(items) + " PERMANENTLY?\n\nThis is a network drive: the Recycle Bin is not used,\nthe deleted items cannot be restored."
-		buttons, yes, deepYes = []string{"Cancel", "Delete"}, "Delete", "Delete permanently"
-	}
-	fm.confirm(text, buttons, func(choice string) {
+	text, buttons := deleteQuestion(items, network)
+	yes, deepYes := buttons[0], deepButton(network)
+	def := deleteDefaultIndex(fm.cfg, network)
+	fm.confirmDefault(text, buttons, def, func(choice string) {
 		if choice != yes {
 			return
 		}
@@ -1158,7 +1295,7 @@ func (fm *FM) trash() {
 					run()
 					return
 				}
-				fm.confirm(subfolderWarning(deep, network), []string{"Cancel", deepYes}, func(choice string) {
+				fm.confirmDefault(subfolderWarning(deep, network), []string{deepYes, "Cancel"}, def, func(choice string) {
 					if choice == deepYes {
 						run()
 					}
@@ -1166,6 +1303,33 @@ func (fm *FM) trash() {
 			})
 		}()
 	})
+}
+
+// deleteQuestion is the first confirmation of Del: the delete button comes first,
+// Cancel/No second.
+func deleteQuestion(items []string, network bool) (string, []string) {
+	if network {
+		return "Delete " + describe(items) + " PERMANENTLY?\n\nThis is a network drive: the Recycle Bin is not used,\nthe deleted items cannot be restored.",
+			[]string{"Delete", "Cancel"}
+	}
+	return "Move " + describe(items) + " to the Recycle Bin?", []string{"Yes", "No"}
+}
+
+// deepButton is the delete button of the second confirmation (folders with subfolders).
+func deepButton(network bool) string {
+	if network {
+		return "Delete permanently"
+	}
+	return "Move to Recycle Bin"
+}
+
+// deleteDefaultIndex is the button selected at first in the delete confirmations:
+// 0 = delete (default), 1 = Cancel/No.
+func deleteDefaultIndex(s settings, network bool) int {
+	if s.deleteDefaultButton(network) == "cancel" {
+		return 1
+	}
+	return 0
 }
 
 // foldersWithSubfolders returns the items that are folders (not links) containing at
@@ -1302,11 +1466,24 @@ func (fm *FM) extract() {
 		run := func(overwrite bool) {
 			fm.runTask("Extracting "+e.name, func(o *opCtx) { o.extract(archPath, dest, overwrite) }, nil)
 		}
-		if des, err := os.ReadDir(dest); err == nil && len(des) > 0 {
-			fm.askOverwrite("The destination folder is not empty.\nWhat about files that already exist?", run)
-			return
+		// Folders with the same name (v1.13): the destination itself, when it is a new
+		// folder name that already exists, and the archive's top folders found there.
+		var folders []string
+		if des, err := os.ReadDir(dest); err == nil && len(des) > 0 && !samePath(dest, destDir) {
+			folders = append(folders, dest)
 		}
-		run(false)
+		for _, d := range archiveTopFolders(archPath) {
+			if st, err := os.Lstat(filepath.Join(dest, d)); err == nil && st.IsDir() {
+				folders = append(folders, filepath.Join(dest, d))
+			}
+		}
+		fm.askMerge(folders, filepath.Dir(dest), "You will then be asked about existing files.", func() {
+			if des, err := os.ReadDir(dest); err == nil && len(des) > 0 {
+				fm.askOverwrite("The destination folder is not empty.\nWhat about files that already exist?", run)
+				return
+			}
+			run(false)
+		})
 	})
 }
 
@@ -1335,11 +1512,28 @@ func (fm *FM) extractSelection() {
 				o.extractSelected(archPath, items, dest, overwrite)
 			}, func(*opCtx) { p.marked = map[string]bool{}; p.render() })
 		}
-		if conflicts == 0 {
-			run(false)
-			return
+		// Folders of the selection that already exist at the destination (v1.13).
+		chosen := map[string]bool{}
+		for _, it := range items {
+			chosen[it] = true
 		}
-		fm.askOverwrite(fmt.Sprintf("%d items already exist at the destination.\nFolders with the same name will be merged.", conflicts), run)
+		var folders []string
+		for _, en := range p.entries {
+			if !en.isDir || en.isUp || !chosen[p.fullPath(en.name)] {
+				continue
+			}
+			to := filepath.Join(dest, filepath.Base(filepath.FromSlash(en.name)))
+			if st, err := os.Lstat(to); err == nil && st.IsDir() {
+				folders = append(folders, to)
+			}
+		}
+		fm.askMerge(folders, dest, "You will then be asked about existing files.", func() {
+			if conflicts == 0 {
+				run(false)
+				return
+			}
+			fm.askOverwrite(fmt.Sprintf("%d items already exist at the destination.\nWhat about files that already exist?", conflicts), run)
+		})
 	}(dest)
 }
 

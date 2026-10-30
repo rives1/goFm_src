@@ -1,9 +1,10 @@
 package main
 
 // Remembered folders: the location of each panel, the active panel and the last
-// folder used on each drive are saved in the user's configuration folder
-// (%APPDATA%\gofm\state.json on Windows) whenever a panel changes location and at
-// exit, and restored at the next start. Folders given on the command line win.
+// folder used on each drive are saved in state.json next to gofm.exe (v1.13; until
+// 1.12 in %APPDATA%\gofm) whenever a panel changes location and at exit, and
+// restored at the next start. Folders given on the command line win. If the program
+// folder is not writable nothing is saved (config.go).
 
 import (
 	"encoding/json"
@@ -25,21 +26,16 @@ type savedState struct {
 	ColorScheme string `json:"colorScheme,omitempty"`
 }
 
-// statePath can be overridden with GOFM_STATE (tests, portable use).
-func statePath() string {
-	if p := os.Getenv("GOFM_STATE"); p != "" {
-		return p
-	}
-	dir, err := os.UserConfigDir()
-	if err != nil {
-		return ""
-	}
-	return filepath.Join(dir, "gofm", "state.json")
+// statePath is state.json next to the executable, or GOFM_STATE (tests, special
+// set-ups). writable is false when the program folder is read-only.
+func statePath() (path string, writable bool) {
+	s := findStorage()
+	return s.statePath, s.stateWrite
 }
 
 func loadState() (savedState, bool) {
 	var st savedState
-	path := statePath()
+	path, _ := statePath()
 	if path == "" {
 		return st, false
 	}
@@ -89,9 +85,9 @@ func (fm *FM) saveState() {
 			return // nothing changed: no write
 		}
 	}
-	path := statePath()
-	if path == "" {
-		return
+	path, writable := statePath()
+	if path == "" || !writable {
+		return // read-only program folder: nothing is saved
 	}
 	data, err := json.MarshalIndent(st, "", "  ")
 	if err != nil {

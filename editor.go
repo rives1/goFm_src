@@ -1,7 +1,8 @@
 package main
 
 // F4 (v1.12): edit the file under the cursor with an external editor. The editor is
-// Notepad on Windows, or the command in the GOFM_EDITOR environment variable, e.g.
+// the command in the GOFM_EDITOR environment variable, else the "editor" setting of
+// gofm.ini (v1.13), else Notepad on Windows. Examples:
 //   GOFM_EDITOR=C:\Program Files\Notepad++\notepad++.exe
 //   GOFM_EDITOR="C:\Program Files\Microsoft VS Code\Code.exe" --reuse-window
 // gofm does not wait for the editor: it is started detached from gofm's console, so
@@ -25,12 +26,12 @@ func editorCommand(spec, def string) (prog string, args []string, err error) {
 		spec = def
 	}
 	if spec == "" {
-		return "", nil, errors.New("no editor: set GOFM_EDITOR to the path of a windowed editor")
+		return "", nil, errors.New("no editor: set editor in gofm.ini to the path of a windowed editor")
 	}
 	if strings.HasPrefix(spec, `"`) {
 		end := strings.Index(spec[1:], `"`)
 		if end < 0 {
-			return "", nil, errors.New("GOFM_EDITOR: missing closing quote")
+			return "", nil, errors.New("editor command: missing closing quote")
 		}
 		return spec[1 : end+1], strings.Fields(spec[end+2:]), nil
 	}
@@ -56,7 +57,11 @@ func (fm *FM) editFile() {
 		return
 	}
 	path := p.fullPath(e.name)
-	prog, args, err := editorCommand(os.Getenv("GOFM_EDITOR"), defaultEditor)
+	spec := os.Getenv("GOFM_EDITOR") // the environment wins over gofm.ini
+	if spec == "" {
+		spec = fm.cfg.editor
+	}
+	prog, args, err := editorCommand(spec, defaultEditor)
 	if err == nil {
 		cmd := exec.Command(prog, append(args, path)...)
 		cmd.Dir = filepath.Dir(path)
@@ -69,5 +74,5 @@ func (fm *FM) editFile() {
 		}
 	}
 	fm.showMessage("Edit", "Cannot start the editor "+prog+":\n"+err.Error()+
-		"\n\nSet GOFM_EDITOR to the path of a windowed editor.")
+		"\n\nSet editor in gofm.ini (next to gofm.exe) to the path of a windowed editor.")
 }
