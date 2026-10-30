@@ -1,6 +1,6 @@
 # gofm — Documentazione di progetto e specifiche
 
-**Versione documentata:** 1.14 · **Data:** 30/10/2026 · **Licenza:** MIT, © 2026 rives
+**Versione documentata:** 1.15 · **Data:** 30/10/2026 · **Licenza:** MIT, © 2026 rives
 **Linguaggio:** Go (minimo 1.24; release compilate con **Go 1.27.3**) · **Piattaforma bersaglio:** Windows 64 bit (x64, ARM64) · **Interfaccia:** inglese
 
 ---
@@ -33,7 +33,7 @@
   2. `CHANGELOG.md` (sezione `## <versione> — <data>` in cima: è anche il testo della Release su GitHub);
   3. `README.md` (inglese);
   4. questa documentazione: intestazione, sezioni toccate, test (§10), limiti (§11), storico (§12) e **prompt di rigenerazione** (§13);
-  5. le **specifiche compatte** (`gofm-<versione>-specifiche-compatte.md`, il riepilogo per riprendere il lavoro in una nuova chat);
+  5. le **specifiche compatte** (`gofm-<versione>-specifiche-compatte.md`) e il **file di contesto** per proseguire in un'altra chat (regola della v1.15): `gofm-<versione>-contesto-chat.md` nella cartella dei pacchetti e la stessa copia in `docs/contesto-chat.md` nel repository (stato del progetto, cose in sospeso, regole, note sull'ambiente di sviluppo, specifiche compatte); a fine lavoro il file viene anche inviato nella chat;
   6. la **pubblicazione su GitHub** (§9.5): commit con **tutti** i file del repository e tag annotato `v<versione>`; il workflow pubblica la Release con il **pacchetto compilato** pronto da scaricare.
 - Licenza **MIT**, "Copyright (c) 2026 rives".
 
@@ -80,7 +80,7 @@ Avvio:
 gofm.exe                        :: entrambi i pannelli nella cartella corrente
 gofm.exe C:\Progetti D:\Backup  :: pannello sinistro e destro
 gofm.exe \\nas                  :: un pannello sull'elenco delle share di \\nas
-gofm.exe -h | --help | /?       :: stampa "gofm 1.14 — usage: gofm [left_folder] [right_folder]"
+gofm.exe -h | --help | /?       :: stampa "gofm 1.15 — usage: gofm [left_folder] [right_folder]"
 ```
 
 Un argomento non valido (inesistente o non cartella) viene sostituito dalla cartella corrente.
@@ -116,6 +116,9 @@ Ogni scelta è stata presa con l'utente o motivata esplicitamente.
 | Cancellazione sulle unità di rete (v1.12) | Percorsi UNC e unità mappate: **cancellazione definitiva** (`removeTree`), con conferma esplicita (`PERMANENTLY`; pulsante predefinito `Cancel` nella v1.12, `Delete` dalla v1.13, impostabile); unità locali: Cestino | Richiesta dell'utente (v1.12). Le cartelle di rete non hanno Cestino: Windows le cancellerebbe comunque in modo definitivo, ma con un proprio avviso dopo la conferma di gofm; ora la conferma di gofm dice la verità prima. |
 | Programma portatile (v1.13) | `gofm.ini` e `state.json` **nella cartella dell'eseguibile** (`os.Executable` + `EvalSymlinks`), non più in `%APPDATA%\gofm`. Se la cartella **non è scrivibile** non si salva nulla (né stato né impostazioni): i file già presenti si leggono, nessuno viene creato o aggiornato, avviso all'avvio. Nessuna migrazione dal vecchio `state.json`. `GOFM_STATE` e `GOFM_CONFIG` sostituiscono i due percorsi | Richiesta dell'utente (v1.13), con le scelte sul ripiego e sulla migrazione. La scrivibilità si verifica **creando un file di prova**: su Windows i permessi (ACL) non si vedono nei bit del file, e con il manifest *asInvoker* la virtualizzazione di UAC è disattivata, quindi una scrittura in `C:\Program Files` fallisce davvero invece di finire nel VirtualStore. Il profilo di Windows Terminal resta nella cartella `Fragments`: Windows Terminal lo legge solo lì. Interpretazione da confermare: un `gofm.ini` messo a mano in una cartella di sola lettura viene letto. |
 | File di impostazioni `gofm.ini` (v1.13) | Testo `chiave = valore`, commenti `#`/`;`, sezioni ignorate, chiavi e valori senza maiuscole, virgolette facoltative; **creato commentato** se manca (righe CRLF, molti commenti per ogni parametro), **mai riscritto** da gofm; separato da `state.json`. Chiavi: `editor`, `colorScheme`, `icons`, `showHidden`, `sortBy`, `deleteDefault`, `networkDelete`, `networkDeleteDefault`. Letto all'avvio e con **Alt+R**, che applica **solo i valori cambiati nel file**. `GOFM_EDITOR` prevale su `editor` | Scelte dell'utente (v1.13). Formato INI perché ammette commenti ed è facile da modificare in Notepad (JSON non ha commenti); nessuna libreria aggiuntiva. File separato da `state.json` perché gofm scrive lo stato a ogni cambio di cartella e cancellerebbe i commenti dell'utente. Con Alt+R si applica solo ciò che è cambiato nel file, altrimenti un semplice aggiornamento annullerebbe Alt+H, Alt+O, Ctrl+F9 o Alt+I. `colorScheme` e `icons` non impostati = ultima scelta salvata in `state.json`; impostati = valgono a ogni avvio. Valori sbagliati e chiavi sconosciute: avviso nella barra di stato con il numero di riga, le altre righe valgono. |
+| Barra di scorrimento (v1.15) | Sul **bordo destro** di pannelli e albero, **solo se l'elenco non entra** nel riquadro: cursore `█` nel colore del bordo, lungo quanto la parte visibile (almeno 1 riga), nella posizione della parte visibile; **clic** o **trascinamento** sul bordo destro portano il cursore al punto corrispondente dell'elenco | Richiesta e scelte dell'utente (v1.15). Il binario è il bordo stesso, così non si perde una colonna. Il clic sposta il cursore (non solo la vista), così la barra di stato e le operazioni seguono il punto scelto. |
+| Copia su sé stessi (v1.15) | Elementi che finirebbero su sé stessi (stessa cartella nei due pannelli) o cartelle che finirebbero dentro sé stesse: **una domanda per elemento**, `Skip` (predefinito) / `Skip all` / `Cancel`; gli altri elementi procedono; se sono tutti saltati, solo un avviso. Vale per F5 e F6 | Richiesta e scelte dell'utente (v1.15). Fino alla v1.14 un solo elemento del genere bloccava l'intera operazione con un errore. Non c'è *Overwrite*: copiare un elemento su sé stesso non ha senso. |
+| Selezione con Shift (v1.15) | **Shift+↑/↓** invertono la marcatura dell'elemento sotto il cursore e poi si spostano (stile Total Commander: tornando indietro si smarca); **Shift+PgUp/PgDn/Home/End** invertono ogni riga attraversata, esclusa quella d'arrivo, salvo che sia la prima o l'ultima dell'elenco; `..`, unità e share mai | Scelta dell'utente (v1.15). Stesso modello di Spazio/Ins (inversione), quindi nessuna "ancora" da ricordare. L'inclusione della riga d'arrivo agli estremi fa sì che Shift+End selezioni fino all'ultimo elemento compreso. |
 | Vista ad albero (Ctrl+T, v1.14) | Il pannello sinistro diventa l'**albero delle cartelle** dell'unità della cartella corrente, aperto fino a quella cartella; il destro mostra la cartella sotto il cursore dell'albero **150 ms dopo** che il cursore si ferma. → apre, ← chiude o sale, Invio/Tab al pannello destro. Ctrl+T di nuovo: due pannelli, **entrambi sulla cartella evidenziata**. Copia, spostamento e confronto rifiutati durante l'albero; Ctrl+T rifiutato da elenco unità, elenco share, archivio e vista piatta; non ricordato all'uscita | Richiesta e scelte dell'utente (v1.14: radice dell'unità, ritardo di 150 ms, F5/F6 disattivati con messaggio, uscita sulla cartella evidenziata, nascosti con Alt+H, rifiuti). Il ritardo evita di leggere ogni cartella attraversata scorrendo (costoso in rete). F5/F6 sono rifiutati perché la destinazione abituale, l'altro pannello, durante l'albero è la cartella da cui si copia. Scelte di Claude, da confermare: rifiuto anche dall'elenco share, nessuna memoria della modalità, sull'albero le operazioni sui file mostrano solo un avviso. L'albero è una tabella propria (non `tview.TreeView`) per avere colori, cursore, bordi e icone uguali ai pannelli. |
 | Prefisso ai nomi (Ctrl+K, v1.14) | Testo anteposto ai nomi di **file e cartelle** selezionati (o dell'elemento sotto il cursore), con **anteprima** dei nuovi nomi; testo vuoto = annulla; caratteri non validi rifiutati già alla digitazione; nomi già esistenti **saltati** ed elencati alla fine; nessuna selezione dopo | Richiesta e scelte dell'utente (v1.14). Ctrl+M, chiesto inizialmente, è stato scartato perché nei terminali VT vale CR, cioè Invio: l'utente ha scelto **Ctrl+K**. Le rinomine avvengono in background (finestra ` Working `), come le altre operazioni, così una cartella di rete lenta non blocca l'interfaccia. |
 | Cartelle omonime nella destinazione (v1.13) | Copia, spostamento ed estrazione: se nella destinazione esistono già **cartelle con lo stesso nome** di quelle copiate, **una sola domanda** con il loro elenco (max 8, poi `… and N more`): **`Merge`** (predefinito) / **`Cancel`**. *Cancel* o Esc **annullano l'intera operazione** prima che cominci. Dopo *Merge* restano le domande file per file (copia/spostamento) o quella unica dell'estrazione | Richiesta dell'utente (v1.13). Basta controllare il primo livello: le cartelle annidate esistono solo dentro una cartella omonima già segnalata. Predefinito *Merge* perché unire non sovrascrive nulla: ogni file esistente viene comunque chiesto dopo. |
@@ -412,6 +415,8 @@ A ogni cambio di cartella riuscito su un percorso con lettera di unità, `lastDi
 |---|---|
 | Spazio | marca/smarca e scende; aggiorna il totale cumulativo sul bordo del pannello (§6.18); durante una ricerca digitando inserisce uno spazio nel testo |
 | Ins | marca/smarca e scende (sempre) |
+| Shift+↑ / Shift+↓ | inverte la marcatura dell'elemento sotto il cursore e si sposta (v1.15, §6.36) |
+| Shift+PgUp / PgDn / Home / End | inverte ogni riga attraversata (v1.15, §6.36) |
 | Ctrl+A | nessuna selezione → seleziona **tutti** i file e le cartelle; altrimenti **inverte** la marcatura (§6.23). Sostituisce `*` e Alt+A (tolti nella v1.12) |
 | Esc | nell'ordine: termina la ricerca digitando → toglie il filtro → toglie le marcature |
 
@@ -490,9 +495,8 @@ Messaggio di sola lettura: `Archives are read-only here.\nUse F5 or Alt+U to ext
 2. Ogni elemento va dentro la destinazione con lo stesso nome. Copiare con un nome nuovo non è più possibile da F5/F6: si copia e poi si rinomina con F2.
 3. Se nel frattempo la cartella dell'altro pannello è stata eliminata: `Destination folder does not exist:` e l'altro pannello viene ricaricato.
 4. Controlli preventivi, ciascuno bloccante:
-   - origine e destinazione coincidono → `Source and destination are the same:`;
-   - cartella dentro sé stessa → `Cannot copy a folder into itself:`;
    - esiste già un elemento di tipo diverso con lo stesso nome → `An item of a different type with the same name already exists:`.
+4b. **Copia su sé stessi (v1.15)**, non più bloccante: per ogni elemento che coincide con la destinazione (`The source and the destination are the same:`) o cartella che finirebbe dentro sé stessa (`This folder would go inside itself:`) una domanda (`selfCopyText`): motivo, ` (i of n)`, percorso, `It cannot be copied onto itself.` (`moved` per F6), `Skip it and go on with the others?`, pulsanti **`Skip`** (predefinito) / `Skip all` / `Cancel` (anche Esc: annulla tutto). Gli elementi saltati vengono tolti; se non resta nulla, avviso `Copy: nothing to do, every item was skipped` (o `Move: …`). Fino alla v1.14 erano errori bloccanti (`Source and destination are the same:`, `Cannot copy a folder into itself:`).
 5. **Cartelle omonime (v1.13)**: `sameNameFolders` elenca le destinazioni che esistono già come cartelle per gli elementi che sono cartelle (`Lstat`: i collegamenti non contano). Se ce ne sono, `askMerge` mostra la domanda di §3.4 **prima** di avviare il lavoro: *Merge* prosegue, *Cancel*/Esc annullano tutto (nulla viene copiato o spostato). Vale per F5 e F6.
 6. Esecuzione in background (§6.10). Fase `Counting files…`: si calcola la dimensione di ogni elemento (`treeSize`, senza seguire link) e il totale.
 7. **Conflitti, file per file (v1.12)**. Fase `Checking the destination…`: `findConflicts` visita la selezione e trova ogni **file** che esiste già nella destinazione, al primo livello e **dentro le cartelle con lo stesso nome** (che vengono unite). Per ciascuno, in ordine, una domanda (§3.4) con dimensione e data delle due copie: **`Skip`** (predefinito), `Skip all`, `Overwrite`, `Overwrite all`, `Cancel`/Esc (annulla l'intera operazione prima che inizi la copia). Le domande arrivano **tutte prima** della copia: i lavoratori paralleli non vanno fermati e un annullamento non lascia nulla a metà. Fino alla v1.11 c'era una sola domanda (`Overwrite` / `Skip existing` / `Cancel`) per gli elementi di primo livello, e dentro le cartelle unite i file venivano sovrascritti senza chiedere.
@@ -852,6 +856,12 @@ Vedi §6.3, punti 5–8. In sintesi: `findConflicts` elenca i file della selezio
 - **Dopo**: nessun elemento selezionato; in vista piatta i nomi dell'elenco vengono aggiornati; il cursore resta sull'elemento che aveva (con il nuovo nome). Se qualcosa è stato saltato: messaggio `Add prefix` con `Renamed N of M items.` + `Not renamed, because an item with the new name already exists:` + i nomi (max 8, poi `… and N more`); altrimenti avviso `Renamed N items`.
 - **Tasto**: Ctrl+K arriva come `KeyCtrlK` con `ModCtrl` (VT) oppure come `K` con `ModCtrl` (win32-input-mode di Windows Terminal), entrambi gestiti da `ctrlLetter`.
 
+### 6.36 Barra di scorrimento e selezione con Shift (v1.15)
+
+- **Barra** (`scrollbar.go`): dopo il disegno della tabella (`panelView.Draw`, `scrollTable.Draw` per l'albero) `drawScrollbar` calcola con `scrollThumb(righe, altezza interna, prima riga visibile)` inizio e lunghezza del cursore: lunghezza `max(1, round(h²/n))`, inizio `round(offset × (h − lunghezza) / (n − h))`; niente se `n ≤ h`. Disegna `█` nel colore del bordo (attivo o inattivo) sulla colonna del bordo destro.
+- **Mouse** (`scrollbarMouse`, nel `MouseHandler` di pannello e albero, prima di quello della tabella): pressione del tasto sinistro sul bordo destro (righe interne) → inizia un trascinamento e il cursore va alla riga `scrollTarget(n, h, y) = round(y × (n−1)/(h−1))`; movimenti con il tasto premuto la aggiornano; il rilascio termina. Il pannello prende il focus. Se l'elenco entra nel riquadro il bordo non reagisce.
+- **Shift+movimento** (`isShiftMove`: Shift senza Ctrl/Alt con ↑ ↓ PgUp PgDn Home End; `Panel.shiftMove`): destinazione come i tasti normali (pagina = altezza interna); righe invertite (`shiftRows`): con ↑/↓ quella di partenza (anche al bordo, dove il cursore non si muove); con gli altri quelle dalla partenza esclusa la destinazione, più la destinazione se è la prima o l'ultima riga. `flipMark` salta `..`, unità e share e avvia/annulla la misura delle cartelle come Spazio. Nell'albero Shift+movimento è un movimento normale.
+
 ---
 
 ## 7. Architettura del codice
@@ -866,6 +876,7 @@ gofm/
 ├── keybar.go        barra dei tasti: voci per priorità, adattamento alla larghezza, clic del mouse (v1.12)
 ├── editor.go        editor esterno (F4): GOFM_EDITOR, editor di gofm.ini, avvio staccato (v1.12)
 ├── config.go        file accanto all'eseguibile, scrivibilità, gofm.ini: lettura, creazione, valori (v1.13)
+├── scrollbar.go     barra di scorrimento (disegno, clic e trascinamento) e selezione con Shift+movimento (v1.15)
 ├── tree.go          vista ad albero (Ctrl+T): nodi, apertura, pannello destro che segue con ritardo, tasti (v1.14)
 ├── prefix.go        prefisso ai nomi (Ctrl+K): anteprima, rinomina, nomi saltati (v1.14)
 ├── drives.go        tipi di unità, etichette, isNetworkLocation (v1.12)
@@ -889,6 +900,7 @@ gofm/
 ├── v110_test.go     test: confronto nome/dimensione/data, cartelle con sottocartelle, riepilogo dei tasti, focus alla chiusura delle finestre
 ├── v111_test.go     test: compilatore fissato uguale in go.mod e nei workflow, risorse Windows (manifest, versione, icone)
 ├── v112_test.go     test: schemi leggibili, unità, ordinamento, tasti nuovi e tolti, barra e clic, editor, conflitti, cancellazione definitiva
+├── v115_test.go     test: cursore della barra, barra su pannello e albero, clic e trascinamento, Shift+movimento, copia su sé stessi
 ├── v114_test.go     test: albero (radice, apertura/chiusura, nascosti, tasti rifiutati, Tab, F5/F6/F12, albero che segue il pannello, uscita, ritardo di 150 ms, rifiuti), prefisso (anteprima, rinomina con nomi saltati e vista piatta, finestra e caratteri non digitabili)
 ├── v113_test.go     test: gofm.ini (sintassi, file creato, avvio, Alt+R), file accanto all'eseguibile, cartella di sola lettura, pulsanti predefiniti di Canc, cartelle omonime, dimensioni dell'icona
 ├── scripts/build-release.sh  pacchetto scaricabile (risorse Windows, zip, SHA-256, note di rilascio dal CHANGELOG)
@@ -1051,7 +1063,7 @@ THIRD_PARTY_NOTICES.md      dipendenze incluse nell'eseguibile, licenze e testi 
 scripts/build-release.sh    pacchetto scaricabile, usato in locale, dalla CI e dalla Release
 winres/                     winres.json (versione, manifest), icon.png (256 px), icon48.png, icon32.png (v1.13), icon16.png
 scripts/make-small-icons.py  disegna a pixel icon32.png e icon48.png (Pillow)
-docs/                       questa documentazione e la schermata
+docs/                       questa documentazione, la schermata e contesto-chat.md (contesto per proseguire in un'altra chat, v1.15)
 windows-terminal/           profilo e script di installazione
 third_party/go4/            sottoinsieme di go4.org (Apache 2.0) con README di provenienza
 testdata/                   archivi 7z per i test
@@ -1106,6 +1118,7 @@ Eseguiti su Linux; su Windows è stata verificata solo la compilazione (`go vet`
 | Tasti | Ctrl+lettera nelle due codifiche, Ctrl+H/I/M, Backspace/Tab/Invio non scambiati, AltGr escluso, Alt+lettera |
 | Selezione | `treeStats` (file regolari e byte, ricorsivo), `plural` |
 | Confronto | `onlyOnOneSide`: cartelle e `..` ignorate, maiuscole indifferenti e distinte, cartella identica senza differenze |
+| v1.15 | `TestScrollThumb` (7 casi di inizio/lunghezza, elenco che entra, `scrollTarget` agli estremi e al centro); `TestPanelScrollbar` (schermo simulato: cursore della barra sulla colonna del bordo con 50 file; clic in basso → ultima riga e focus al pannello; trascinamento in alto → prima riga; movimento senza tasto ignorato; con 3 file nessuna barra e nessun trascinamento); `TestTreeScrollbar` (barra e clic nell'albero); `TestShiftRows` (8 casi); `TestShiftMarks` (FM reale: `..` mai marcato, Shift+↓ ×3, cartella marcata misurata, Shift+↑ ×2 come in Total Commander, Shift+End fino all'ultima riga compresa, Shift+Home, frecce normali senza effetto, Ctrl+Shift escluso); `TestSelfCopy` (F5 e F6 con i due pannelli sulla stessa cartella: una domanda per file con Skip predefinito, poi avviso; file intatto; cartella nella propria sottocartella con Esc; `askSelfCopies` con Skip, Skip all, Cancel e senza elementi da chiedere) |
 | v1.14 | `TestTreeRoot`; `TestTreeView` (FM reale: Ctrl+T dalla cartella `a/b` → albero al posto del pannello sinistro, cursore su `b`, pannello destro su `b`, focus sull'albero, titolo; nascosti esclusi; → apre senza spostare, → di nuovo va alla prima sottocartella e il pannello destro la segue; foglia senza marcatore; ← al padre, ← chiude, ← sale; Alt+H mostra `.hid` e `hidden shown`; F2 sull'albero = solo avviso; Tab al pannello destro; F5, F6, F12 rifiutati; il pannello destro entra in `b` e l'albero lo segue; cartella creata a destra visibile nell'albero dopo la rilettura; Tab di nuovo all'albero e `state.json` con la cartella dell'albero; Ctrl+T: entrambi i pannelli sulla cartella evidenziata); `TestTreeDelay` (due movimenti rapidi: il pannello destro non si muove prima del ritardo e alla fine è sull'ultima cartella; un aggiornamento vecchio non sovrascrive il nuovo); `TestTreeRefused` (vista piatta, elenco unità, archivio); `TestPrefixPreview` (vuoto, caratteri non validi, 6 righe + `… and 2 more`); `TestAddPrefix` (file, cartella, file in sottocartella della vista piatta; nome esistente saltato e non sovrascritto; testo del messaggio); `TestPrefixDialog` (elementi selezionati, cursore, `..` escluso; Ctrl+K apre la finestra; `/` e `\` non digitabili; Esc non rinomina) |
 | v1.13 | `TestMain` (i test non scrivono `gofm.ini` accanto al binario di prova: `GOFM_CONFIG` temporaneo); `TestParseSettings` (BOM, CRLF, commenti `#`/`;`, sezione, maiuscole, virgolette, sinonimi di `yes/no`, `chiave =` vuota; editor con argomenti che conserva le virgolette; 4 problemi con numero di riga e righe valide applicate); `TestDefaultConfigText` (file creato senza effetti né errori, CRLF, ogni chiave documentata con tutti i valori, righe commentate uguali ai predefiniti, valori predefiniti validi una volta tolti i commenti); `TestStorage` (cartella dell'eseguibile per `gofm.ini` e `state.json`, `GOFM_STATE`/`GOFM_CONFIG`); `TestDirWritable` (nessun file di prova lasciato; cartella in sola lettura); `TestLoadSettingsCreatesFile` (non creato senza permesso, creato con il testo predefinito, problemi segnalati, file esistente mai riscritto); `TestReadOnlyProgramFolder` (cartella non scrivibile: nessun file scritto dopo cambio cartella e Ctrl+F9, avviso `read-only`, `gofm.ini` esistente letto); `TestSettingsAtStart` (schema e icone del file prevalgono su `state.json`, nascosti e ordinamento nei due pannelli, editor; senza impostazioni decide `state.json`; avviso per un valore sbagliato); `TestReloadSettings` (Alt+R applica schema, nascosti, editor; una seconda Alt+R senza modifiche al file non annulla Ctrl+F9 e Alt+H; file ricreato se cancellato); `TestDeleteDefaults` (6 combinazioni locale/rete, ordine dei pulsanti, `networkDelete`); `TestDeleteEnter` (FM reale: pulsante selezionato `Yes`/`No` secondo `deleteDefault`; Invio su `No` non cancella); `TestMergeQuestion` (`sameNameFolders` ignora file e cartelle nuove, testo con uno e 10 nomi, `askMerge` senza cartelle parte subito, Invio = Merge, Esc = annulla; F5 e F6 reali chiedono e Esc non sposta nulla); `TestArchiveTopFolders` (voci cartella, percorsi, file alla radice esclusi, maiuscole); `TestIconSizes` (16, 32, 48, 256 px elencati in `winres.json`) |
 | v1.12 | `TestSchemesReadable` (3 schemi, nomi unici, navy principale; contrasto di testo, titoli, cartelle, selezione, cursori, barre, tasti, avvisi, etichette, finestre, errori ≥ 4,5:1; bordi, colonne secondarie, selezione sul cursore inattivo ≥ 3:1; `schemeIndex`); i test di colori e icone delle versioni precedenti girano per **ogni schema** (`forEachScheme`); `TestDriveKinds` (icona per tipo, etichette ≤ 9 celle e diverse, `isNetworkLocation` fuori da Windows); `TestSortDirection` (6 combinazioni tipo/senso con `..` e cartelle prima, sensi iniziali, frecce); `TestKeysV112` (FM reale: titolo `sort: name ↑`, Ctrl+A seleziona tutto e poi inverte, `*` e Alt+A senza effetto, Alt+D e Alt+O con la freccia nel titolo, Alt+F7/Ctrl+F7/Ctrl+F2/Canc/F7 aprono una finestra, F8, Alt+F1, Alt+S, Alt+F, Ctrl+Alt+F7 e Ctrl+F5 no); `TestKeyBar` (ordine di priorità, voci che entrano e spaziatura a 0–400 colonne, nessun tasto escluso, `itemAt`; **clic simulati** sulla barra di un FM reale: Alt+D, Ctrl+F2, Ctrl+F9 eseguiti senza spostare il focus, Shift+X senza effetto); `TestColourSchemeSwitch` (tre Ctrl+F9: colori di pannelli e barra, salvataggio in `state.json`, avviso; avvio con lo schema salvato); `TestEditorCommand` (7 casi: predefinito, vuoto, virgolette con argomenti, virgoletta non chiusa, percorso con spazi esistente, comando con argomenti); `TestEditFile` (F4 avvia uno script come editor con argomento e percorso del file senza attenderlo; `..`; editor inesistente → messaggio); `TestConflicts` (copia e spostamento con conflitti al primo livello e annidati: *Overwrite*, *Skip*, *Overwrite*; file saltato intatto nella destinazione e rimasto nella sorgente, gli altri copiati/spostati; testo della domanda con `(newer)`); `TestResolveConflicts` (Skip all, Overwrite all, Cancel, Esc, pulsante predefinito); `TestDeletePermanently` (cartella e file di sola lettura cancellati; avviso `PERMANENTLY`) |
@@ -1122,6 +1135,8 @@ Le fixture 7z sono generate con `py7zr`:
 - `single.7z`: `progetto/città.txt`, `progetto/sub/big.txt` (50 000 righe "riga");
 - `multi.7z`: come `single.7z` più `solo.txt` ("S");
 - `secret.7z`: `solo.txt` con password `pw`.
+
+Prova reale (v1.15) in `tmux` a 100×20 con 60 file: cursore della barra `█` sul bordo destro del pannello; Shift+↓ ×3 da `..` → `file01.txt` e `file02.txt` marcati (` 2 selected · 6 B`); F5 con i due pannelli sulla stessa cartella → domanda `The source and the destination are the same: (1 of 2)` con `Skip` evidenziato. **Non verificabili qui**: clic e trascinamento con il mouse in Windows Terminal, Shift+frecce nella console classica.
 
 Prova reale (v1.14) in `tmux` a 110×40: Ctrl+T da `…/t/w/proj` → albero da `/` aperto fino a `proj`, evidenziata e visibile in fondo all'elenco, pannello destro su `proj`; Alt+I → marcatori `+`/`-` e icone semplici; Ctrl+K su `a.txt` e `b.txt` con `x_b.txt` già presente → anteprima `a.txt → x_a.txt`, `b.txt → x_b.txt`, poi messaggio `Renamed 1 of 2 items.` con `b.txt` tra i non rinominati, nessuna selezione. **Non verificabili qui**: Ctrl+T e Ctrl+K nei terminali Windows, albero su unità di rete lente.
 
@@ -1172,6 +1187,7 @@ Prove precedenti: navigazione con le frecce, ricerca digitando, larghezza delle 
 - `go.sum` costruito con un metodo verificato ma senza accesso a `sum.golang.org` (§9.2): la prima compilazione su una macchina normale, o la CI, lo confermano.
 
 **Non verificato su Windows reale** (logica testata solo dove è portabile):
+- v1.15: clic e trascinamento sulla barra in Windows Terminal e nella console classica (eventi del mouse con il tasto premuto); Shift+frecce, Shift+PgUp/PgDn/Home/End nei due terminali;
 - v1.14: decodifica di Ctrl+T e Ctrl+K in Windows Terminal e nella console classica; ritardo dell'albero su share lente (la lettura di un ramo all'apertura è sincrona, come il cambio di cartella dei pannelli);
 - v1.13: rilevamento della cartella non scrivibile in `C:\Program Files` (atteso: scrittura negata perché il manifest *asInvoker* disattiva la virtualizzazione di UAC); `os.Executable` avviato da un collegamento o dal PATH; `gofm.ini` aperto e salvato con Notepad (BOM e CRLF gestiti nei test); resa delle icone a 32 e 48 px nelle viste di Esplora risorse (la cache delle icone di Windows può mostrare la vecchia icona fino al suo rinnovo);
 - v1.12: riconoscimento dei tipi di unità (`GetDriveType`, bus USB via `DeviceIoControl`); cancellazione definitiva su unità mappate e UNC; F4 con Notepad e con editor in `GOFM_EDITOR` (avvio staccato); clic sulla barra dei tasti; decodifica di Alt+F7, Ctrl+F7, Ctrl+F2, Ctrl+F9 e Ctrl+A in Windows Terminal e nella console classica (nella console classica Ctrl+A potrebbe essere intercettato dalla selezione del testo della finestra);
@@ -1192,6 +1208,7 @@ Prove precedenti: navigazione con le frecce, ricerca digitando, larghezza delle 
 |---|---|
 | 1.0 | Doppio pannello, operazioni di base, Cestino, ZIP, ricerca, filtro, anteprima; interfaccia in italiano |
 | 1.1 | Frecce ←/→, interfaccia in inglese, anteprima ed estrazione 7z |
+| 1.15 | **Barra di scorrimento** su pannelli e albero (solo se l'elenco non entra), cliccabile e trascinabile; **copia su sé stessi** saltabile elemento per elemento (Skip, Skip all, Cancel) anche per le cartelle dentro sé stesse; **selezione con Shift+frecce** e Shift+PgUp/PgDn/Home/End; file di contesto anche in `docs/contesto-chat.md` |
 | 1.14 | **Vista ad albero (Ctrl+T)**: albero delle cartelle a sinistra, contenuto della cartella evidenziata a destra (dopo 150 ms), → ← per aprire e chiudere, uscita con entrambi i pannelli sulla cartella evidenziata; **prefisso ai nomi (Ctrl+K)** con anteprima, nomi esistenti saltati ed elencati |
 | 1.13 | **Programma portatile**: `gofm.ini` e `state.json` accanto a `gofm.exe` (nulla salvato se la cartella non è scrivibile; nessuna migrazione da `%APPDATA%`); **file di impostazioni `gofm.ini`** commentato (editor, schema, icone, nascosti, ordinamento, pulsante predefinito e modalità della cancellazione, anche per le unità di rete), riletto con Alt+R; **domanda Merge/Cancel** per le cartelle omonime in copia, spostamento ed estrazione; **pulsante predefinito = cancella** nelle conferme di Canc (impostabile); icona anche a **32 e 48 px** |
 | 1.12 | **Tasti**: Ctrl+A seleziona tutto / inverte (tolti `*` e Alt+A), **F4** editor esterno (Notepad o `GOFM_EDITOR`), F8 non cancella più (solo Canc), ricerca **Alt+F7**, filtro **Ctrl+F7**, riepilogo **Ctrl+F2** con tutti i tasti, **Alt+D** inverte l'ordinamento con freccia ↑/↓ nel titolo, **Ctrl+F9** tre schemi di colori (navy, dark, light); **barra dei tasti** per priorità secondo la larghezza, senza F2 F3 F5 F7 F10, **cliccabile**; **conflitti file per file** in copia/spostamento (Skip, Skip all, Overwrite, Overwrite all, Cancel), anche dentro le cartelle unite; **cancellazione definitiva** sulle unità di rete; **icone ed etichette per tipo di unità** (locale, rete, rimovibile/USB, CD/DVD) |
@@ -1210,7 +1227,7 @@ Prove precedenti: navigazione con le frecce, ricerca digitando, larghezza delle 
 
 ## 13. Prompt per rigenerare il programma
 
-Il prompt seguente è autosufficiente: incollato a un assistente di programmazione con accesso a Go, dovrebbe produrre un programma equivalente alla versione 1.14. Le stringhe dell'interfaccia sono indicate testualmente.
+Il prompt seguente è autosufficiente: incollato a un assistente di programmazione con accesso a Go, dovrebbe produrre un programma equivalente alla versione 1.15. Le stringhe dell'interfaccia sono indicate testualmente.
 
 ````text
 Crea "gofm", un file manager a doppio pannello per il terminale di Windows, in Go (go.mod:
@@ -1221,10 +1238,10 @@ golang.org/x/text (charmap CP437/850/852/858/866 e Windows1252, unicode UTF-16),
 github.com/rivo/uniseg e github.com/bodgit/sevenzip v1.6 (7z in sola lettura).
 Interfaccia interamente in INGLESE. Deve compilare e girare anche su Linux per i test
 (file sys_windows.go e sys_other.go con build tag). Scrivi test unitari per tutta la
-logica portabile. Versione "1.14".
+logica portabile. Versione "1.15".
 
 AVVIO: gofm [left_folder] [right_folder]; -h/--help//? stampa
-"gofm 1.14 — usage: gofm [left_folder] [right_folder]". Argomento non valido -> cartella corrente.
+"gofm 1.15 — usage: gofm [left_folder] [right_folder]". Argomento non valido -> cartella corrente.
 Un argomento \\server apre l'elenco share.
 MEMORIA (state.go): stato JSON {version:1, left, right, active "left"|"right", driveDirs
 {lettera: cartella}, basicIcons bool omitempty, colorScheme "dark"|"light" omitempty} in state.json NELLA CARTELLA DELL'ESEGUIBILE
@@ -1431,6 +1448,17 @@ sempre. Il risultato fa ridisegnare la riga e il totale sul bordo.
   Alt+E/Ctrl+← rivelano la sua cartella; Tab torna all'albero. Ctrl+T da qualunque lato:
   due pannelli, entrambi sulla cartella evidenziata. Non salvato; state.json registra come
   sinistra la cartella dell'albero; barra di stato con il percorso evidenziato.
+- BARRA DI SCORRIMENTO (scrollbar.go): dopo il disegno di pannelli e albero, se le righe n
+  superano l'altezza interna h, "█" nel colore del bordo sulla colonna del bordo destro:
+  lunghezza max(1, round(h*h/n)), inizio round(offset*(h-lunghezza)/(n-h)). MouseHandler di
+  pannello e albero: tasto sinistro premuto sul bordo destro (righe interne, solo se c'è la
+  barra) -> trascinamento; cursore alla riga round(y*(n-1)/(h-1)); i movimenti con il tasto
+  premuto la aggiornano; il rilascio termina; il pannello prende il focus.
+- SHIFT+MOVIMENTO: Shift (senza Ctrl/Alt) con ↑ ↓ PgUp PgDn Home End, prima degli altri
+  tasti: destinazione come i tasti normali (pagina = altezza interna); con ↑/↓ inverte la
+  marcatura della riga di partenza (anche al bordo) e si sposta; con gli altri inverte le
+  righe dalla partenza esclusa la destinazione, più la destinazione se è la prima o l'ultima;
+  "..", unità e share mai; cartelle misurate/annullate come con Spazio.
 - PREFISSO (prefix.go, Ctrl+K): elementi = selezionati o quello sotto il cursore (no "..",
   unità, share), file e cartelle; fuori da una cartella su disco i messaggi di sola lettura.
   Finestra 76x14 " Add a prefix to <descrizione> ": campo "Prefix: " (caratteri \ / e, su
@@ -1492,9 +1520,13 @@ COPIA/SPOSTA: NESSUN campo destinazione: si parte subito verso la cartella mostr
 dall'altro pannello; se l'altro pannello non è una cartella su disco (unità, share, archivio)
 mostra "The destination is the other panel:\nopen a folder on disk there first." (titolo
 Copy/Move). Ogni elemento va dentro con lo stesso nome. Se la cartella è sparita:
-"Destination folder does not exist:\n" e ricarica l'altro pannello. Blocchi: "Source and destination are the same:\n",
-"Cannot copy a folder into itself:\n", "An item of a different type with the same name
-already exists:\n". CARTELLE OMONIME: se per elementi che sono cartelle (Lstat) la destinazione
+"Destination folder does not exist:\n" e ricarica l'altro pannello. Blocco: "An item of a different type with the same name
+already exists:\n". COPIA SU SÉ STESSI (non più blocchi): per ogni elemento con
+origine = destinazione ("The source and the destination are the same:") o cartella che
+finirebbe dentro sé stessa ("This folder would go inside itself:") una domanda "<motivo> (i of
+n)\n\n<percorso>\n\nIt cannot be copied onto itself.\nSkip it and go on with the others?"
+(moved per F6) con Skip (predefinito) / Skip all / Cancel (Esc = Cancel: annulla tutto); se
+non resta nulla avviso "Copy: nothing to do, every item was skipped". CARTELLE OMONIME: se per elementi che sono cartelle (Lstat) la destinazione
 esiste già come cartella, una sola domanda "A folder with the same name already exists in\n
 <dest>:\n\n<nomi, max 8, poi … and N more>\n\nMerge the contents? Files that exist in both
 are asked about one by one.\nCancel stops the whole operation." (per più cartelle "N folders
@@ -1669,7 +1701,7 @@ entra in larghezza-4 togli prima lo spazio libero, poi i file; negli elenchi uni
 lo spazio (se noto).
 ELENCO UNITÀ: Alt+V.
 ARCHITETTURA FILE: main.go (FM, tasti, finestre, runTask, azioni, confronto, expandPath),
-theme.go, icons.go, help.go, keybar.go, editor.go, config.go, tree.go, prefix.go, drives.go, statusbar.go, watch.go, copy.go, flat.go, state.go,
+theme.go, icons.go, help.go, keybar.go, editor.go, config.go, tree.go, prefix.go, scrollbar.go, drives.go, statusbar.go, watch.go, copy.go, flat.go, state.go,
 panel.go (Panel, luoghi, rendering, navigazione, marcatura, jumpTo), ops.go (opCtx,
 percorsi, copia/sposta/zip/ricerca), archive.go (ZIP/7z, estrazione, albero, anteprima
 voci), preview.go, unc.go (regole Windows/UNC in pura logica di stringhe, driveLetter),
@@ -1691,7 +1723,8 @@ contrasto; tipi di unità; ordinamento nei due sensi; tasti nuovi e tolti con un
 barra tasti (priorità, larghezza, clic simulati); cambio di schema e salvataggio;
 editorCommand e F4 con uno script come editor; conflitti annidati in copia e spostamento
 (Skip/Overwrite, file saltati rimasti nella sorgente), resolveConflicts; cancellazione
-definitiva di file di sola lettura; albero (apertura, chiusura, rifiuti, ritardo di 150 ms con
+definitiva di file di sola lettura; barra (calcolo, schermo simulato, clic e trascinamento),
+Shift+movimento, copia su sé stessi; albero (apertura, chiusura, rifiuti, ritardo di 150 ms con
 timer sostituibile, pannello che segue e albero che segue, uscita), prefisso (anteprima,
 nomi saltati, vista piatta, caratteri non digitabili); gofm.ini (sintassi, testo creato, avvio, Alt+R che applica
 solo i cambiamenti), file accanto all'eseguibile e cartella di sola lettura (appDirInfo

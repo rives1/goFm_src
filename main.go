@@ -15,7 +15,7 @@ import (
 	"github.com/rivo/tview"
 )
 
-const version = "1.14"
+const version = "1.15"
 
 type FM struct {
 	app     *tview.Application
@@ -548,6 +548,10 @@ func (fm *FM) keys(ev *tcell.EventKey) *tcell.EventKey {
 
 	// Every other key ends the quick search.
 	fm.resetQuickSearch()
+	if isShiftMove(ev) { // Shift+movement marks (v1.15)
+		p.shiftMove(ev.Key())
+		return nil
+	}
 	switch ev.Key() {
 	case tcell.KeyTab, tcell.KeyBacktab:
 		fm.setActive(fm.other(), true)
@@ -1136,13 +1140,8 @@ func (fm *FM) copyOrMove(move bool) {
 			return
 		}
 		for _, pr := range pairs {
-			if samePath(pr.from, pr.to) {
-				fm.showMessage("Error", "Source and destination are the same:\n"+pr.from)
-				return
-			}
-			if fi, err := os.Stat(pr.from); err == nil && fi.IsDir() && isWithin(pr.from, pr.to) {
-				fm.showMessage("Error", "Cannot copy a folder into itself:\n"+pr.from)
-				return
+			if selfCopyReason(pr) != "" {
+				continue // asked below: Skip, Skip all or Cancel (v1.15)
 			}
 			if fi, err := os.Lstat(pr.to); err == nil {
 				sfi, _ := os.Lstat(pr.from)
@@ -1187,14 +1186,81 @@ func (fm *FM) copyOrMove(move bool) {
 				}
 			}, func(*opCtx) { src.marked = map[string]bool{}; src.reload() })
 		}
-		// Folders with the same name at the destination (v1.13): merge them, or cancel
-		// the whole operation. After Merge, existing files are asked one by one.
-		var srcDirs, dstDirs []string
-		for _, pr := range pairs {
-			srcDirs, dstDirs = append(srcDirs, pr.from), append(dstDirs, pr.to)
-		}
-		fm.askMerge(sameNameFolders(srcDirs, dstDirs), dest, "Files that exist in both are asked about one by one.", start)
+		// Items copied onto themselves (v1.15): one question each, Skip, Skip all or
+		// Cancel. Then the folders with the same name at the destination (v1.13): merge
+		// them, or cancel the whole operation; after Merge, existing files are asked
+		// one by one.
+		fm.askSelfCopies(pairs, verb, func(kept []copyPair) {
+			if len(kept) == 0 {
+				fm.notice = verb + ": nothing to do, every item was skipped"
+				fm.updateStatus()
+				return
+			}
+			pairs = kept
+			var srcDirs, dstDirs []string
+			for _, pr := range pairs {
+				srcDirs, dstDirs = append(srcDirs, pr.from), append(dstDirs, pr.to)
+			}
+			fm.askMerge(sameNameFolders(srcDirs, dstDirs), dest, "Files that exist in both are asked about one by one.", start)
+		})
 	}(dest)
+}
+
+// selfCopyReason says why an item cannot be copied or moved where asked: it would land
+// on itself, or a folder would go inside itself; "" otherwise.
+func selfCopyReason(pr copyPair) string {
+	if samePath(pr.from, pr.to) {
+		return "The source and the destination are the same:"
+	}
+	if fi, err := os.Stat(pr.from); err == nil && fi.IsDir() && isWithin(pr.from, pr.to) {
+		return "This folder would go inside itself:"
+	}
+	return ""
+}
+
+// Buttons of the question about an item copied onto itself.
+const (
+	selfSkip    = "Skip"
+	selfSkipAll = "Skip all"
+	selfCancel  = "Cancel"
+)
+
+// selfCopyText is the question for the i-th of n items copied onto themselves.
+func selfCopyText(pr copyPair, verb string, i, n int) string {
+	done := map[string]string{"Copy": "copied", "Move": "moved"}[verb]
+	return fmt.Sprintf("%s (%d of %d)\n\n%s\n\nIt cannot be %s onto itself.\nSkip it and go on with the others?",
+		selfCopyReason(pr), i+1, n, pr.from, done)
+}
+
+// askSelfCopies asks about each item that would be copied onto itself — Skip (the
+// default), Skip all, Cancel/Esc — and then calls done with the items to copy.
+// Nothing is asked when there are none.
+func (fm *FM) askSelfCopies(pairs []copyPair, verb string, done func(kept []copyPair)) {
+	var kept, self []copyPair
+	for _, pr := range pairs {
+		if selfCopyReason(pr) != "" {
+			self = append(self, pr)
+		} else {
+			kept = append(kept, pr)
+		}
+	}
+	var ask func(i int)
+	ask = func(i int) {
+		if i == len(self) {
+			done(kept)
+			return
+		}
+		fm.confirm(selfCopyText(self[i], verb, i, len(self)), []string{selfSkip, selfSkipAll, selfCancel}, func(c string) {
+			switch c {
+			case selfSkip:
+				ask(i + 1)
+			case selfSkipAll:
+				done(kept)
+			}
+			// Cancel or Esc: nothing happens
+		})
+	}
+	ask(0)
 }
 
 // sameNameFolders returns the destinations that already exist as folders, for the

@@ -18,7 +18,7 @@ Get **`gofm-<version>-windows.zip`** from the [latest release](https://github.co
 To check a download, compare its hash with the one on the release page (PowerShell):
 
 ```
-Get-FileHash .\gofm-1.14-windows.zip     # the zip: see the .sha256 file
+Get-FileHash .\gofm-1.15-windows.zip     # the zip: see the .sha256 file
 Get-FileHash .\gofm.exe                  # the program: see the release notes
 ```
 
@@ -87,6 +87,8 @@ uses a function key, **Alt+letter**, **Ctrl+letter**, or **Shift+letter** (drive
 | Ctrl+T | **tree view**: folder tree on the left, contents of the highlighted folder on the right; Ctrl+T again to go back (see *Tree view*) |
 | Ctrl+→ (left panel) | show this location in the right panel |
 | Ctrl+← (right panel) | show this location in the left panel |
+| Shift+↑ / Shift+↓ | **mark while moving**: invert the mark of the item under the cursor, then move (going back unmarks) |
+| Shift+PgUp / PgDn / Home / End | invert the marks of every row passed; Shift+Home and Shift+End include the first/last row |
 | Space / Ins | mark/unmark; the panel's top border shows the running total of the selection, folders included recursively (Space types a space while a quick search is in progress) |
 | Ctrl+A | nothing marked → mark **all** files and folders; something marked → **invert** the marks |
 | Esc | end quick search, then clear the filter, then the marks |
@@ -140,6 +142,7 @@ Operations act on marked items; if nothing is marked, on the item under the curs
 ## Copy, move and selection
 
 - **F5/F6 do not ask for a destination**: the destination is always the folder shown in the other panel. If the other panel shows the drive list, a share list or the inside of an archive, gofm asks you to open a folder there first. To copy under a different name, copy and then rename with F2.
+- **Copying onto itself** (both panels on the same folder, or a folder into one of its own subfolders): gofm asks about each such item — *Skip* (the default), *Skip all*, *Cancel* — and copies or moves the others. If every item is skipped, nothing happens.
 - **Folders with the same name** at the destination (F5 and F6): gofm first lists them and asks *Merge* (the default button) or *Cancel*. *Cancel* (or Esc) stops the **whole** operation: nothing is copied or moved.
 - **Files that already exist** at the destination, also inside the merged folders: after counting the files, gofm asks about each one, showing size and date of both copies — *Skip* (the default button), *Skip all*, *Overwrite*, *Overwrite all*, *Cancel*. Every other file is copied or moved anyway. A skipped file stays where it is: in a move, the source keeps only the skipped files.
 - While you mark items, the **top border of the panel** (right side, on the path line) shows ` N selected · <size> · M files `. Marked folders are measured recursively in the background and their **size column shows the total** (`…` while measuring); ` · counting…` is shown until every folder has been measured. Unmarking a folder stops its measurement.
@@ -250,6 +253,10 @@ Copy, move, compress and extract show a progress bar with bytes done, speed (ave
 - The **status bar** follows the same rule: fixed columns on the right (size, date and time, attributes, item count) and a name column that takes the remaining space.
 - The text cursor (in input fields) is a **blinking underscore**.
 
+## Scroll bar
+
+When a list is longer than its panel (or the tree), a **scroll bar** appears on the right border: the thumb's length is the visible part of the list, its position the place of the visible rows. **Click** on the right border, or **drag** along it, to jump to that point of the list.
+
 ## Automatic refresh
 
 Both panels refresh by themselves when files are added, removed or changed, using Windows change notifications (they also work on network shares). Nothing is polled; bursts of changes (e.g. during a copy) are grouped, and slow folders are re-read less often. The cursor, scroll position, marks and folder totals are kept. If a server does not send notifications, Alt+R refreshes by hand.
@@ -312,6 +319,7 @@ The GitHub Actions workflows:
 - This README: usage.
 - [`docs/gofm-documentazione.md`](docs/gofm-documentazione.md): full specification and design notes (in Italian), including a prompt to regenerate the program.
 - [`CHANGELOG.md`](CHANGELOG.md): version history.
+- [`docs/contesto-chat.md`](docs/contesto-chat.md): project state and compact specification for continuing the work in a new chat with an AI assistant (in Italian), updated with every version.
 
 ## Licence
 

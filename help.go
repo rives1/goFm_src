@@ -30,11 +30,12 @@ var helpSections = []helpSection{
 		{"Alt+L", `go to a path: C:\x, %USERPROFILE%, ~, \\server\share`},
 		{"Alt+V", "drive list"},
 		{"Shift+letter", "go to that drive (last folder used there)"},
-		{"Mouse click", "select a row; on the key bar: run that key"},
+		{"Mouse click", "select a row; key bar: run the key; scroll bar: jump"},
 	}},
 	{"Search and selection", [][2]string{
 		{"a–z 0–9 …", "quick search by name (lower-case letters)"},
 		{"Space / Ins", "mark or unmark, then move down"},
+		{"Shift+arrows", "move and (un)mark; also Shift+PgUp PgDn Home End"},
 		{"Ctrl+A", "nothing marked: mark all; otherwise invert"},
 		{"Esc", "end search, then clear filter, then marks"},
 		{"Alt+F7", "find files by name and/or content"},

@@ -46,7 +46,7 @@ func (n *treeNode) leaf() bool { return n.loaded && len(n.children) == 0 }
 
 type treeView struct {
 	fm    *FM
-	table *tview.Table
+	table *scrollTable
 	root  *treeNode
 	rows  []*treeNode // visible nodes, in display order
 	quiet bool        // cursor moved by gofm itself: the right panel must not follow
@@ -129,7 +129,7 @@ func (fm *FM) closeTree() {
 }
 
 func newTreeView(fm *FM) *treeView {
-	t := &treeView{fm: fm, table: tview.NewTable().SetSelectable(true, false)}
+	t := &treeView{fm: fm, table: &scrollTable{Table: tview.NewTable().SetSelectable(true, false)}}
 	t.queue = func(f func()) { fm.app.QueueUpdateDraw(f) }
 	t.after = func(f func()) *time.Timer { return time.AfterFunc(treeDelay, f) }
 	t.table.SetBorder(true).SetTitleAlign(tview.AlignLeft)
@@ -284,7 +284,8 @@ func (t *treeView) render() {
 	row, _ := tb.GetSelection()
 	rowOff, colOff := tb.GetOffset()
 	was := t.quiet
-	t.quiet, tb = true, tb.Clear()
+	t.quiet = true
+	tb.Clear()
 	for i, n := range t.rows {
 		e := entry{name: n.name, isDir: true, hidden: n.hidden, isLink: n.isLink}
 		color, attr := entryStyle(e, false)

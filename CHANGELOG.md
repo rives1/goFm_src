@@ -2,6 +2,13 @@
 
 All notable changes to gofm. Versions follow the order in which features were added.
 
+## 1.15 — 2026-10-30
+
+- **Scroll bar** on the right border of the panels and of the tree, only when the list is longer than the box; click or drag on it to jump to that point of the list.
+- **Copying onto itself** (same folder on both sides, or a folder into one of its subfolders) no longer stops the whole operation: one question per item, *Skip* (default), *Skip all*, *Cancel*; the other items are copied or moved.
+- **Shift+↑/↓** mark while moving (the item under the cursor is inverted, then the cursor moves); **Shift+PgUp/PgDn/Home/End** invert every row passed, Shift+Home/End including the first/last row.
+- The context summary for continuing in a new chat is also kept in the repository: `docs/contesto-chat.md`.
+
 ## 1.14 — 2026-10-30
 
 - **Tree view (Ctrl+T)**: the left panel becomes the folder tree of the current drive, opened down to the current folder; the right panel shows the folder under the tree cursor, 150 ms after the cursor stops. → and ← open and close branches, Enter or Tab go to the files on the right, Shift+letter shows another drive, Alt+H shows hidden folders. Ctrl+T again goes back to two panels, both on the highlighted folder. Copy, move and compare need two panels and are refused meanwhile; not available from the drive list, share lists, archives or the flat view.

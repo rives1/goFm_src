@@ -109,7 +109,8 @@ type Panel struct {
 // shortened and the size and date columns always stay visible.
 type panelView struct {
 	*tview.Table
-	p *Panel
+	p        *Panel
+	dragging bool // dragging along the scroll bar
 }
 
 func (v *panelView) Draw(screen tcell.Screen) {
@@ -119,6 +120,7 @@ func (v *panelView) Draw(screen tcell.Screen) {
 	}
 	v.p.styleCursorIcon()
 	v.Table.Draw(screen)
+	drawScrollbar(screen, v.Table)
 	// Files of the folder and free space of the volume on the bottom border, right-aligned.
 	files, size := v.p.folderTotals()
 	x, y, w, h := v.GetRect()
