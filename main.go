@@ -15,7 +15,7 @@ import (
 	"github.com/rivo/tview"
 )
 
-const version = "1.13"
+const version = "1.14"
 
 type FM struct {
 	app     *tview.Application
@@ -38,6 +38,8 @@ type FM struct {
 	keybar          *keyBar
 
 	cfg settings // gofm.ini as last read (start, Alt+R)
+
+	tree *treeView // tree view (Ctrl+T) in place of the left panel; nil = two panels
 
 	saved     savedState // last state written to disk
 	restoring bool       // true while the panels are being set up: no state writes yet
@@ -219,6 +221,9 @@ func (fm *FM) toggleIcons() {
 	for _, p := range []*Panel{fm.left, fm.right} {
 		p.render()
 	}
+	if fm.tree != nil {
+		fm.tree.render()
+	}
 	if fm.basicIcons {
 		fm.notice = "Icons: basic symbols — Alt+I for Nerd Font icons"
 	} else {
@@ -256,6 +261,11 @@ func (fm *FM) recolor() {
 		p.table.SetTitleColor(colTitle)
 		p.render()
 	}
+	if fm.tree != nil {
+		fm.tree.table.SetBackgroundColor(colBackground)
+		fm.tree.table.SetTitleColor(colTitle)
+		fm.tree.render()
+	}
 	fm.setActive(fm.active, false)
 }
 
@@ -273,18 +283,34 @@ func (fm *FM) setActive(p *Panel, focus bool) {
 	}
 	fm.active = p
 	for _, q := range []*Panel{fm.left, fm.right} {
+		t := fm.viewOf(q)
 		if q == p {
-			q.table.SetBorderColor(colActiveBorder)
-			q.table.SetSelectedStyle(tcell.StyleDefault.Background(colCursorBg).Foreground(colCursorFg))
+			t.SetBorderColor(colActiveBorder)
+			t.SetSelectedStyle(tcell.StyleDefault.Background(colCursorBg).Foreground(colCursorFg))
 		} else {
-			q.table.SetBorderColor(colPanelBorder)
-			q.table.SetSelectedStyle(tcell.StyleDefault.Background(colCursorOffBg).Foreground(colCursorOffFg))
+			t.SetBorderColor(colPanelBorder)
+			t.SetSelectedStyle(tcell.StyleDefault.Background(colCursorOffBg).Foreground(colCursorOffFg))
 		}
 	}
 	if focus {
-		fm.app.SetFocus(p.table)
+		fm.app.SetFocus(fm.viewOf(p))
 	}
 	fm.updateStatus()
+}
+
+// panelTable is what setActive needs from the table shown for a panel.
+type panelTable interface {
+	tview.Primitive
+	SetBorderColor(tcell.Color) *tview.Box
+	SetSelectedStyle(tcell.Style) *tview.Table
+}
+
+// viewOf is the table shown for a panel: the tree replaces the left panel (Ctrl+T).
+func (fm *FM) viewOf(p *Panel) panelTable {
+	if p == fm.left && fm.tree != nil {
+		return fm.tree.table
+	}
+	return p.table
 }
 
 // updateStatus is called whenever what the status bar shows may have changed. The
@@ -377,6 +403,9 @@ func (fm *FM) keys(ev *tcell.EventKey) *tcell.EventKey {
 		fm.notice = "" // shown until the next key
 		fm.updateStatus()
 	}
+	if fm.tree != nil && p == fm.left {
+		return fm.treeKeys(ev) // the tree has the focus (Ctrl+T)
+	}
 
 	// Ctrl+Right in the left panel / Ctrl+Left in the right panel: show this location
 	// on the other side (the arrow points to the panel that changes).
@@ -388,8 +417,9 @@ func (fm *FM) keys(ev *tcell.EventKey) *tcell.EventKey {
 		return nil
 	}
 
-	// Ctrl+B: flat view; Ctrl+A: mark all, or invert the marks. Other Ctrl+letters are
-	// not used (drives moved to Shift+letter).
+	// Ctrl+B: flat view; Ctrl+A: mark all, or invert the marks; Ctrl+T: tree view;
+	// Ctrl+K: add a prefix to the names (v1.14). Other Ctrl+letters are not used
+	// (drives moved to Shift+letter).
 	if l, ok := ctrlLetter(ev); ok {
 		fm.resetQuickSearch()
 		switch l {
@@ -397,6 +427,10 @@ func (fm *FM) keys(ev *tcell.EventKey) *tcell.EventKey {
 			fm.toggleFlat()
 		case 'A':
 			p.markAllOrInvert()
+		case 'T':
+			fm.toggleTree()
+		case 'K':
+			fm.prefixRename()
 		}
 		return nil
 	}
@@ -557,6 +591,10 @@ func (fm *FM) keys(ev *tcell.EventKey) *tcell.EventKey {
 // Existing marks are replaced.
 func (fm *FM) compareFolders() {
 	fm.resetQuickSearch()
+	if fm.tree != nil {
+		fm.showMessage("Compare", treeTwoPanels)
+		return
+	}
 	for _, p := range []*Panel{fm.left, fm.right} {
 		if p.inDriveList() || p.inShareList() {
 			fm.showMessage("Compare", "Both panels must show a folder (or the inside of an archive).")
@@ -654,11 +692,18 @@ func newer(a, b entry) bool {
 }
 
 func (fm *FM) gotoDrive(l byte) {
-	p := fm.active
+	if target, ok := fm.driveTarget(l); ok {
+		fm.active.chdir(target, "")
+	}
+}
+
+// driveTarget is where Shift+letter leads: the last folder used on that drive, or its
+// root; false (after a message) when the drive does not exist.
+func (fm *FM) driveTarget(l byte) (string, bool) {
 	drives := listDrives()
 	if len(drives) == 0 {
 		fm.showMessage("Drives", "Shift+<letter> switches drive on Windows only.\nType lower-case letters to search by name.")
-		return
+		return "", false
 	}
 	root := string(l) + `:\`
 	found := false
@@ -669,7 +714,7 @@ func (fm *FM) gotoDrive(l byte) {
 	}
 	if !found {
 		fm.showMessage("Drives", "Drive "+string(l)+": does not exist.")
-		return
+		return "", false
 	}
 	target := root
 	if last, ok := fm.lastDir[l]; ok {
@@ -677,11 +722,19 @@ func (fm *FM) gotoDrive(l byte) {
 			target = last
 		}
 	}
-	p.chdir(target, "")
+	return target, true
 }
 
 // syncOther shows the active panel's location in the other panel.
 func (fm *FM) syncOther() {
+	if fm.tree != nil { // tree view: show the right panel's folder in the tree
+		if r := fm.right; r.onDisk() && !r.flat {
+			fm.tree.quiet = true
+			fm.tree.reveal(r.dir)
+			fm.tree.quiet = false
+		}
+		return
+	}
 	p, o := fm.active, fm.other()
 	sel := ""
 	if e := p.current(); e != nil && p.arch == nil {
@@ -986,6 +1039,9 @@ func (fm *FM) readOnlyHere() bool {
 
 // destFolder is the default destination: the other panel's folder, if it is a real one.
 func (fm *FM) destFolder() (string, bool) {
+	if fm.tree != nil {
+		return "", false // the tree is not a destination
+	}
 	o := fm.other()
 	if !o.onDisk() {
 		return "", false
@@ -1024,7 +1080,14 @@ func (fm *FM) askOverwrite(text string, run func(overwrite bool)) {
 	})
 }
 
+// treeTwoPanels is the message of the operations that need two panels (v1.14).
+const treeTwoPanels = "This needs the two panels:\nleave the tree view with Ctrl+T first."
+
 func (fm *FM) copyOrMove(move bool) {
+	if fm.tree != nil {
+		fm.showMessage(map[bool]string{false: "Copy", true: "Move"}[move], treeTwoPanels)
+		return
+	}
 	src := fm.active
 	if src.arch != nil {
 		if move {
@@ -1489,6 +1552,10 @@ func (fm *FM) extract() {
 
 // extractSelection extracts the marked items (or the one under the cursor) of the archive being browsed.
 func (fm *FM) extractSelection() {
+	if fm.tree != nil {
+		fm.showMessage("Extract", treeTwoPanels)
+		return
+	}
 	p := fm.active
 	items := p.selection()
 	if len(items) == 0 {

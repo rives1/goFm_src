@@ -52,7 +52,11 @@ func loadState() (savedState, bool) {
 func (p *Panel) panelHome() string { return p.dir }
 
 func (fm *FM) currentState() savedState {
-	st := savedState{Version: 1, Left: fm.left.panelHome(), Right: fm.right.panelHome(),
+	left := fm.left.panelHome()
+	if fm.tree != nil { // tree view (not remembered): the left panel reopens on the tree's folder
+		left = fm.tree.selectedPath()
+	}
+	st := savedState{Version: 1, Left: left, Right: fm.right.panelHome(),
 		Active: "left", DriveDirs: map[string]string{}, BasicIcons: fm.basicIcons}
 	if curScheme != 0 {
 		st.ColorScheme = schemes[curScheme].name

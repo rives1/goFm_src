@@ -2,6 +2,12 @@
 
 All notable changes to gofm. Versions follow the order in which features were added.
 
+## 1.14 — 2026-10-30
+
+- **Tree view (Ctrl+T)**: the left panel becomes the folder tree of the current drive, opened down to the current folder; the right panel shows the folder under the tree cursor, 150 ms after the cursor stops. → and ← open and close branches, Enter or Tab go to the files on the right, Shift+letter shows another drive, Alt+H shows hidden folders. Ctrl+T again goes back to two panels, both on the highlighted folder. Copy, move and compare need two panels and are refused meanwhile; not available from the drive list, share lists, archives or the flat view.
+- **Add a prefix (Ctrl+K)**: puts a text before the names of the marked files and folders (or of the item under the cursor), with a preview of the new names. An empty text cancels; invalid characters cannot be typed; items whose new name already exists are skipped and listed. Nothing stays marked afterwards.
+- Key bar and key summary (Ctrl+F2) list Ctrl+T and Ctrl+K.
+
 ## 1.13 — 2026-10-30
 
 - **Portable**: the settings and the remembered state now live **next to `gofm.exe`** (`gofm.ini`, `state.json`) instead of `%APPDATA%\gofm`, so the program folder can be copied anywhere with its settings. If that folder is not writable (e.g. `C:\Program Files`) gofm saves nothing and says so at start. The old `%APPDATA%\gofm\state.json` is not imported.

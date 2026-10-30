@@ -34,6 +34,8 @@ var keybarItems = []keyItem{
 	{"F9", "Zip", fkey(tcell.KeyF9, 0)},
 	{"F12", "Compare", fkey(tcell.KeyF12, 0)},
 	{"Ctrl+A", "Select", fkey(tcell.KeyCtrlA, tcell.ModCtrl)},
+	{"Ctrl+T", "Tree", fkey(tcell.KeyCtrlT, tcell.ModCtrl)},
+	{"Ctrl+K", "Prefix", fkey(tcell.KeyCtrlK, tcell.ModCtrl)},
 	{"Ctrl+B", "Flat", fkey(tcell.KeyCtrlB, tcell.ModCtrl)},
 	{"Alt+F7", "Find", fkey(tcell.KeyF7, tcell.ModAlt)},
 	{"Ctrl+F7", "Filter", fkey(tcell.KeyF7, tcell.ModCtrl)},

@@ -18,7 +18,7 @@ Get **`gofm-<version>-windows.zip`** from the [latest release](https://github.co
 To check a download, compare its hash with the one on the release page (PowerShell):
 
 ```
-Get-FileHash .\gofm-1.13-windows.zip     # the zip: see the .sha256 file
+Get-FileHash .\gofm-1.14-windows.zip     # the zip: see the .sha256 file
 Get-FileHash .\gofm.exe                  # the program: see the release notes
 ```
 
@@ -84,6 +84,7 @@ uses a function key, **Alt+letter**, **Ctrl+letter**, or **Shift+letter** (drive
 | *lower-case letters* | quick search: jump to the first name starting with (or containing) what you type (case does not matter for the match); Backspace deletes a character, Esc ends it |
 | Shift+*letter* | go to that drive (Shift+D → D:), returning to the last folder you used there |
 | Ctrl+B | **flat view**: all files of this folder and its subfolders in one list; Ctrl+B again to go back |
+| Ctrl+T | **tree view**: folder tree on the left, contents of the highlighted folder on the right; Ctrl+T again to go back (see *Tree view*) |
 | Ctrl+→ (left panel) | show this location in the right panel |
 | Ctrl+← (right panel) | show this location in the left panel |
 | Space / Ins | mark/unmark; the panel's top border shows the running total of the selection, folders included recursively (Space types a space while a quick search is in progress) |
@@ -95,6 +96,7 @@ uses a function key, **Alt+letter**, **Ctrl+letter**, or **Shift+letter** (drive
 | F5 | copy to the other panel's folder, **at once** — inside an archive: **extract** the marked items there |
 | F6 | move to the other panel's folder, **at once** |
 | F7 | new folder (accepts `a\b\c`) |
+| Ctrl+K | **add a prefix** to the names of the marked files and folders, or of the item under the cursor (see *Adding a prefix*) |
 | Del | delete: to the **Recycle Bin** on local drives, **permanently** on network drives (see *Deleting*) |
 | F9 | compress to ZIP |
 | F10 / Alt+Q | quit |
@@ -143,6 +145,30 @@ Operations act on marked items; if nothing is marked, on the item under the curs
 - While you mark items, the **top border of the panel** (right side, on the path line) shows ` N selected · <size> · M files `. Marked folders are measured recursively in the background and their **size column shows the total** (`…` while measuring); ` · counting…` is shown until every folder has been measured. Unmarking a folder stops its measurement.
 - After a move or a delete the cursor goes to the **next item** (or the previous one at the end of the list).
 - **Ctrl+→ / Ctrl+←**: the arrow points at the panel that changes, so Ctrl+→ works from the left panel and Ctrl+← from the right one. The cursor lands on the same item, and an archive being browsed is opened on the other side too.
+
+## Tree view (Ctrl+T)
+
+Ctrl+T replaces the left panel with the **folder tree** of the current drive, opened down to the current folder; the right panel shows the contents of the folder under the tree cursor, and follows it as soon as the cursor rests for 150 ms (scrolling quickly does not read every folder on the way). Ctrl+T again goes back to two panels, **both on the folder highlighted in the tree**.
+
+| Key in the tree | Action |
+|---|---|
+| ↑ ↓ PgUp PgDn Home End | move |
+| → | open the branch; on an open branch, go to its first subfolder |
+| ← | close the branch; on a closed one, go to the parent folder |
+| Backspace | parent folder |
+| Enter / Tab | go to the right panel (Tab there comes back to the tree) |
+| Shift+*letter* | show the tree of that drive |
+| Alt+H | show/hide hidden folders |
+| Alt+R | re-read the tree |
+
+- Work on the files in the **right panel** as usual: rename, delete, edit, view, Ctrl+K, open subfolders (the tree follows). **Copy, move and compare (F5, F6, F12) need two panels** and are refused while the tree is shown.
+- Branches show Nerd Font chevrons (closed › / open ⌄), or `+`/`-` with the basic symbols (Alt+I). A branch that turns out to have no subfolders loses its marker.
+- Folders created or deleted in the right panel appear in the tree when that panel is re-read.
+- Ctrl+T is not available from the drive list, a share list, an archive or the flat view. The tree view is not remembered at exit (the left panel reopens on the folder of the tree).
+
+## Adding a prefix (Ctrl+K)
+
+Ctrl+K asks for a text and puts it **before the names** of the marked files and folders (or of the item under the cursor when nothing is marked), e.g. `2026_` turns `report.pdf` into `2026_report.pdf`. The dialog shows a **preview** of the first new names. An empty text cancels; characters that names cannot contain (`\ / : * ? " < > |`) cannot be typed. An item whose new name **already exists** is not renamed: the others are, and a message lists the skipped ones. Afterwards nothing is marked. In the flat view each item stays in its own subfolder.
 
 ## Flat view (Ctrl+B)
 
@@ -240,6 +266,7 @@ Both panels refresh by themselves when files are added, removed or changed, usin
 
 ## Known limits
 
+- Ctrl+K: Windows Terminal and the classic console send it as a key of its own; a few other terminals may use it themselves.
 - Password-protected ZIP/7z archives are not supported (a clear error is shown).
 - No creation of 7z archives; no RAR or other formats.
 - Content search is a plain text match: it does not find text in UTF-16 files, inside .docx/.pdf (they are compressed), or accented letters in a different case.

@@ -249,6 +249,7 @@ func (p *Panel) load(selectName string) error {
 		}
 	}
 	p.marked = keep
+	p.followTree(p.sizesLoc != p.locKey())
 	if p.sizesLoc != p.locKey() { // new location: forget folder totals
 		p.resetSizes()
 		p.sizesLoc = p.locKey()
@@ -276,6 +277,23 @@ func (p *Panel) load(selectName string) error {
 	p.table.ScrollToBeginning()
 	p.table.Select(row, 0)
 	return nil
+}
+
+// followTree keeps the tree view (Ctrl+T) in step with the right panel: a new folder
+// there is shown in the tree; a re-read of the same folder re-reads its branch, so
+// folders created or deleted in the right panel appear in the tree.
+func (p *Panel) followTree(moved bool) {
+	if p.fm == nil || p.fm.tree == nil || p != p.fm.right || !p.onDisk() || p.flat {
+		return
+	}
+	t := p.fm.tree
+	if moved {
+		t.quiet = true
+		t.reveal(p.dir)
+		t.quiet = false
+	} else {
+		t.refreshPath(p.dir)
+	}
 }
 
 // sortEntries sorts a listing: folders first, then by the panel's sort type and
@@ -588,6 +606,18 @@ func (p *Panel) closeArchive() {
 
 // chdir moves to a disk location ("" = drives, \\server = shares); on error it stays where it was.
 func (p *Panel) chdir(dir, selectName string) {
+	if err := p.tryChdir(dir, selectName); err != nil {
+		what := "folder"
+		if isUNCServer(dir) {
+			what = "share list"
+		}
+		p.fm.showMessage("Error", "Cannot open "+what+":\n"+err.Error())
+	}
+}
+
+// tryChdir is chdir that returns the error instead of showing it (the tree view
+// reports it in the status bar).
+func (p *Panel) tryChdir(dir, selectName string) (err error) {
 	if onWindows {
 		dir = normalizeUNC(dir)
 	}
@@ -596,15 +626,10 @@ func (p *Panel) chdir(dir, selectName string) {
 	p.exitFlat() // any move to another location ends the flat view
 	p.dir, p.filter, p.arch = dir, "", nil
 	p.marked = map[string]bool{}
-	if err := p.load(selectName); err != nil {
+	if err = p.load(selectName); err != nil {
 		p.dir, p.filter, p.arch, p.marked = old, oldFilter, oldArch, oldMarked
 		p.flat, p.flatEntries, p.flatTrunc = oldFlat, oldFlatEntries, oldTrunc
 		_ = p.load("")
-		what := "folder"
-		if isUNCServer(dir) {
-			what = "share list"
-		}
-		p.fm.showMessage("Error", "Cannot open "+what+":\n"+err.Error())
 	} else if oldArch != nil {
 		oldArch.closer.Close()
 	}
@@ -612,6 +637,7 @@ func (p *Panel) chdir(dir, selectName string) {
 		p.fm.lastDir[l] = p.dir
 	}
 	p.fm.updateStatus()
+	return err
 }
 
 // parentLoc returns where Left/Backspace leads and which name to select there.

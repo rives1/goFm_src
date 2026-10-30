@@ -103,7 +103,13 @@ func (b *statusBar) Draw(screen tcell.Screen) {
 		}
 		col += uniseg.StringWidth(prefix) + 1
 	}
-	name, right := layoutStatus(w, col-x, fm.statusFieldsFor(fm.active))
+	f := statusFields{}
+	if fm.tree != nil && fm.active == fm.left {
+		f.name = fm.tree.selectedPath() // the folder under the tree cursor
+	} else {
+		f = fm.statusFieldsFor(fm.active)
+	}
+	name, right := layoutStatus(w, col-x, f)
 	tview.Print(screen, tview.Escape(name), col, y, w, tview.AlignLeft, colText)
 	rw := uniseg.StringWidth(right)
 	tview.Print(screen, tview.Escape(right), x+w-rw-1, y, rw, tview.AlignLeft, colDim)
