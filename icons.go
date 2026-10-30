@@ -30,25 +30,31 @@ const (
 	kindSystem
 	kindFolder
 	kindUp
-	kindDrive
+	kindDrive // local drive
 	kindShare
+	kindDriveNet // network (mapped) drive
+	kindDriveUSB // removable drive: USB stick or disk, memory card
+	kindDriveCD  // CD/DVD drive
 	numKinds
 )
 
 // Nerd Font codepoints (Font Awesome range, unchanged since Nerd Fonts v2).
 var nerdIcons = [numKinds]rune{
-	kindFile:     '', // nf-fa-file_o
-	kindArchive:  '', // nf-fa-file_archive_o
-	kindProgram:  '', // nf-fa-terminal
-	kindImage:    '', // nf-fa-file_image_o
-	kindDocument: '', // nf-fa-file_text_o
-	kindMedia:    '', // nf-fa-play_circle
-	kindCode:     '', // nf-fa-file_code_o
-	kindSystem:   '', // nf-fa-cog
-	kindFolder:   '', // nf-fa-folder
-	kindUp:       '', // nf-fa-arrow_up
-	kindDrive:    '', // nf-fa-hdd_o
-	kindShare:    '', // nf-fa-server
+	kindFile:     '\uF016', // nf-fa-file_o
+	kindArchive:  '\uF1C6', // nf-fa-file_archive_o
+	kindProgram:  '\uF120', // nf-fa-terminal
+	kindImage:    '\uF1C5', // nf-fa-file_image_o
+	kindDocument: '\uF0F6', // nf-fa-file_text_o
+	kindMedia:    '\uF144', // nf-fa-play_circle
+	kindCode:     '\uF1C9', // nf-fa-file_code_o
+	kindSystem:   '\uF013', // nf-fa-cog
+	kindFolder:   '\uF07B', // nf-fa-folder
+	kindUp:       '\uF062', // nf-fa-arrow_up
+	kindDrive:    '\uF0A0', // nf-fa-hdd_o
+	kindShare:    '\uF233', // nf-fa-server
+	kindDriveNet: '\uF0E8', // nf-fa-sitemap
+	kindDriveUSB: '\uF287', // nf-fa-usb
+	kindDriveCD:  '\uF192', // nf-fa-dot_circle_o
 }
 
 // Basic symbols, all in code page 437.
@@ -65,6 +71,9 @@ var basicIcons = [numKinds]rune{
 	kindUp:       '↑',
 	kindDrive:    '■',
 	kindShare:    '≡',
+	kindDriveNet: '≈',
+	kindDriveUSB: '▬',
+	kindDriveCD:  '○',
 }
 
 // entryKind classifies a row.
@@ -73,6 +82,14 @@ func entryKind(e entry) iconKind {
 	case e.isUp:
 		return kindUp
 	case e.isDrive:
+		switch e.drive {
+		case driveNetwork:
+			return kindDriveNet
+		case driveRemovable:
+			return kindDriveUSB
+		case driveOptical:
+			return kindDriveCD
+		}
 		return kindDrive
 	case e.isShare:
 		return kindShare
@@ -99,7 +116,7 @@ func iconColor(e entry) tcell.Color {
 	case e.hidden:
 		return colDim
 	case e.isDir:
-		return rgb(0xFFFFFF)
+		return colFolder
 	}
 	if i := family(e.name); i >= 0 {
 		return fileTypes[i].color

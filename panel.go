@@ -21,10 +21,11 @@ type entry struct {
 	name      string
 	isDir     bool
 	isLink    bool
-	isUp      bool // the ".." row
-	isDrive   bool // a drive (C:\, D:\ ...)
-	isShare   bool // a network share in a \\server listing
-	inArchive bool // an item inside a .zip/.7z being browsed
+	isUp      bool      // the ".." row
+	isDrive   bool      // a drive (C:\, D:\ ...)
+	drive     driveType // kind of drive, for isDrive rows
+	isShare   bool      // a network share in a \\server listing
+	inArchive bool      // an item inside a .zip/.7z being browsed
 	hidden    bool
 	size      int64
 	mod       time.Time
@@ -39,6 +40,19 @@ const (
 )
 
 var sortLabels = []string{"name", "size", "date"}
+
+// defaultAsc is the direction a sort starts with when chosen with Alt+O: names A→Z,
+// sizes and dates largest/newest first. Alt+D reverses it (v1.12).
+func defaultAsc(mode int) bool { return mode == sortName }
+
+// sortArrow is shown next to the sort type in the panel title: ↑ ascending (A→Z,
+// small→large, old→new), ↓ descending.
+func sortArrow(asc bool) string {
+	if asc {
+		return "↑"
+	}
+	return "↓"
+}
 
 // Columns of a row: mark ("*"), icon, name, size, date. tview separates columns
 // with one space, so the mark and the icon take 4 cells and the name column gets
@@ -73,6 +87,7 @@ type Panel struct {
 	filter     string
 	showHidden bool
 	sortMode   int
+	sortAsc    bool                // direction of sortMode (Alt+D)
 	width      int                 // inner width at the last render
 	sizes      map[string]*dirSize // recursive totals of marked folders, by full path
 	sizesLoc   string              // location the sizes belong to
@@ -136,7 +151,7 @@ func (p *Panel) selectionLabel() string {
 }
 
 func newPanel(fm *FM, dir string) *Panel {
-	p := &Panel{fm: fm, dir: dir, marked: map[string]bool{}, sizes: map[string]*dirSize{}}
+	p := &Panel{fm: fm, dir: dir, marked: map[string]bool{}, sizes: map[string]*dirSize{}, sortAsc: true}
 	t := tview.NewTable().SetSelectable(true, false)
 	t.SetBorder(true).SetTitleAlign(tview.AlignLeft)
 	t.SetSelectedFunc(func(row, col int) { p.enter() })
@@ -172,7 +187,7 @@ func (p *Panel) load(selectName string) error {
 		list = append([]entry(nil), p.flatEntries...)
 	case p.dir == "":
 		for _, d := range listDrives() {
-			list = append(list, entry{name: d, isDir: true, isDrive: true})
+			list = append(list, entry{name: d, isDir: true, isDrive: true, drive: driveKind(d)})
 		}
 	case p.inShareList():
 		shares, err := listShares(p.dir)
@@ -263,24 +278,37 @@ func (p *Panel) load(selectName string) error {
 	return nil
 }
 
+// sortEntries sorts a listing: folders first, then by the panel's sort type and
+// direction; equal keys fall back to the name, always A→Z.
 func (p *Panel) sortEntries(list []entry) {
 	sort.SliceStable(list, func(i, j int) bool {
-		a, b := list[i], list[j]
-		if a.isDir != b.isDir {
-			return a.isDir // folders first
-		}
-		switch p.sortMode {
-		case sortSize:
-			if a.size != b.size {
-				return a.size > b.size
-			}
-		case sortDate:
-			if !a.mod.Equal(b.mod) {
-				return a.mod.After(b.mod)
-			}
-		}
-		return strings.ToLower(a.name) < strings.ToLower(b.name)
+		return entryLess(list[i], list[j], p.sortMode, p.sortAsc)
 	})
+}
+
+func entryLess(a, b entry, mode int, asc bool) bool {
+	if a.isUp != b.isUp {
+		return a.isUp
+	}
+	if a.isDir != b.isDir {
+		return a.isDir // folders first
+	}
+	byName := func() bool { return strings.ToLower(a.name) < strings.ToLower(b.name) }
+	switch mode {
+	case sortSize:
+		if a.size != b.size {
+			return (a.size < b.size) == asc
+		}
+	case sortDate:
+		if !a.mod.Equal(b.mod) {
+			return a.mod.Before(b.mod) == asc
+		}
+	default:
+		if strings.ToLower(a.name) != strings.ToLower(b.name) {
+			return byName() == asc
+		}
+	}
+	return byName()
 }
 
 // styleCursorIcon gives the icon on the cursor row its colours. The table paints
@@ -326,7 +354,7 @@ func (p *Panel) render() {
 		case e.isUp:
 			size = "UP"
 		case e.isDrive:
-			size = "DRIVE"
+			size = e.drive.label()
 		case e.isShare:
 			size = "SHARE"
 		case e.isDir:
@@ -420,9 +448,7 @@ func (p *Panel) updateTitle() {
 	if p.filter != "" {
 		extra = append(extra, "filter: "+p.filter)
 	}
-	if p.sortMode != sortName {
-		extra = append(extra, "sort: "+sortLabels[p.sortMode])
-	}
+	extra = append(extra, "sort: "+sortLabels[p.sortMode]+" "+sortArrow(p.sortAsc))
 	if p.showHidden {
 		extra = append(extra, "hidden shown")
 	}
@@ -760,18 +786,17 @@ func nextSurvivor(old []entry, row int, now []entry) int {
 	return 0
 }
 
-// markAllOrNone is the "*" key: with nothing marked it marks every file and folder,
-// otherwise it clears all marks.
-func (p *Panel) markAllOrNone() {
+// markAllOrInvert is Ctrl+A (v1.12): with nothing marked it marks every file and
+// folder; otherwise it inverts the marks.
+func (p *Panel) markAllOrInvert() {
 	if len(p.marked) > 0 {
-		p.marked = map[string]bool{}
-		p.resetSizes()
-	} else {
-		for _, e := range p.entries {
-			if !e.isUp && !e.isDrive && !e.isShare {
-				p.marked[e.name] = true
-				p.ensureSize(e)
-			}
+		p.invertMarks()
+		return
+	}
+	for _, e := range p.entries {
+		if !e.isUp && !e.isDrive && !e.isShare {
+			p.marked[e.name] = true
+			p.ensureSize(e)
 		}
 	}
 	p.render()

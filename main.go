@@ -15,7 +15,7 @@ import (
 	"github.com/rivo/tview"
 )
 
-const version = "1.11"
+const version = "1.12"
 
 type FM struct {
 	app     *tview.Application
@@ -33,6 +33,9 @@ type FM struct {
 	notice string // one-shot message in the status bar, cleared by the next key
 
 	basicIcons bool // Alt+I: basic symbols instead of Nerd Font icons
+
+	root, panelsBox *tview.Flex // kept to recolour them (Ctrl+F9)
+	keybar          *keyBar
 
 	saved     savedState // last state written to disk
 	restoring bool       // true while the panels are being set up: no state writes yet
@@ -87,7 +90,7 @@ func absOr(p, fallback string) string {
 }
 
 func newFM(leftDir, rightDir string, st savedState) *FM {
-	applyTheme() // before any primitive is created
+	applyScheme(schemeIndex(st.ColorScheme)) // before any primitive is created
 	fm := &FM{app: tview.NewApplication(), pages: tview.NewPages(),
 		focus: map[string]tview.Primitive{}, lastDir: map[byte]string{}, restoring: true,
 		basicIcons: st.BasicIcons}
@@ -110,18 +113,17 @@ func newFM(leftDir, rightDir string, st savedState) *FM {
 	}
 
 	fm.status = newStatusBar(fm)
-	keybar := tview.NewTextView().SetDynamicColors(true).SetText(keybarText())
-	keybar.SetBackgroundColor(colBarBg)
+	fm.keybar = newKeyBar(fm)
 
-	panels := tview.NewFlex().
+	fm.panelsBox = tview.NewFlex().
 		AddItem(fm.left.table, 0, 1, true).
 		AddItem(fm.right.table, 0, 1, false)
-	root := tview.NewFlex().SetDirection(tview.FlexRow).
-		AddItem(panels, 0, 1, true).
+	fm.root = tview.NewFlex().SetDirection(tview.FlexRow).
+		AddItem(fm.panelsBox, 0, 1, true).
 		AddItem(fm.status, 1, 0, false).
-		AddItem(keybar, 1, 0, false)
+		AddItem(fm.keybar, 1, 0, false)
 
-	fm.pages.AddPage("main", root, true, true)
+	fm.pages.AddPage("main", fm.root, true, true)
 	fm.app.SetRoot(fm.pages, true).EnableMouse(true)
 	fm.app.SetInputCapture(fm.keys)
 	fm.app.SetBeforeDrawFunc(func(screen tcell.Screen) bool {
@@ -156,13 +158,35 @@ func (fm *FM) toggleIcons() {
 	fm.updateStatus()
 }
 
-func keybarText() string {
-	keys := keybarKeys
-	var b strings.Builder
-	for _, k := range keys {
-		fmt.Fprintf(&b, "[#06122E:#2AB3C8]%s[-:-]%s ", k[0], k[1])
+// cycleScheme (Ctrl+F9) switches to the next colour scheme and remembers it.
+func (fm *FM) cycleScheme() {
+	applyScheme((curScheme + 1) % len(schemes))
+	fm.recolor()
+	fm.notice = "Colours: " + schemes[curScheme].name + " — Ctrl+F9 for the next scheme"
+	fm.saveState()
+	fm.updateStatus()
+}
+
+// recolor applies the current scheme to the primitives that already exist; dialogs
+// opened later take it from tview's defaults.
+func (fm *FM) recolor() {
+	for _, b := range []interface{ SetBackgroundColor(tcell.Color) *tview.Box }{fm.pages, fm.root, fm.panelsBox} {
+		if b != nil {
+			b.SetBackgroundColor(colBackground)
+		}
 	}
-	return b.String()
+	if fm.status != nil {
+		fm.status.SetBackgroundColor(colBarBg)
+	}
+	if fm.keybar != nil {
+		fm.keybar.SetBackgroundColor(colBarBg)
+	}
+	for _, p := range []*Panel{fm.left, fm.right} {
+		p.table.SetBackgroundColor(colBackground)
+		p.table.SetTitleColor(colTitle)
+		p.render()
+	}
+	fm.setActive(fm.active, false)
 }
 
 func (fm *FM) other() *Panel {
@@ -184,7 +208,7 @@ func (fm *FM) setActive(p *Panel, focus bool) {
 			q.table.SetSelectedStyle(tcell.StyleDefault.Background(colCursorBg).Foreground(colCursorFg))
 		} else {
 			q.table.SetBorderColor(colPanelBorder)
-			q.table.SetSelectedStyle(tcell.StyleDefault.Background(colCursorOffBg).Foreground(rgb(0xFFFFFF)))
+			q.table.SetSelectedStyle(tcell.StyleDefault.Background(colCursorOffBg).Foreground(colCursorOffFg))
 		}
 	}
 	if focus {
@@ -294,11 +318,32 @@ func (fm *FM) keys(ev *tcell.EventKey) *tcell.EventKey {
 		return nil
 	}
 
-	// Ctrl+B: flat view. Other Ctrl+letters are not used (drives moved to Shift+letter).
+	// Ctrl+B: flat view; Ctrl+A: mark all, or invert the marks. Other Ctrl+letters are
+	// not used (drives moved to Shift+letter).
 	if l, ok := ctrlLetter(ev); ok {
 		fm.resetQuickSearch()
-		if l == 'B' {
+		switch l {
+		case 'B':
 			fm.toggleFlat()
+		case 'A':
+			p.markAllOrInvert()
+		}
+		return nil
+	}
+	// Function keys with Ctrl or Alt (v1.12). Any other combination does nothing, so
+	// that e.g. Ctrl+F7 never falls through to F7.
+	if ev.Key() >= tcell.KeyF1 && ev.Key() <= tcell.KeyF64 && ev.Modifiers()&(tcell.ModCtrl|tcell.ModAlt) != 0 {
+		fm.resetQuickSearch()
+		ctrl, alt := ev.Modifiers()&tcell.ModCtrl != 0, ev.Modifiers()&tcell.ModAlt != 0
+		switch {
+		case alt && !ctrl && ev.Key() == tcell.KeyF7:
+			fm.searchDialog()
+		case ctrl && !alt && ev.Key() == tcell.KeyF7:
+			fm.filterDialog()
+		case ctrl && !alt && ev.Key() == tcell.KeyF2:
+			fm.showKeys()
+		case ctrl && !alt && ev.Key() == tcell.KeyF9:
+			fm.cycleScheme()
 		}
 		return nil
 	}
@@ -306,10 +351,6 @@ func (fm *FM) keys(ev *tcell.EventKey) *tcell.EventKey {
 	if r, ok := altLetter(ev); ok {
 		fm.resetQuickSearch()
 		switch r {
-		case 's':
-			fm.searchDialog()
-		case 'f':
-			fm.filterDialog()
 		case 'u':
 			fm.extract()
 		case 'l':
@@ -331,12 +372,14 @@ func (fm *FM) keys(ev *tcell.EventKey) *tcell.EventKey {
 			fm.refreshAll()
 		case 'o':
 			p.sortMode = (p.sortMode + 1) % len(sortLabels)
+			p.sortAsc = defaultAsc(p.sortMode)
+			p.reload()
+		case 'd':
+			p.sortAsc = !p.sortAsc
 			p.reload()
 		case 'h':
 			p.showHidden = !p.showHidden
 			p.reload()
-		case 'a':
-			p.invertMarks()
 		case 'e':
 			fm.syncOther()
 		case 'i':
@@ -355,11 +398,6 @@ func (fm *FM) keys(ev *tcell.EventKey) *tcell.EventKey {
 			p.toggleMark()
 			return nil
 		}
-		if r == '*' { // '*' cannot appear in Windows file names: select all / none
-			fm.resetQuickSearch()
-			p.markAllOrNone()
-			return nil
-		}
 		// Shift+letter switches drive. The terminal delivers it as the upper-case letter
 		// (it cannot be told apart from Caps Lock), so quick search uses lower case.
 		if l, ok := driveKey(r); ok {
@@ -370,12 +408,6 @@ func (fm *FM) keys(ev *tcell.EventKey) *tcell.EventKey {
 		if unicode.IsPrint(r) {
 			fm.quickSearch(r)
 		}
-		return nil
-	}
-
-	if ev.Key() == tcell.KeyF1 && ev.Modifiers()&tcell.ModAlt != 0 {
-		fm.resetQuickSearch()
-		fm.showKeys()
 		return nil
 	}
 
@@ -430,8 +462,10 @@ func (fm *FM) keys(ev *tcell.EventKey) *tcell.EventKey {
 		fm.copyOrMove(true)
 	case tcell.KeyF7:
 		fm.mkdir()
-	case tcell.KeyF8, tcell.KeyDelete:
+	case tcell.KeyDelete:
 		fm.trash()
+	case tcell.KeyF4:
+		fm.editFile()
 	case tcell.KeyF9:
 		fm.zip()
 	case tcell.KeyF10:
@@ -891,6 +925,18 @@ func (fm *FM) resolveDest(dest, base string) string {
 	return dest
 }
 
+// askSync asks a question from a background task and waits for the answer (the
+// dialog runs on the interface goroutine). An empty answer means Esc.
+func (fm *FM) askSync(text string, buttons []string) string {
+	answer := make(chan string, 1)
+	fm.app.QueueUpdateDraw(func() {
+		fm.confirm(text, buttons, func(choice string) { answer <- choice })
+	})
+	return <-answer
+}
+
+// askOverwrite is the single question of extractions: overwrite or skip every
+// existing file.
 func (fm *FM) askOverwrite(text string, run func(overwrite bool)) {
 	fm.confirm(text, []string{"Overwrite", "Skip existing", "Cancel"}, func(choice string) {
 		switch choice {
@@ -950,7 +996,6 @@ func (fm *FM) copyOrMove(move bool) {
 				strings.Join(dups[:min(len(dups), 8)], "\n")))
 			return
 		}
-		conflicts := 0
 		for _, pr := range pairs {
 			if samePath(pr.from, pr.to) {
 				fm.showMessage("Error", "Source and destination are the same:\n"+pr.from)
@@ -966,41 +1011,41 @@ func (fm *FM) copyOrMove(move bool) {
 					fm.showMessage("Error", "An item of a different type with the same name already exists:\n"+pr.to)
 					return
 				}
-				conflicts++
 			}
 		}
-		run := func(overwrite bool) {
-			fm.runTask(verb+" "+describe(items), func(o *opCtx) {
-				o.setPhase("Counting files…")
-				var total int64
-				for i := range pairs {
-					pairs[i].size = o.treeSize(pairs[i].from)
-					total += pairs[i].size
-				}
-				o.total.Store(total)
-				o.setPhase("")
-				var todo []copyPair
-				for _, pr := range pairs {
-					if overwrite || !exists(pr.to) {
-						todo = append(todo, pr)
-					} else {
-						o.bytes.Add(pr.size) // skipped, but it counts toward the progress
-					}
-				}
-				// One shared engine for all the items: small files are copied in parallel
-				// across the whole selection, big files one at a time.
-				if move {
-					o.moveAll(todo)
-				} else {
-					o.copyAll(todo)
-				}
-			}, func(*opCtx) { src.marked = map[string]bool{}; src.reload() })
-		}
-		if conflicts == 0 {
-			run(false)
-			return
-		}
-		fm.askOverwrite(fmt.Sprintf("%d items already exist at the destination.\nFolders with the same name will be merged.", conflicts), run)
+		fm.runTask(verb+" "+describe(items), func(o *opCtx) {
+			o.setPhase("Counting files…")
+			var total int64
+			for i := range pairs {
+				pairs[i].size = o.treeSize(pairs[i].from)
+				total += pairs[i].size
+			}
+			o.total.Store(total)
+			// Files that already exist at the destination, also inside folders that
+			// will be merged: one question each (v1.12), until an "all" answer.
+			o.setPhase("Checking the destination…")
+			conflicts := o.findConflicts(pairs)
+			if o.cancelled() {
+				return
+			}
+			skip, ok := resolveConflicts(conflicts, func(i int) string {
+				return fm.askSync(conflictText(conflicts[i], i, len(conflicts), dest), conflictButtons)
+			})
+			if !ok {
+				o.cancel.Store(true)
+				return
+			}
+			o.skip = skip
+			o.setPhase("")
+			// One shared engine for all the items: small files are copied in parallel
+			// across the whole selection, big files one at a time. Skipped files stay
+			// where they are; the others go on.
+			if move {
+				o.moveAll(pairs)
+			} else {
+				o.copyAll(pairs)
+			}
+		}, func(*opCtx) { src.marked = map[string]bool{}; src.reload() })
 	}(dest)
 }
 
@@ -1066,6 +1111,10 @@ func (fm *FM) mkdir() {
 	})
 }
 
+// trash is the Del key. On local drives the items go to the Recycle Bin; on network
+// drives (UNC paths and mapped drives) they are deleted permanently, after an explicit
+// warning (v1.12): Windows would delete them permanently anyway, since network
+// folders have no Recycle Bin. F8 no longer deletes (v1.12).
 func (fm *FM) trash() {
 	if fm.readOnlyHere() {
 		return
@@ -1075,7 +1124,14 @@ func (fm *FM) trash() {
 	if len(items) == 0 {
 		return
 	}
+	network := isNetworkLocation(p.dir)
 	run := func() {
+		if network {
+			fm.runTask("Deleting "+describe(items)+" permanently", func(o *opCtx) {
+				o.deleteAll(items)
+			}, func(*opCtx) { p.marked = map[string]bool{}; p.reload() })
+			return
+		}
 		fm.runTask("Moving "+describe(items)+" to the Recycle Bin", func(o *opCtx) {
 			o.setPhase("Waiting for Windows…")
 			if err := moveToTrash(items); err != nil {
@@ -1083,8 +1139,14 @@ func (fm *FM) trash() {
 			}
 		}, func(*opCtx) { p.marked = map[string]bool{}; p.reload() })
 	}
-	fm.confirm("Move "+describe(items)+" to the Recycle Bin?", []string{"Yes", "No"}, func(choice string) {
-		if choice != "Yes" {
+	text, buttons, yes := "Move "+describe(items)+" to the Recycle Bin?", []string{"Yes", "No"}, "Yes"
+	deepYes := "Move to Recycle Bin"
+	if network {
+		text = "Delete " + describe(items) + " PERMANENTLY?\n\nThis is a network drive: the Recycle Bin is not used,\nthe deleted items cannot be restored."
+		buttons, yes, deepYes = []string{"Cancel", "Delete"}, "Delete", "Delete permanently"
+	}
+	fm.confirm(text, buttons, func(choice string) {
+		if choice != yes {
 			return
 		}
 		// Folders with subfolders need a second confirmation. Reading a folder on a
@@ -1096,8 +1158,8 @@ func (fm *FM) trash() {
 					run()
 					return
 				}
-				fm.confirm(subfolderWarning(deep), []string{"Cancel", "Move to Recycle Bin"}, func(choice string) {
-					if choice == "Move to Recycle Bin" {
+				fm.confirm(subfolderWarning(deep, network), []string{"Cancel", deepYes}, func(choice string) {
+					if choice == deepYes {
 						run()
 					}
 				})
@@ -1144,7 +1206,7 @@ func hasSubfolder(dir string) bool {
 const maxWarnNames = 8
 
 // subfolderWarning is the text of the second confirmation of F8.
-func subfolderWarning(deep []string) string {
+func subfolderWarning(deep []string, permanent bool) string {
 	var b strings.Builder
 	if len(deep) == 1 {
 		b.WriteString("WARNING: this folder contains subfolders:\n\n")
@@ -1158,7 +1220,11 @@ func subfolderWarning(deep []string) string {
 		}
 		b.WriteString(filepath.Base(d) + "\n")
 	}
-	b.WriteString("\nThey will go to the Recycle Bin with everything inside them.")
+	if permanent {
+		b.WriteString("\nThey will be deleted PERMANENTLY with everything inside them.")
+	} else {
+		b.WriteString("\nThey will go to the Recycle Bin with everything inside them.")
+	}
 	return b.String()
 }
 
@@ -1321,7 +1387,7 @@ func (fm *FM) gotoDialog() {
 func (fm *FM) searchDialog() {
 	p := fm.active
 	if !p.onDisk() {
-		fm.showMessage("Find", "Search works in folders on disk.\nUse Alt+F to filter the current list.")
+		fm.showMessage("Find", "Search works in folders on disk.\nUse Ctrl+F7 to filter the current list.")
 		return
 	}
 	var name string

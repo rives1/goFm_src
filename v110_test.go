@@ -89,7 +89,7 @@ func TestFoldersWithSubfolders(t *testing.T) {
 			t.Error("a link to a folder is not a folder to warn about")
 		}
 	}
-	w := subfolderWarning([]string{deep})
+	w := subfolderWarning([]string{deep}, false)
 	if !strings.HasPrefix(w, "WARNING: this folder contains subfolders:") || !strings.Contains(w, "\ndeep\n") {
 		t.Errorf("single: %q", w)
 	}
@@ -97,45 +97,33 @@ func TestFoldersWithSubfolders(t *testing.T) {
 	for i := 0; i < 11; i++ {
 		many = append(many, filepath.Join(d, "f"+string(rune('a'+i))))
 	}
-	w = subfolderWarning(many)
+	w = subfolderWarning(many, false)
 	if !strings.HasPrefix(w, "WARNING: 11 folders contain subfolders:") || !strings.Contains(w, "… and 3 more") || strings.Contains(w, "\nfi\n") {
 		t.Errorf("many: %q", w)
 	}
 }
 
-// The summary lists no key of the key bar, and every key bar key is a real shortcut.
-func TestHelpExcludesKeybar(t *testing.T) {
-	bar := map[string]bool{}
-	for _, k := range keybarKeys {
-		bar[k[0]] = true
-	}
-	n := 0
-	for _, s := range helpSections {
-		for _, k := range s.keys {
-			n++
-			for _, part := range strings.Split(k[0], " / ") {
-				if bar[part] {
-					t.Errorf("%q is in the key bar", part)
-				}
-			}
-		}
-	}
-	if n < 20 {
-		t.Errorf("only %d entries", n)
-	}
+// v1.12: the summary lists every shortcut, those of the key bar included.
+func TestHelpListsAllKeys(t *testing.T) {
 	text := helpText()
-	for _, k := range keybarKeys {
-		if strings.Contains(text, "]"+k[0]+"[") {
-			t.Errorf("%s appears in the summary", k[0])
+	for _, it := range keybarItems {
+		k := it.key
+		if k == "Shift+X" {
+			k = "Shift+letter"
+		}
+		if !strings.Contains(text, "]"+k+"[") && !strings.Contains(text, "]"+k+" /") {
+			t.Errorf("%s missing from the summary", k)
 		}
 	}
-	for _, want := range []string{"Alt+F1", "Alt+L", "Alt+E", "Alt+O", "Alt+H", "Alt+A", "Alt+R", "Alt+Q", "Del", "Ctrl+→", "Ctrl+←"} {
+	for _, want := range []string{"F2", "F3", "F5", "F7", "F10 / Alt+Q", "Ctrl+→", "Ctrl+←", "Alt+L", "Alt+E", "Alt+R", "Ctrl+F2", "Ctrl+F9", "Alt+D"} {
 		if !strings.Contains(text, "]"+want+"[") {
 			t.Errorf("%s missing from the summary", want)
 		}
 	}
-	if !strings.Contains(keybarText(), "Alt+I") {
-		t.Error("key bar")
+	for _, gone := range []string{"Alt+F1", "Alt+S", "Alt+F[", "]*[", "Alt+A", "F8"} {
+		if strings.Contains(text, gone) {
+			t.Errorf("%q is no longer a shortcut", gone)
+		}
 	}
 }
 

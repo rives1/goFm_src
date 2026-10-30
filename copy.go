@@ -38,17 +38,19 @@ type dirTime struct {
 }
 
 type copier struct {
-	o      *opCtx
-	jobs   chan copyJob
-	wg     sync.WaitGroup
-	big    chan struct{} // one token: only one big file at a time
-	mu     sync.Mutex
-	failed map[int]bool // top-level items with at least one error
-	dirs   []dirTime    // folder dates, applied after their content is written
+	o       *opCtx
+	jobs    chan copyJob
+	wg      sync.WaitGroup
+	big     chan struct{} // one token: only one big file at a time
+	mu      sync.Mutex
+	failed  map[int]bool // top-level items with at least one error
+	skipped map[int]bool // top-level items with files skipped on a conflict
+	dirs    []dirTime    // folder dates, applied after their content is written
 }
 
 func newCopier(o *opCtx) *copier {
-	c := &copier{o: o, jobs: make(chan copyJob, 64), big: make(chan struct{}, 1), failed: map[int]bool{}}
+	c := &copier{o: o, jobs: make(chan copyJob, 64), big: make(chan struct{}, 1),
+		failed: map[int]bool{}, skipped: map[int]bool{}}
 	for i := 0; i < copyWorkers; i++ {
 		c.wg.Add(1)
 		go c.worker()
@@ -98,6 +100,13 @@ func (c *copier) add(root int, src, dst string) {
 		c.fail(root, src, err)
 		return
 	}
+	if o.skip[src] && !fi.IsDir() { // a conflict answered "Skip": the existing file stays
+		o.bytes.Add(fi.Size()) // it counts toward the progress
+		c.mu.Lock()
+		c.skipped[root] = true
+		c.mu.Unlock()
+		return
+	}
 	mode := fi.Mode()
 	switch {
 	case mode&fs.ModeSymlink != 0:
@@ -143,6 +152,7 @@ func (c *copier) add(root int, src, dst string) {
 }
 
 // finish waits for the workers and returns the top-level items that had errors.
+// (Called from one goroutine; c.skipped is complete once add has returned.)
 func (c *copier) finish() map[int]bool {
 	close(c.jobs)
 	c.wg.Wait()
@@ -181,6 +191,10 @@ func (o *opCtx) moveAll(pairs []copyPair) {
 			o.fail(p.from, err)
 			continue
 		}
+		if o.skip[p.from] && !si.IsDir() { // a conflict answered "Skip": nothing to move
+			o.bytes.Add(p.size)
+			continue
+		}
 		di, derr := os.Lstat(p.to)
 		merge := derr == nil && di.IsDir() && si.IsDir()
 		if !merge {
@@ -199,6 +213,12 @@ func (o *opCtx) moveAll(pairs []copyPair) {
 		src := pairs[i].from
 		if o.cancelled() || failed[i] {
 			o.fail(src, errors.New("source NOT deleted because the copy is incomplete"))
+			continue
+		}
+		if c.skipped[i] { // keep the skipped files where they are, delete the rest
+			if err := removeExcept(src, o.skip); err != nil {
+				o.fail(src, fmt.Errorf("copied, but could not delete the source: %w", err))
+			}
 			continue
 		}
 		if err := os.RemoveAll(src); err != nil {
@@ -232,4 +252,137 @@ func copyFileGo(o *opCtx, src, dst string, fi fs.FileInfo) error {
 	}
 	_ = os.Chtimes(dst, fi.ModTime(), fi.ModTime())
 	return nil
+}
+
+// removeExcept deletes the tree at root except the files in keep (and the folders
+// that still contain them): what is left of a moved folder after some files were
+// skipped. Children are removed before their parents; a folder that is not empty
+// stays.
+func removeExcept(root string, keep map[string]bool) error {
+	var paths []string
+	var dirs = map[string]bool{}
+	err := filepath.WalkDir(root, func(p string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		paths = append(paths, p)
+		if d.IsDir() {
+			dirs[p] = true
+		}
+		return nil
+	})
+	for i := len(paths) - 1; i >= 0; i-- {
+		p := paths[i]
+		switch {
+		case keep[p]:
+		case dirs[p]:
+			_ = os.Remove(p) // fails, and stays, if a kept file is inside
+		default:
+			if rerr := os.Remove(p); rerr != nil && err == nil {
+				err = rerr
+			}
+		}
+	}
+	return err
+}
+
+// fileConflict is a file of a copy or move that already exists at the destination.
+type fileConflict struct {
+	src, dst         string
+	srcInfo, dstInfo fs.FileInfo
+}
+
+// findConflicts lists, in order, the files that would overwrite an existing file:
+// top-level files, and files inside folders that will be merged. Items of different
+// types (file against folder) are left to the copy, which reports them.
+func (o *opCtx) findConflicts(pairs []copyPair) []fileConflict {
+	var out []fileConflict
+	var walk func(src, dst string)
+	walk = func(src, dst string) {
+		if o.cancelled() {
+			return
+		}
+		si, err := os.Lstat(src)
+		if err != nil {
+			return
+		}
+		di, err := os.Lstat(dst)
+		if err != nil {
+			return // nothing there: no conflict
+		}
+		switch {
+		case si.IsDir() && di.IsDir():
+			des, err := os.ReadDir(src)
+			if err != nil {
+				return
+			}
+			for _, de := range des {
+				walk(filepath.Join(src, de.Name()), filepath.Join(dst, de.Name()))
+			}
+		case !si.IsDir() && !di.IsDir():
+			out = append(out, fileConflict{src, dst, si, di})
+		}
+	}
+	for _, p := range pairs {
+		walk(p.from, p.to)
+	}
+	return out
+}
+
+// Answers to a conflict, in the order of the buttons: the default (first) one never
+// overwrites.
+const (
+	conflictSkip         = "Skip"
+	conflictSkipAll      = "Skip all"
+	conflictOverwrite    = "Overwrite"
+	conflictOverwriteAll = "Overwrite all"
+	conflictCancel       = "Cancel"
+)
+
+var conflictButtons = []string{conflictSkip, conflictSkipAll, conflictOverwrite, conflictOverwriteAll, conflictCancel}
+
+// resolveConflicts asks about each conflict, until an "all" answer decides the rest.
+// It returns the source files to skip; ok is false when the operation is cancelled
+// (Cancel, or Esc: an empty answer).
+func resolveConflicts(cs []fileConflict, ask func(i int) string) (skip map[string]bool, ok bool) {
+	skip = map[string]bool{}
+	all := ""
+	for i, c := range cs {
+		answer := all
+		if answer == "" {
+			answer = ask(i)
+		}
+		switch answer {
+		case conflictSkip:
+			skip[c.src] = true
+		case conflictSkipAll:
+			skip[c.src] = true
+			all = conflictSkip
+		case conflictOverwrite:
+		case conflictOverwriteAll:
+			all = conflictOverwrite
+		default:
+			return nil, false
+		}
+	}
+	return skip, true
+}
+
+// conflictText describes conflict i of n; destRoot is the destination folder, so the
+// name is shown relative to it.
+func conflictText(c fileConflict, i, n int, destRoot string) string {
+	name := c.dst
+	if rel, err := filepath.Rel(destRoot, c.dst); err == nil {
+		name = rel
+	}
+	side := func(fi fs.FileInfo, newer bool) string {
+		s := humanSize(fi.Size()) + " · " + fi.ModTime().Local().Format("02/01/2006 15:04")
+		if newer {
+			s += " (newer)"
+		}
+		return s
+	}
+	ns, ds := c.srcInfo.ModTime(), c.dstInfo.ModTime()
+	return fmt.Sprintf("A file with this name already exists (%d of %d):\n\n%s\n\nNew:      %s\nExisting: %s",
+		i+1, n, name, side(c.srcInfo, ns.Sub(ds) > dateTolerance), side(c.dstInfo, ds.Sub(ns) > dateTolerance))
 }

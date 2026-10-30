@@ -18,7 +18,7 @@ Get **`gofm-<version>-windows.zip`** from the [latest release](https://github.co
 To check a download, compare its hash with the one on the release page (PowerShell):
 
 ```
-Get-FileHash .\gofm-1.11-windows.zip     # the zip: see the .sha256 file
+Get-FileHash .\gofm-1.12-windows.zip     # the zip: see the .sha256 file
 Get-FileHash .\gofm.exe                  # the program: see the release notes
 ```
 
@@ -71,7 +71,8 @@ Use `gofm-arm64.exe` only on Windows PCs with an ARM processor (e.g. Snapdragon 
 ## Keys
 
 Typing letters in a panel jumps to the first matching name, so every command
-uses a function key, **Alt+letter**, **Ctrl+B**, or **Shift+letter** (drives).
+uses a function key, **Alt+letter**, **Ctrl+letter**, or **Shift+letter** (drives).
+**Ctrl+F2** shows all the keys in the program.
 
 | Key | Action |
 |---|---|
@@ -86,29 +87,33 @@ uses a function key, **Alt+letter**, **Ctrl+B**, or **Shift+letter** (drives).
 | Ctrl+→ (left panel) | show this location in the right panel |
 | Ctrl+← (right panel) | show this location in the left panel |
 | Space / Ins | mark/unmark; the panel's top border shows the running total of the selection, folders included recursively (Space types a space while a quick search is in progress) |
-| `*` | nothing marked → mark **all** files and folders; something marked → **unmark all** |
+| Ctrl+A | nothing marked → mark **all** files and folders; something marked → **invert** the marks |
 | Esc | end quick search, then clear the filter, then the marks |
 | F2 | rename |
 | F3 | preview / properties (text, archive listing, hex, folder size) |
+| F4 | **edit** the file with an external editor (Notepad, or the one in `GOFM_EDITOR`) |
 | F5 | copy to the other panel's folder, **at once** — inside an archive: **extract** the marked items there |
 | F6 | move to the other panel's folder, **at once** |
 | F7 | new folder (accepts `a\b\c`) |
-| F8 / Del | move to the **Recycle Bin** (a second confirmation if folders with subfolders are included) |
+| Del | delete: to the **Recycle Bin** on local drives, **permanently** on network drives (see *Deleting*) |
 | F9 | compress to ZIP |
 | F10 / Alt+Q | quit |
 | F12 | **compare** the two panels by name, size and date: marks, on each side, the files missing on the other side and the **newer** copy of files on both sides (see *Comparing folders*) |
-| Alt+S | search subfolders by name and/or content |
-| Alt+F | filter the panel (`text` or `*.pdf`) |
+| Alt+F7 | search subfolders by name and/or content |
+| Ctrl+F7 | filter the panel (`text` or `*.pdf`) |
 | Alt+U | extract the whole archive under the cursor (or the marked items while browsing one) |
 | Alt+L | go to a path: `C:\x`, `%USERPROFILE%`, `~`, `\\server` (share list), `\\server\share\dir` |
-| Alt+V | drive list |
+| Alt+V | drive list: local, network, removable (USB) and CD/DVD drives each have their own icon and label |
 | Alt+E | show the same location in the other panel (either direction) |
-| Alt+O | sort by name → size → date |
+| Alt+O | sort by name → size → date (names start A→Z, sizes and dates largest/newest first) |
+| Alt+D | reverse the sort direction; the title shows e.g. `sort: name ↑` (↑ ascending, ↓ descending) |
 | Alt+H | show/hide hidden and system files (and administrative shares such as `C$`) |
-| Alt+A | invert marks |
 | Alt+R | refresh by hand (panels also refresh automatically) and re-measure marked folders |
 | Alt+I | icons: Nerd Font icons ↔ basic symbols (remembered) |
-| Alt+F1 | summary of the shortcuts that are not in the key bar |
+| Ctrl+F9 | next colour scheme: **navy** (default) → **dark** → **light** (remembered) |
+| Ctrl+F2 | summary of all the keys |
+
+F1 and F8 do nothing. The **key bar** at the bottom shows as many shortcuts as fit the window, operations first (F2, F3, F5, F7 and F10 are never shown there); **click** a shortcut in the bar to run it.
 
 Operations act on marked items; if nothing is marked, on the item under the cursor.
 
@@ -133,7 +138,7 @@ Operations act on marked items; if nothing is marked, on the item under the curs
 ## Copy, move and selection
 
 - **F5/F6 do not ask for a destination**: the destination is always the folder shown in the other panel. If the other panel shows the drive list, a share list or the inside of an archive, gofm asks you to open a folder there first. To copy under a different name, copy and then rename with F2.
-- The question about **existing items** (Overwrite / Skip existing / Cancel) is still asked.
+- **Files that already exist** at the destination, also inside folders with the same name (which are merged): after counting the files, gofm asks about each one, showing size and date of both copies — *Skip* (the default button), *Skip all*, *Overwrite*, *Overwrite all*, *Cancel*. Every other file is copied or moved anyway. A skipped file stays where it is: in a move, the source keeps only the skipped files.
 - While you mark items, the **top border of the panel** (right side, on the path line) shows ` N selected · <size> · M files `. Marked folders are measured recursively in the background and their **size column shows the total** (`…` while measuring); ` · counting…` is shown until every folder has been measured. Unmarking a folder stops its measurement.
 - After a move or a delete the cursor goes to the **next item** (or the previous one at the end of the list).
 - **Ctrl+→ / Ctrl+←**: the arrow points at the panel that changes, so Ctrl+→ works from the left panel and Ctrl+← from the right one. The cursor lands on the same item, and an archive being browsed is opened on the other side too.
@@ -167,9 +172,7 @@ F12 compares the **files** of the two panels by **name, size and date** and mark
 | on both sides, same date (±2 s) but a different size | on **both** sides (gofm cannot tell which one is right) |
 | on both sides, same size and date (±2 s) | nowhere |
 
-The 2-second tolerance covers FAT/exFAT drives and many NAS, which store times with that resolution; a difference of exactly one hour (daylight saving on FAT drives) counts as a difference. Folders are ignored and the content is not read. On Windows names match case-insensitively. The comparison uses what each panel lists, so the filter (Alt+F) and the hidden-files setting (Alt+H) count. Previous marks are replaced, and the result is shown in the status bar until the next key — e.g. `Compare: left 2 only here, 1 newer · right 1 only here, 0 newer`. Typical use: F12, then F5 in each panel to bring the other side up to date without overwriting newer files with older ones (F5 still asks before overwriting). It also works inside archives and in the flat view (relative paths).
-
-**Alt+F1** shows a summary of the shortcuts that are not in the key bar.
+The 2-second tolerance covers FAT/exFAT drives and many NAS, which store times with that resolution; a difference of exactly one hour (daylight saving on FAT drives) counts as a difference. Folders are ignored and the content is not read. On Windows names match case-insensitively. The comparison uses what each panel lists, so the filter (Ctrl+F7) and the hidden-files setting (Alt+H) count. Previous marks are replaced, and the result is shown in the status bar until the next key — e.g. `Compare: left 2 only here, 1 newer · right 1 only here, 0 newer`. Typical use: F12, then F5 in each panel to bring the other side up to date without overwriting newer files with older ones (F5 still asks about each file it would overwrite). It also works inside archives and in the flat view (relative paths).
 
 ## Fast copying over the network
 
@@ -185,8 +188,8 @@ Copy, move, compress and extract show a progress bar with bytes done, speed (ave
 
 ## Display
 
-- **Dark-blue theme** everywhere. File names are **coloured by type**: archives pink, programs green, images orchid, documents light blue, audio/video red, code and config aquamarine, system files grey-blue, folders white. **Yellow is reserved for marked items** and no file type uses it.
-- An **icon** before each name shows its type: one icon per colour family, plus folder, `..`, drive and share. The icon keeps the colour of its type **even when the item is marked** (only the name turns yellow); on the cursor row of the active panel it takes the cursor's text colour, because the type colours are unreadable on the cyan cursor. Hidden items have dimmed icons. Nerd Font icons by default, basic symbols with **Alt+I** (see *Font with icons*).
+- Three **colour schemes**, switched with **Ctrl+F9** and remembered: **navy** (dark blue, the default), **dark** (neutral grey) and **light**. File names are **coloured by type**: archives pink, programs green, images orchid, documents blue, audio/video red, code and config aquamarine, system files grey, folders white (black in the light scheme). The **mark colour is reserved** (yellow; dark gold in the light scheme) and no file type comes close to it. Every scheme is checked by the tests for readable contrast.
+- An **icon** before each name shows its type: one icon per colour family, plus folder, `..`, share and four kinds of drive (local, network, removable/USB, CD/DVD). The icon keeps the colour of its type **even when the item is marked** (only the name turns yellow); on the cursor row of the active panel it takes the cursor's text colour, because the type colours are unreadable on the cyan cursor. Hidden items have dimmed icons. Nerd Font icons by default, basic symbols with **Alt+I** (see *Font with icons*).
 - Dates: `22/10 16:37` for the current year, `22/10/2024` for older files.
 - Long names are shortened to fit the window, keeping the extension (`a really very extre….pdf`), so size and date always stay visible.
 - The **status bar** follows the same rule: fixed columns on the right (size, date and time, attributes, item count) and a name column that takes the remaining space.
@@ -198,9 +201,10 @@ Both panels refresh by themselves when files are added, removed or changed, usin
 
 ## Behaviour worth knowing
 
-- **Conflicts** when copying, moving or extracting (the only question F5/F6 ask): choose *Overwrite*, *Skip existing* or *Cancel*. Folders with the same name are **merged**.
+- **Conflicts** when copying or moving: one question per existing file (see *Copy, move and selection*). When **extracting**, a single question covers all the files: *Overwrite*, *Skip existing* or *Cancel*. Folders with the same name are **merged**.
 - **Moving between drives** = copy + delete the source, and the source is deleted **only if the copy fully succeeded**.
-- **Recycle Bin**: F8 asks for confirmation; if the items include **folders that contain subfolders**, a second warning lists them and its default button is *Cancel*. Uses the Windows API. If an item cannot be recycled (network share, file too large), Windows shows its own warning before deleting it permanently.
+- **Deleting (Del)**: on local drives the items go to the **Recycle Bin** (Windows API; if an item cannot be recycled, e.g. a file too large, Windows shows its own warning). On **network drives** — `\\server\share` paths and mapped drives — there is no Recycle Bin, so gofm says so and **deletes permanently** after a confirmation whose default button is *Cancel*. In both cases, if the items include **folders that contain subfolders**, a second warning lists them (default *Cancel*). Read-only files are deleted too.
+- **Editing (F4)**: Notepad by default. To use another editor set the `GOFM_EDITOR` environment variable to its path, optionally with arguments, e.g. `C:\Program Files\Notepad++\notepad++.exe` or `"C:\Program Files\Microsoft VS Code\Code.exe" --reuse-window`. gofm does not wait for the editor and starts it detached from its console, so use a windowed editor (console editors such as vim are not supported). Saved changes appear by themselves.
 - ZIP names are written as UTF-8 (Explorer-compatible); old archives with OEM code-page names (e.g. CP850) are decoded.
 - Symbolic links and junctions are not followed (avoids endless loops); in archives they are skipped and reported.
 - Long operations run in the background with a **Cancel** button; half-written files are removed.

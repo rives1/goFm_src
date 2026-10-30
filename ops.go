@@ -25,11 +25,12 @@ type opCtx struct {
 	cancel atomic.Bool
 	errs   []string // written by the workers (under errMu), read after they finish
 	errMu  sync.Mutex
-	total  atomic.Int64 // bytes expected (0 = unknown)
-	bytes  atomic.Int64 // bytes processed so far
-	files  atomic.Int64 // files processed so far
-	cur    atomic.Value // string: current file or status line
-	phase  atomic.Value // string: e.g. "Counting files…"
+	total  atomic.Int64    // bytes expected (0 = unknown)
+	bytes  atomic.Int64    // bytes processed so far
+	files  atomic.Int64    // files processed so far
+	cur    atomic.Value    // string: current file or status line
+	phase  atomic.Value    // string: e.g. "Counting files…"
+	skip   map[string]bool // source files not to copy (conflicts answered "Skip"); set before copying
 }
 
 func (o *opCtx) cancelled() bool { return o.cancel.Load() }
@@ -298,4 +299,39 @@ func fileContains(path string, needle []byte, o *opCtx) bool {
 			return false
 		}
 	}
+}
+
+// deleteAll deletes items permanently (Del on a network drive, v1.12).
+func (o *opCtx) deleteAll(items []string) {
+	o.setPhase("Deleting…")
+	for _, it := range items {
+		if o.cancelled() {
+			return
+		}
+		o.step(it)
+		if err := removeTree(it); err != nil {
+			o.fail(it, err)
+		}
+	}
+}
+
+// removeTree is os.RemoveAll that also removes read-only files: on Windows the
+// read-only attribute makes the deletion fail, so it is cleared and the deletion
+// retried. Links and junctions are removed, never followed.
+func removeTree(path string) error {
+	err := os.RemoveAll(path)
+	if err == nil {
+		return nil
+	}
+	_ = filepath.WalkDir(path, func(p string, d fs.DirEntry, werr error) error {
+		if werr == nil && d.Type()&fs.ModeSymlink == 0 {
+			if d.IsDir() {
+				_ = os.Chmod(p, 0o777)
+			} else {
+				_ = os.Chmod(p, 0o666)
+			}
+		}
+		return nil
+	})
+	return os.RemoveAll(path)
 }

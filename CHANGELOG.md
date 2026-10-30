@@ -2,6 +2,15 @@
 
 All notable changes to gofm. Versions follow the order in which features were added.
 
+## 1.12 — 2026-10-30
+
+- **Keys**: Ctrl+A marks everything, or inverts the marks (`*` and Alt+A removed); **F4** edits the file with an external editor (Notepad, or the one in `GOFM_EDITOR`); **F8 no longer deletes** (Del only); find moves to **Alt+F7**, filter to **Ctrl+F7**, the key summary to **Ctrl+F2**, now listing every key; **Alt+D** reverses the sort, with an arrow in the title (`sort: name ↑`); **Ctrl+F9** cycles three colour schemes.
+- **Key bar**: shows as many shortcuts as fit the window, operations first; F2, F3, F5, F7 and F10 are no longer shown; **click** a shortcut to run it.
+- **Colour schemes**: navy (the default, unchanged), dark and light, remembered in `state.json`; every scheme is tested for readable contrast.
+- **Copy/move conflicts**: one question per existing file, also inside merged folders, showing both copies: Skip (default), Skip all, Overwrite, Overwrite all, Cancel. The other files are copied or moved anyway; skipped files stay where they are. (Before, a single question covered only the top-level items, and files inside merged folders were overwritten.)
+- **Network drives**: Del deletes permanently, with an explicit warning, instead of going through the Recycle Bin (network folders have none). Read-only files are deleted too.
+- **Drive list**: local, network, removable (USB sticks and disks, memory cards) and CD/DVD drives have their own icon and label.
+
 ## 1.11 — 2026-10-28
 
 - **Compiler updated**: releases are built with **Go 1.27.3**, pinned in `go.mod` (`toolchain go1.27.3`) and in both workflows. 1.10 had been built with Go 1.24.0, because the workflows took the minimum version from `go.mod`; the Go 1.24 series no longer receives security fixes. A test keeps the workflows and `go.mod` in step, and the build script refuses any other compiler.

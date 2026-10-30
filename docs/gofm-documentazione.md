@@ -1,6 +1,6 @@
 # gofm — Documentazione di progetto e specifiche
 
-**Versione documentata:** 1.11 · **Data:** 28/10/2026 · **Licenza:** MIT, © 2026 rives
+**Versione documentata:** 1.12 · **Data:** 30/10/2026 · **Licenza:** MIT, © 2026 rives
 **Linguaggio:** Go (minimo 1.24; release compilate con **Go 1.27.3**) · **Piattaforma bersaglio:** Windows 64 bit (x64, ARM64) · **Interfaccia:** inglese
 
 ---
@@ -58,7 +58,11 @@ Funzioni principali:
 - **copia ottimizzata per la rete**: ogni file è copiato con il motore di Windows (`CopyFileEx`), i file piccoli fino a 4 alla volta, quelli grandi uno alla volta;
 - **tema blu scuro** con **colori per tipo di file**, totale della selezione sul bordo del pannello e dimensione ricorsiva delle cartelle selezionate;
 - **aggiornamento automatico** dei due pannelli con le notifiche di modifica del sistema;
-- **riepilogo dei tasti (Alt+F1)** con le scorciatoie che non sono nella barra in basso;
+- **riepilogo di tutti i tasti (Ctrl+F2)** e **barra dei tasti cliccabile** che mostra quante scorciatoie entrano nella larghezza;
+- **tre schemi di colori** (navy, scuro, chiaro) con **Ctrl+F9**; **editor esterno** con **F4**; ordinamento **invertibile** (Alt+D) con freccia nel titolo;
+- **conflitti file per file** in copia e spostamento (*Skip*, *Skip all*, *Overwrite*, *Overwrite all*, *Cancel*);
+- **cancellazione definitiva** sulle unità di rete (niente Cestino), Cestino sulle unità locali;
+- **icone delle unità** per tipo: locale, di rete, rimovibile/USB, CD/DVD;
 - **pacchetto scaricabile** pubblicato come Release su GitHub a ogni tag di versione, compilato con un compilatore fissato e **riproducibile byte per byte**;
 - **metadati di Windows** negli eseguibili: informazioni di versione, manifest (*asInvoker*) e icona;
 - **icone per tipo di file** davanti ai nomi (glifi Nerd Font, oppure simboli semplici con Alt+I);
@@ -76,7 +80,7 @@ Avvio:
 gofm.exe                        :: entrambi i pannelli nella cartella corrente
 gofm.exe C:\Progetti D:\Backup  :: pannello sinistro e destro
 gofm.exe \\nas                  :: un pannello sull'elenco delle share di \\nas
-gofm.exe -h | --help | /?       :: stampa "gofm 1.11 — usage: gofm [left_folder] [right_folder]"
+gofm.exe -h | --help | /?       :: stampa "gofm 1.12 — usage: gofm [left_folder] [right_folder]"
 ```
 
 Un argomento non valido (inesistente o non cartella) viene sostituito dalla cartella corrente.
@@ -101,8 +105,17 @@ Ogni scelta è stata presa con l'utente o motivata esplicitamente.
 | Destinazione di F5/F6 | **Sempre la cartella dell'altro pannello, senza campo da confermare** (anche per l'estrazione con F5 dentro un archivio). Resta la domanda sui file omonimi | Richiesta dell'utente (v1.3). La domanda sui conflitti resta perché è l'unica protezione contro la sovrascrittura. |
 | Specchio del percorso | **Ctrl+→ nel pannello sinistro, Ctrl+← nel destro**: la freccia indica il pannello che cambia; nella direzione opposta non succede nulla | Richiesta dell'utente (v1.3); gesto direzionale, Alt+E resta come equivalente non direzionale. |
 | Confronto cartelle | **F12**, **solo file** (le cartelle sono ignorate). Dalla v1.10 per **nome, dimensione e data**: seleziona i mancanti dall'altro lato e, per i file presenti in entrambi, **solo la copia più recente**; stessa data e dimensione diversa → entrambe. **Tolleranza 2 s** sulla data | Scelte dell'utente (v1.4: solo nome e mancanti; v1.10: nome+data+dimensione, la più recente, 2 s). Selezionare la sola copia più recente rende sicuro F5 subito dopo (come la sincronizzazione di Total Commander). 2 s è la risoluzione delle date su FAT/exFAT e su molti NAS; uno scarto di **1 ora esatta** (ora legale su FAT) resta una differenza: ignorarlo nasconderebbe anche modifiche reali. |
-| Aiuto | F1 non fa nulla (dalla v1.4). Dalla v1.10 **Alt+F1** apre un **riepilogo dei tasti** che **esclude** quelli della barra in basso | Scelte dell'utente (v1.4, v1.10): la barra mostra già i suoi tasti; un test verifica che le due liste non si sovrappongano. |
-| Cancellazione di cartelle con sottocartelle | Dopo la conferma normale di F8, una **seconda conferma** con l'**elenco dei nomi** (al massimo 8, poi `… and N more`); pulsante predefinito **Cancel** | Scelta dell'utente (v1.10): solo i nomi, nessun conteggio, così la risposta è immediata anche su share lente. Il controllo legge ogni cartella solo fino alla prima sottocartella, in background. |
+| Aiuto | F1 non fa nulla (dalla v1.4). Riepilogo dei tasti: **Alt+F1** nella v1.10–1.11 (escludeva i tasti della barra), **Ctrl+F2** dalla v1.12, con **tutti** i tasti | Scelte dell'utente (v1.4, v1.10, v1.12). Dalla v1.12 la barra cambia con la larghezza della finestra, quindi escludere i suoi tasti non avrebbe più senso; un test verifica che ogni voce della barra sia nel riepilogo. |
+| Barra dei tasti (v1.12) | Voci per **priorità** (operazioni prima: F4 Edit, F6 Move, Del Delete, F9 Zip, F12 Compare, Ctrl+A Select, Ctrl+B Flat, Alt+F7 Find, Ctrl+F7 Filter, Alt+U Extract, Alt+V Drives, Ctrl+F2 Keys, Alt+O Sort, Alt+D Reverse, Alt+H Hidden, Ctrl+F9 Colours, Alt+I Icons, Shift+X Drive X:, Alt+L Go to), **quante ne entrano**; F2, F3, F5, F7, F10 **mai**; **clic del mouse** su una voce = pressione del tasto | Scelte dell'utente (v1.12). Le voci si fermano alla prima che non entra, così l'ordine resta prevedibile. Shift+X è solo un'indicazione (26 tasti): il clic non fa nulla. |
+| Tasti cambiati (v1.12) | Ricerca **Alt+S → Alt+F7**; filtro **Alt+F → Ctrl+F7**; seleziona tutto/inverti **Ctrl+A** (tolti `*` e Alt+A); F8 non cancella più (solo **Canc**); **F4** editor; **Alt+D** inverte l'ordinamento; **Ctrl+F9** schemi di colori | Richieste dell'utente (v1.12). Le combinazioni Ctrl/Alt di un tasto funzione non assegnate non fanno nulla, così Ctrl+F7 non ricade mai su F7. `*` ora va alla ricerca digitando come ogni altro carattere (e non trova nulla). |
+| Ctrl+A | Nessuna selezione → **seleziona file e cartelle**; selezione presente → **inverte** | Scelta dell'utente (v1.12): come il vecchio `*` per la selezione completa, con l'inversione di Alt+A al posto della deselezione. |
+| Editor (F4) | **Notepad**, oppure il comando nella variabile **`GOFM_EDITOR`** (percorso, eventualmente tra virgolette, più argomenti); avviato **staccato** dalla console (`DETACHED_PROCESS`), senza attenderlo | Scelta dell'utente (v1.12). Staccarlo impedisce che un programma da console (es. `code.cmd`) scriva sullo schermo di gofm; per lo stesso motivo gli editor da terminale non sono supportati. Le modifiche salvate compaiono con l'aggiornamento automatico. |
+| Ordinamento (v1.12) | **Alt+O** cambia tipo e riparte dal senso naturale (nome A→Z, dimensione e data dal più grande/recente); **Alt+D** inverte; titolo sempre con `sort: <tipo> ↑|↓` (↑ crescente, ↓ decrescente); cartelle sempre prima, `..` in cima | Scelta dell'utente (v1.12). La freccia indica il senso dei valori, non la posizione: ↑ = dal più piccolo/vecchio/A al più grande/recente/Z. |
+| Schemi di colori (v1.12) | Tre schemi: **navy** (principale, quello di sempre), **dark** (grigio neutro), **light** (chiaro); **Ctrl+F9** a rotazione; ricordato in `state.json` | Scelte dell'utente (v1.12). Ogni schema ha il proprio colore di selezione riservato (giallo `#FFE14D` nei due scuri, oro scuro `#986800` nel chiaro, perché il giallo su bianco è illeggibile) e rispetta le soglie WCAG: 4,5:1 per il testo, 3:1 per bordi e icone. Nel chiaro il rosso dell'audio/video è `#D80838` invece di `#CF222E`, per restare ad almeno 120 dal colore di selezione: valori trovati con una ricerca numerica sui vincoli. |
+| Conflitti in copia/spostamento (v1.12) | Dopo il conteggio, **una domanda per ogni file esistente**, anche dentro le cartelle unite, con dimensione e data delle due copie: **Skip** (predefinito), **Skip all**, **Overwrite**, **Overwrite all**, **Cancel**; gli altri file procedono comunque. Negli spostamenti i file saltati restano nella sorgente | Scelta dell'utente (v1.12). Le domande arrivano tutte **prima** di iniziare a copiare, così i lavoratori paralleli non vanno messi in pausa e un *Cancel* non lascia copie a metà. Il pulsante predefinito non sovrascrive mai. Fino alla v1.11 la domanda era unica e riguardava solo gli elementi di primo livello: dentro le cartelle unite i file venivano sovrascritti senza chiedere. L'estrazione dagli archivi mantiene la domanda unica. |
+| Cancellazione sulle unità di rete (v1.12) | Percorsi UNC e unità mappate: **cancellazione definitiva** (`removeTree`), con conferma esplicita (`PERMANENTLY`, pulsante predefinito `Cancel`); unità locali: Cestino | Richiesta dell'utente (v1.12). Le cartelle di rete non hanno Cestino: Windows le cancellerebbe comunque in modo definitivo, ma con un proprio avviso dopo la conferma di gofm; ora la conferma di gofm dice la verità prima. |
+| Unità per tipo (v1.12) | Elenco unità con icona ed etichetta per **locale** (`LOCAL`), **di rete** (`NETWORK`), **rimovibile** (`REMOVABLE`: chiavette e dischi USB, schede di memoria) e **CD/DVD** | Richiesta dell'utente (v1.12). `GetDriveType` riconosce rete, rimovibili e ottiche, ma i **dischi USB** risultano "fissi": per questi si interroga il tipo di bus (`IOCTL_STORAGE_QUERY_PROPERTY`, USB, 1394, SD, MMC), senza diritti di amministratore. |
+| Cancellazione di cartelle con sottocartelle | Dopo la conferma normale di Canc (F8 fino alla v1.11), una **seconda conferma** con l'**elenco dei nomi** (al massimo 8, poi `… and N more`); pulsante predefinito **Cancel** | Scelta dell'utente (v1.10): solo i nomi, nessun conteggio, così la risposta è immediata anche su share lente. Il controllo legge ogni cartella solo fino alla prima sottocartella, in background. |
 | Compilatore | **Go 1.27.3** fissato in `go.mod` (`toolchain go1.27.3`) e in `GO_VERSION` dei due workflow, con `GOTOOLCHAIN=local`; lo script di build rifiuta un altro compilatore e un test controlla che `go.mod` e workflow coincidano. La riga `go 1.24.0` resta come versione **minima** del linguaggio | Richiesta dell'utente (v1.11). Fino alla 1.10 `setup-go` leggeva `go-version-file: go.mod`, cioè la riga `go 1.24.0`, e installava **esattamente Go 1.24.0**, la prima versione della serie, senza le correzioni di sicurezza successive; la serie 1.24 non è più supportata (Go supporta le due ultime versioni maggiori, ora 1.26 e 1.27). Un compilatore esatto rende anche la build **riproducibile**: chiunque può ricompilare gli stessi byte. Scelta la 1.27.3 (ultima stabile) dopo vet, test e race detector superati. |
 | Metadati di Windows | Informazioni di versione (`ProductName gofm`, `CompanyName rives`, `FileDescription`, `LegalCopyright`, `OriginalFilename gofm.exe`, `Comments` con il link ai sorgenti, versione `1.11` / `1.11.0.0`), **manifest** (`asInvoker`, nessuna elevazione, `longPathAware`, Windows 10 come sistema supportato) e **icona** (due pannelli nei colori del tema, 256 px e 16 px disegnata a pixel). Generati da **go-winres** v0.3.3 (licenza 0BSD), registrato come `tool` in `go.mod`, da `winres/winres.json`; i `.syso` sono creati dallo script di build e non stanno nel repository | Richiesta dell'utente (v1.11) dopo che Defender ha segnalato la 1.10 come `Trojan:Win32/Bearfoos.B!ml`. Gli eseguibili senza firma e senza metadati sono più spesso colpiti dalle euristiche ML degli antivirus: i metadati riducono la probabilità, **non la azzerano**. La soluzione stabile è la **firma del codice** (es. SignPath Foundation, gratuita per l'open source, o Azure Trusted Signing), che richiede un account dell'utente: non ancora attivata. go-winres è uno strumento di build: non finisce nell'eseguibile, quindi non serve in `THIRD_PARTY_NOTICES.md`. |
 | Pubblicazione | **Release su GitHub** con lo zip compilato e il suo SHA-256, creata dal workflow `release.yml` al push di un tag `v<versione>`. Commit e tag li prepara Claude nella copia locale, il push lo fa l'utente | Scelta dell'utente (v1.10). Lo zip è compilato da GitHub dai sorgenti pubblicati, quindi verificabile; lo stesso script (`scripts/build-release.sh`) produce il pacchetto in locale e nella CI. |
@@ -115,7 +128,7 @@ Ogni scelta è stata presa con l'utente o motivata esplicitamente.
 | Tema | Sfondo **blu scuro `#0A1946`** su tutta l'interfaccia, colori **RGB** (uguali in ogni profilo di terminale; le console a 16 colori usano il colore più vicino) | Richiesta dell'utente (v1.6). |
 | Colori dei file | 7 famiglie per estensione; il **giallo `#FFE14D` è riservato** alla selezione e nessuna famiglia gli si avvicina (verificato da un test sulla distanza dei colori) | Richiesta dell'utente (v1.6): il colore di un file non deve mai confondersi con quello di un file selezionato. |
 | Totale selezione | Spostato dalla barra di stato al **bordo superiore del pannello**, a destra, sulla stessa riga del percorso | Richiesta dell'utente (v1.6). |
-| Tasto `*` | Nessuna selezione → **seleziona file e cartelle**; selezione presente → **deseleziona tutto**. `*` non può comparire nei nomi Windows, quindi non serve alla ricerca digitando | Scelte dell'utente (v1.6). |
+| Tasto `*` | v1.6–1.11: nessuna selezione → seleziona tutto, altrimenti deseleziona tutto. **Tolto nella v1.12**, sostituito da Ctrl+A | Scelte dell'utente (v1.6, v1.12). |
 | Cursore | **Trattino basso lampeggiante** (DECSCUSR 3) al posto della barra verticale di Windows Terminal | Scelta dell'utente (v1.6). |
 | Font | **Cascadia Mono NF** (dalla v1.9; Cascadia Mono nella v1.6–1.8) tramite un profilo di Windows Terminal: un programma da terminale non può scegliere il font | Scelta dell'utente. La variante **NF** contiene i glifi Nerd Font delle icone; l'utente la installa **a mano** (README, *Font with icons*). Lo script di installazione si limita a segnalarne l'assenza. |
 | Icone dei file | Un **carattere** per famiglia di colori (+ cartella, file generico, `..`, unità, share). Insieme predefinito: **glifi Nerd Font**; con **Alt+I** **simboli semplici** della codepage 437, ricordati in `state.json` | Scelta dell'utente (v1.9) fra tre opzioni. Le icone di Esplora risorse sono bitmap e in una cella del terminale non si possono disegnare. Le **emoji** sono state scartate: occupano 2 celle con resa diversa da terminale a terminale e nella console classica diventano `??`, disallineando le colonne. Il Nerd Font dà vere icone ma senza il font mostra quadratini, e un programma da terminale **non può accorgersene**: da qui il tasto esplicito e il ripiego. |
@@ -143,18 +156,18 @@ Ogni scelta è stata presa con l'utente o motivata esplicitamente.
 ║  ♦ setup.exe                        85.3 MB 02/01/2024  ║│                                              │
 ╚══════════════════════════════════════════════════════════╝└──────────────────────────────────────────────┘
  Search: rel  relazione finale.pdf                         1.2 MB │ 21/10/2026 09:12 │ ---A │     3 items
-F2Ren F3View F5Copy F6Move F7MkDir F8Trash F9Zip F10Quit F12Compare Alt+SFind Alt+FFilter Alt+UExtract Ctrl+XDrive X:
+ F4Edit F6Move DelDelete F9Zip F12Compare Ctrl+ASelect Ctrl+BFlat Alt+F7Find Ctrl+F7Filter Alt+UExtract
 ```
 
-Sfondo blu scuro su tutto; icona e nome colorati per tipo (§3.5, §3.9); selezione in giallo. Nello schema le icone sono i simboli semplici (Alt+I): i glifi Nerd Font predefiniti non si vedono senza il font. Una schermata reale (v1.8, senza icone) è nel file `screenshot.png`.
+Schema navy: sfondo blu scuro su tutto; icona e nome colorati per tipo (§3.5, §3.9); selezione in giallo. Il titolo di ogni pannello finisce con `[sort: name ↑]` (omesso nello schema per brevità). Nello schema le icone sono i simboli semplici (Alt+I): i glifi Nerd Font predefiniti non si vedono senza il font. Una schermata reale (v1.8, senza icone) è nel file `screenshot.png`.
 
 ### 3.1 Pannelli
 
-- Titolo (bordo superiore, a sinistra): il percorso del luogo, tagliato a sinistra con `…` se troppo lungo; tra parentesi quadre eventuali `filter: …`, `sort: size|date`, `hidden shown`.
+- Titolo (bordo superiore, a sinistra): il percorso del luogo, tagliato a sinistra con `…` se troppo lungo; tra parentesi quadre eventuali `filter: …`, **sempre** `sort: name|size|date ↑|↓` (dalla v1.12; prima solo `sort: size|date` se diverso dal nome), `hidden shown`.
 - **Bordo inferiore, a destra** (§6.26): ` 12 files 3.4 MB │ 28.5G free (11%) `, cioè numero e dimensione dei file elencati nel pannello, poi lo spazio libero del disco in forma compatta e la percentuale libera. Se lo spazio manca si toglie prima la parte del disco, poi quella dei file. Negli elenchi unità/share non c'è la parte dei file.
 - **Vista piatta**: nel titolo `[flat view]`, con `, first 200000` se l'elenco è troncato e `, updating…` durante una rilettura.
 - **Totale della selezione** (bordo superiore, a destra, in giallo): ` N selected · <dimensione> · M files ` più ` · counting…` finché una cartella è in misurazione (§6.18). Il percorso viene accorciato per lasciargli spazio; se il pannello è troppo stretto il totale non viene mostrato.
-- Pannello attivo: bordo **giallo** `#FFE14D` (doppio), riga del cursore **sfondo `#2AB3C8`, testo `#06122E`**. Pannello inattivo: bordo `#5A6E9A`, riga del cursore **sfondo `#2B3F6E`, testo bianco**. Sotto il cursore il colore del tipo di file è sostituito da quello del cursore; un elemento selezionato resta riconoscibile dall'asterisco `*`. Eccezione: sul cursore del pannello **inattivo** l'icona conserva il colore della famiglia (§3.9).
+- Pannello attivo (schema navy; gli altri schemi in §3.6): bordo **giallo** `#FFE14D` (doppio), riga del cursore **sfondo `#2AB3C8`, testo `#06122E`**. Pannello inattivo: bordo `#5A6E9A`, riga del cursore **sfondo `#2B3F6E`, testo bianco**. Sotto il cursore il colore del tipo di file è sostituito da quello del cursore; un elemento selezionato resta riconoscibile dall'asterisco `*`. Eccezione: sul cursore del pannello **inattivo** l'icona conserva il colore della famiglia (§3.9).
 - Cinque colonne, separate da uno spazio (comportamento di tview):
 
 | Colonna | Larghezza | Contenuto |
@@ -162,7 +175,7 @@ Sfondo blu scuro su tutto; icona e nome colorati per tipo (§3.5, §3.9); selezi
 | Marca | 1 | `*` se marcato, altrimenti spazio |
 | Icona | 1 | icona del tipo (§3.9) |
 | Nome | `larghezza_interna − 4 − 9 − 11 − 2` (minimo 6), si espande | il nome, senza prefissi (fino alla v1.8 le cartelle erano precedute da `\`); link seguiti da ` ~` |
-| Dimensione | 9, allineata a destra | `UP` per `..`, `DRIVE`, `SHARE`; per una cartella `<DIR>`, ma se è **selezionata** il **totale ricorsivo** del suo contenuto (`…` durante la misurazione); per un file la dimensione leggibile |
+| Dimensione | 9, allineata a destra | `UP` per `..`; per le unità il tipo (`LOCAL`, `NETWORK`, `REMOVABLE`, `CD/DVD`, dalla v1.12; prima `DRIVE`); `SHARE`; per una cartella `<DIR>`, ma se è **selezionata** il **totale ricorsivo** del suo contenuto (`…` durante la misurazione); per un file la dimensione leggibile |
 | Data | 11 | vedi §6.13; vuota se la data è sconosciuta |
 
 - Colori del nome: vedi §3.5. Nascosti `#7F8FB4`; marcati **giallo grassetto** (prevale su tutto). Marca, nome, dimensione e data usano lo stesso colore; l'icona ha il colore della famiglia (§3.9).
@@ -181,12 +194,16 @@ Stesse regole delle colonne dei pannelli: **colonne a larghezza fissa a destra**
 | Attributi | 4 | `RHSA` (Windows) |
 | Elementi | 11, a destra | `N items` (escluso `..`) |
 
-Le colonne fisse sono separate da ` │ ` e scritte in `#7F8FB4`; il nome in `#D5DEEE`. Dopo F12, Ctrl+B o Alt+I un avviso (testo scuro su `#56D4DD`) **sostituisce l'intera riga** fino al tasto successivo (§6.20). Il totale della selezione non è più qui ma sul bordo del pannello (§3.1).
+Le colonne fisse sono separate da ` │ ` e scritte in `#7F8FB4`; il nome in `#D5DEEE`. Dopo F12, Ctrl+B, Alt+I, Ctrl+F9 o F4 un avviso (testo scuro su `#56D4DD`) **sostituisce l'intera riga** fino al tasto successivo (§6.20). Il totale della selezione non è più qui ma sul bordo del pannello (§3.1).
 
 ### 3.3 Barra dei tasti (ultima riga)
 
-Sfondo `#06122E`; ogni coppia è resa come `[#06122E:#2AB3C8]Tasto[-:-]Etichetta `:
-`F2 Ren · F3 View · F5 Copy · F6 Move · F7 MkDir · F8 Trash · F9 Zip · F10 Quit · F12 Compare · Ctrl+B Flat · Alt+S Find · Alt+F Filter · Alt+U Extract · Alt+V Drives · Alt+I Icons · Shift+X Drive X:`. Gli altri tasti sono nel riepilogo di **Alt+F1** (§3.4). (le ultime voci si vedono solo nelle finestre larghe)
+Primitiva propria (`keyBar`, `keybar.go`, v1.12). Sfondo della barra dello schema; per ogni voce il tasto (testo `keyFg` su `keyBg`, nello schema navy `#06122E` su `#2AB3C8`) seguito dall'etichetta, poi uno spazio; un carattere di margine a sinistra.
+
+- **Voci in ordine di priorità** (`keybarItems`): `F4 Edit · F6 Move · Del Delete · F9 Zip · F12 Compare · Ctrl+A Select · Ctrl+B Flat · Alt+F7 Find · Ctrl+F7 Filter · Alt+U Extract · Alt+V Drives · Ctrl+F2 Keys · Alt+O Sort · Alt+D Reverse · Alt+H Hidden · Ctrl+F9 Colours · Alt+I Icons · Shift+X Drive X: · Alt+L Go to`.
+- **Adattamento alla larghezza** (`keybarLayout`): si aggiungono voci finché entrano; alla prima che non entra ci si ferma (niente voci successive più corte "infilate" dopo, per non cambiare l'ordine). A 80 colonne entrano le prime 8 (fino a Ctrl+F7 Filter esclusa), a 120 le prime 11, a 200 le prime 17; per tutte e 19 servono 215 colonne.
+- **Mai mostrati**: F2, F3, F5, F7, F10 (scelta dell'utente); F8 non ha più funzioni. Restano nel riepilogo Ctrl+F2.
+- **Clic del mouse** (`MouseHandler`): il clic sinistro su una voce costruisce l'evento del tasto (`tcell.NewEventKey`) e lo passa a `FM.keys`, esattamente come una pressione reale; il focus resta sul pannello. Shift+X è solo un'indicazione: il clic non fa nulla. Con una finestra di dialogo aperta il clic arriva alla finestra, non alla barra.
 
 ### 3.4 Finestre di dialogo
 
@@ -196,13 +213,14 @@ Sfondo `#06122E`; ogni coppia è resa come `[#06122E:#2AB3C8]Tasto[-:-]Etichetta
 - **Avanzamento**: riquadro 72×12 intitolato ` Working ` con testo e pulsante `Cancel` (anche Esc).
 - Tutto il testo derivato da nomi di file passa per `tview.Escape`, altrimenti `[x].txt` verrebbe interpretato come tag di colore.
 - Le finestre sono una pila: chiudendo una finestra il focus torna a quella sotto, o al pannello attivo. **Dettaglio tecnico** (bug corretto nella v1.10): `Pages.RemovePage` restituisce il focus alla pagina principale, il cui `Flex` lo passa al primo elemento, cioè al pannello **sinistro**, e il gestore del focus di quel pannello lo rende attivo. `closeModal` memorizza quindi il pannello attivo **prima** di `RemovePage` e poi lo riattiva con `setActive(active, true)`. Fino alla v1.9 la chiusura di qualsiasi finestra aperta dal pannello destro (avanzamento di Ctrl+B, F5, F8, conferme, F3) spostava il focus a sinistra.
-- **Riepilogo dei tasti (Alt+F1)**: TextView con bordo, titolo ` Keys — Esc to close `, sezioni *Navigation*, *Search and selection*, *Files*, *View*, *Program*; larghezza adattata al testo (righe ≤ 76 celle, quindi entra in 80 colonne), altezza limitata allo schermo con scorrimento (titolo ` Keys — ↑↓ to scroll, Esc to close `). Si chiude con Esc, Invio, F1, Alt+F1 o `q`. Elenca **solo** i tasti che **non** sono nella barra in basso: la barra e il riepilogo leggono due liste nel codice (`keybarKeys`, `helpSections`) e un test verifica che non abbiano voci in comune. `Del` e `Alt+Q` compaiono perché sono tasti diversi da F8 e F10, con l'indicazione `(same as F8)` / `(same as F10)`.
+- **Riepilogo dei tasti (Ctrl+F2, v1.12; Alt+F1 nella v1.10–1.11)**: TextView con bordo, titolo ` Keys — Esc to close `, sezioni *Navigation*, *Search and selection*, *Files*, *View*, *Program*; larghezza adattata al testo (righe ≤ 76 celle, quindi entra in 80 colonne), altezza limitata allo schermo con scorrimento (titolo ` Keys — ↑↓ to scroll, Esc to close `). Si chiude con Esc, Invio, F2 o `q`. Dalla v1.12 elenca **tutti** i tasti, compresi quelli della barra (che cambia con la larghezza); un test verifica che ogni voce della barra vi compaia e che i tasti tolti (Alt+F1, Alt+S, Alt+F, `*`, Alt+A, F8) non ci siano. Titoli delle sezioni nel colore di selezione, tasti nel colore delle etichette dello schema.
+- **Conflitti in copia/spostamento (v1.12)**: Modal con `A file with this name already exists (i of n):`, il percorso relativo alla destinazione, `New: <dimensione> · <data>` e `Existing: <dimensione> · <data>` (con ` (newer)` sulla copia più recente di oltre 2 s), pulsanti **`Skip`** (primo, quindi predefinito), `Skip all`, `Overwrite`, `Overwrite all`, `Cancel`; Esc = Cancel. La domanda parte dal lavoro in background con `askSync` (`QueueUpdateDraw` + canale) mentre la finestra di avanzamento resta sotto.
 - Colori dal tema (§3.6): riquadro dei messaggi `#1E3A78` con pulsanti su `#0A1946`; moduli su `#0A1946` con campi e pulsanti `#1E3A78`; etichette `#8FD3FF`; pulsante attivo invertito.
 - **Cursore di testo** nei campi: trattino basso lampeggiante (§3.7).
 
 ### 3.5 Colori per tipo di file
 
-Il colore dipende dall'estensione (senza distinzione di maiuscole). Le famiglie sono scelte perché distano almeno 60 tra loro e almeno 120 dal giallo della selezione nello spazio RGB (controllato dai test).
+Il colore dipende dall'estensione (senza distinzione di maiuscole). In **ogni schema** le famiglie distano almeno 60 tra loro e almeno 120 dal colore di selezione nello spazio RGB, e hanno contrasto ≥ 4,5:1 sullo sfondo e ≥ 3:1 sul cursore del pannello inattivo (controllato dai test per tutti e tre gli schemi). La tabella riporta lo schema **navy**; gli altri in §3.6.
 
 | Famiglia | Colore | Estensioni |
 |---|---|---|
@@ -218,20 +236,38 @@ Il colore dipende dall'estensione (senza distinzione di maiuscole). Le famiglie 
 | Nascosti/di sistema (attributi) | `#7F8FB4` | prevale sul tipo |
 | **Selezionati** | **giallo `#FFE14D` grassetto** | prevale su tutto; riservato |
 
-### 3.6 Tema
+### 3.6 Schemi di colori (v1.12)
 
-Impostato in `applyTheme()` prima di creare qualsiasi elemento (i valori predefiniti di tview vengono letti alla creazione):
+Tre schemi (`schemes` in `theme.go`), scelti con **Ctrl+F9** a rotazione navy → dark → light → navy, con l'avviso `Colours: <nome> — Ctrl+F9 for the next scheme`; la scelta è salvata in `state.json` (`colorScheme`, assente per navy). `applyScheme(i)` imposta le variabili dei colori, i colori delle famiglie e i valori predefiniti di tview (letti quando si crea un elemento: valgono per le finestre aperte dopo); `FM.recolor()` ricolora gli elementi già esistenti (pagine, layout, pannelli con il colore del titolo, barra di stato, barra dei tasti) e ridisegna i pannelli.
 
-| Ruolo | Colore |
-|---|---|
-| Sfondo di tutta l'interfaccia | `#0A1946` |
-| Sfondo di campi, pulsanti, messaggi | `#1E3A78` |
-| Testo | `#D5DEEE` |
-| Bordi inattivi / attivi | `#5A6E9A` / `#FFE14D` |
-| Barre in basso | `#06122E` |
-| Etichette dei moduli | `#8FD3FF` |
+| Ruolo | navy (principale) | dark | light |
+|---|---|---|---|
+| Sfondo | `#0A1946` | `#1E1E1E` | `#F6F8FA` |
+| Campi, pulsanti, messaggi | `#1E3A78` | `#333333` | `#E6EAEF` |
+| Testo | `#D5DEEE` | `#D4D4D4` | `#1F2328` |
+| Secondario / nascosti | `#7F8FB4` | `#8C8C8C` | `#636C76` |
+| Cartelle | `#FFFFFF` | `#FFFFFF` | `#000000` |
+| Titoli dei pannelli | `#FFFFFF` | `#FFFFFF` | `#1F2328` |
+| Bordo inattivo / attivo | `#5A6E9A` / `#FFE14D` | `#707070` / `#FFE14D` | `#808994` / `#0969DA` |
+| **Selezione (riservato)** | `#FFE14D` | `#FFE14D` | `#986800` |
+| Cursore attivo (sfondo / testo) | `#2AB3C8` / `#06122E` | `#5FA8E8` / `#111111` | `#0969DA` / `#FFFFFF` |
+| Cursore inattivo (sfondo / testo) | `#2B3F6E` / `#FFFFFF` | `#3C3C3C` / `#FFFFFF` | `#D8DEE4` / `#1F2328` |
+| Barre in basso | `#06122E` | `#121212` | `#E6EAEF` |
+| Tasti nella barra (testo / sfondo) | `#06122E` / `#2AB3C8` | `#111111` / `#5FA8E8` | `#FFFFFF` / `#0969DA` |
+| Avvisi (testo / sfondo) | `#06122E` / `#56D4DD` | `#111111` / `#7FD1C7` | `#FFFFFF` / `#0969DA` |
+| Etichette dei moduli | `#8FD3FF` | `#9CDCFE` | `#0550AE` |
+| Errori | `#FF7B72` | `#F48771` | `#B42318` |
+| Archivi | `#FF79C6` | come navy | `#BF3989` |
+| Programmi e script | `#5AF78E` | come navy | `#1A7F37` |
+| Immagini | `#C792EA` | come navy | `#8250DF` |
+| Documenti | `#79C0FF` | come navy | `#0550AE` |
+| Audio e video | `#FF6B6B` | come navy | `#D80838` |
+| Codice, configurazione, log | `#4EE6C8` | come navy | `#0E7C86` |
+| Sistema e supporto | `#9AA3B5` | come navy | `#57606A` |
 
-Tutti i colori sono RGB: in Windows Terminal appaiono esattamente; nella console classica a 16 colori tcell sceglie il colore di tavolozza più vicino (lo sfondo diventa il blu scuro standard, e alcune famiglie possono coincidere).
+**Soglie verificate dai test per ogni schema** (rapporto di contrasto WCAG): testo, titoli, cartelle, selezione, etichette, testo dei cursori, delle barre, dei tasti, degli avvisi, delle finestre e degli errori ≥ 4,5:1; colonne secondarie della barra di stato, bordi, selezione sul cursore inattivo e icone sul cursore inattivo ≥ 3:1. I colori codificati nei testi con tag di tview (riepilogo dei tasti, avvisi) sono generati dallo schema corrente (`tagColor`).
+
+Tutti i colori sono RGB: in Windows Terminal appaiono esattamente; nella console classica a 16 colori tcell sceglie il colore di tavolozza più vicino (lo sfondo navy diventa il blu scuro standard, e alcune famiglie possono coincidere). Il profilo di Windows Terminal resta con lo schema "gofm Navy": gofm dipinge ogni cella, quindi lo schema del terminale si vede solo nel bordo di 2 pixel.
 
 ### 3.7 Cursore
 
@@ -255,7 +291,10 @@ Davanti a ogni nome c'è un'icona di **una cella**, nella colonna *Icona* (§3.1
 |---|---|---|---|
 | Cartella | `U+F07B` nf-fa-folder | `►` | bianco |
 | `..` | `U+F062` nf-fa-arrow_up | `↑` | bianco |
-| Unità | `U+F0A0` nf-fa-hdd_o | `■` | bianco |
+| Unità locale | `U+F0A0` nf-fa-hdd_o | `■` | colore delle cartelle |
+| Unità di rete (v1.12) | `U+F0E8` nf-fa-sitemap | `≈` | colore delle cartelle |
+| Unità rimovibile / USB (v1.12) | `U+F287` nf-fa-usb | `▬` | colore delle cartelle |
+| Unità CD/DVD (v1.12) | `U+F192` nf-fa-dot_circle_o | `○` | colore delle cartelle |
 | Share | `U+F233` nf-fa-server | `≡` | bianco (attenuato per `C$`, `ADMIN$`) |
 | Archivi | `U+F1C6` nf-fa-file_archive_o | `▒` | `#FF79C6` |
 | Programmi e script | `U+F120` nf-fa-terminal | `♦` | `#5AF78E` |
@@ -348,15 +387,15 @@ A ogni cambio di cartella riuscito su un percorso con lettera di unità, `lastDi
 | Tab / Shift+Tab | cambia pannello attivo |
 | Shift+*lettera* (lettera maiuscola) | va a quell'unità (vedi §4.2); messaggio se non esiste; fuori da Windows `Shift+<letter> switches drive on Windows only.` + `Type lower-case letters to search by name.`. Con il Blocco Maiuscole attivo ogni lettera è un cambio di unità |
 | Ctrl+B | **vista piatta** on/off (§6.25) |
-| Ctrl+altre lettere | nessuna funzione (fino alla v1.7 cambiavano unità) |
+| Ctrl+altre lettere | nessuna funzione, tranne Ctrl+A (§5.2) (fino alla v1.7 cambiavano unità) |
 | Alt+L | `Go to`: digita un percorso (vedi §6.12) |
-| Alt+V | elenco unità, con il cursore sull'unità corrente (fino alla v1.6 era Alt+D) |
+| Alt+V | elenco unità, con il cursore sull'unità corrente; icona ed etichetta per tipo di unità (§6.30) |
 | Ctrl+→ | **solo nel pannello sinistro**: il pannello destro mostra lo stesso luogo (vedi §6.19); nel pannello destro non fa nulla |
 | Ctrl+← | **solo nel pannello destro**: il pannello sinistro mostra lo stesso luogo; nel pannello sinistro non fa nulla |
 | Alt+E | come sopra, verso l'altro pannello in qualunque direzione |
 | Alt+R | aggiorna entrambi i pannelli e rimisura le cartelle selezionate (l'aggiornamento è comunque automatico, §6.22) |
 | Alt+I | icone: glifi Nerd Font ↔ simboli semplici (§3.9); la scelta è ricordata |
-| Mouse | clic per selezionare e attivare un pannello |
+| Mouse | clic per selezionare e attivare un pannello; clic su una voce della barra dei tasti = quel tasto (§3.3) |
 
 ### 5.2 Selezione
 
@@ -364,8 +403,7 @@ A ogni cambio di cartella riuscito su un percorso con lettera di unità, `lastDi
 |---|---|
 | Spazio | marca/smarca e scende; aggiorna il totale cumulativo sul bordo del pannello (§6.18); durante una ricerca digitando inserisce uno spazio nel testo |
 | Ins | marca/smarca e scende (sempre) |
-| `*` | nessuna selezione → seleziona **tutti** i file e le cartelle; altrimenti **deseleziona tutto** (§6.23) |
-| Alt+A | inverte la marcatura (esclusi `..`, unità, share) |
+| Ctrl+A | nessuna selezione → seleziona **tutti** i file e le cartelle; altrimenti **inverte** la marcatura (§6.23). Sostituisce `*` e Alt+A (tolti nella v1.12) |
 | Esc | nell'ordine: termina la ricerca digitando → toglie il filtro → toglie le marcature |
 
 ### 5.3 Operazioni
@@ -379,12 +417,14 @@ Agiscono sugli elementi marcati; se non ce ne sono, sull'elemento sotto il curso
 | F5 | Copia **subito** nella cartella dell'altro pannello | **Estrae subito** la selezione nella cartella dell'altro pannello |
 | F6 | Sposta **subito** nella cartella dell'altro pannello | rifiutato: `Archives are read-only here: use F5 to extract instead of moving.` |
 | F7 | Nuova cartella (accetta `a\b\c`) | messaggio sola lettura |
-| F8 / Canc | Cestino (seconda conferma se ci sono cartelle con sottocartelle, §6.6) | messaggio sola lettura |
+| F4 | **Modifica** il file sotto il cursore con l'editor esterno (§6.28) | `Files inside an archive cannot be edited.` |
+| Canc | Cestino sulle unità locali, **cancellazione definitiva** sulle unità di rete; seconda conferma se ci sono cartelle con sottocartelle (§6.6) | messaggio sola lettura |
+| F8 | nessuna funzione (cancellava fino alla v1.11) | — |
 | F9 | Comprimi in ZIP | messaggio sola lettura |
 | F10 / Alt+Q | Esci | Esci |
 | F12 | Confronta le due cartelle (§6.20) | Confronta (funziona anche dentro gli archivi) |
 | F1 | nessuna funzione (l'aiuto è stato eliminato in v1.4) | — |
-| Alt+F1 | Riepilogo dei tasti non presenti nella barra (§3.4) | uguale |
+| Ctrl+F2 | Riepilogo di tutti i tasti (§3.4; Alt+F1 nella v1.10–1.11) | uguale |
 | Alt+U | Estrae tutto l'archivio sotto il cursore | Estrae la selezione |
 
 Messaggio di sola lettura: `Archives are read-only here.\nUse F5 or Alt+U to extract the selected items.` In elenco share: `Open a share first (→ or Enter).`; in elenco unità: `Open a drive first (→ or Enter).`
@@ -393,9 +433,11 @@ Messaggio di sola lettura: `Archives are read-only here.\nUse F5 or Alt+U to ext
 
 | Tasto | Azione |
 |---|---|
-| Alt+S | Ricerca ricorsiva (solo su disco) |
-| Alt+F | Filtro del pannello (anche dentro archivi ed elenco share) |
-| Alt+O | Ordina: nome → dimensione → data |
+| Alt+F7 | Ricerca ricorsiva (solo su disco; Alt+S fino alla v1.11) |
+| Ctrl+F7 | Filtro del pannello (anche dentro archivi ed elenco share; Alt+F fino alla v1.11) |
+| Alt+O | Ordina: nome → dimensione → data, ripartendo dal senso naturale (nome ↑, dimensione e data ↓) |
+| Alt+D | Inverte il senso dell'ordinamento (v1.12); il titolo mostra `sort: <tipo> ↑` o `↓` |
+| Ctrl+F9 | Schema di colori successivo: navy → dark → light (§3.6) |
 | Alt+H | Mostra/nasconde file nascosti e di sistema e le share amministrative (`C$`, `ADMIN$`) |
 
 ### 5.5 Decodifica dei tasti (dettaglio tecnico)
@@ -406,9 +448,10 @@ Messaggio di sola lettura: `Archives are read-only here.\nUse F5 or Alt+U to ext
   2. Windows Terminal (*win32-input-mode*): `Key('A'…'Z')` con `ModCtrl`. Solo questa forma distingue Ctrl+H, Ctrl+I, Ctrl+M da Backspace, Tab e Invio.
   Va scartato Ctrl+Alt, che è AltGr sulle tastiere europee.
 - **Alt+lettera**: `KeyRune` con `ModAlt` e senza `ModCtrl`; la lettera viene portata in minuscolo.
+- **Tasti funzione con Ctrl o Alt** (v1.12): `KeyF1…KeyF64` con `ModCtrl` e/o `ModAlt`, controllati **prima** dei tasti funzione semplici: Alt+F7 ricerca, Ctrl+F7 filtro, Ctrl+F2 riepilogo, Ctrl+F9 schemi; ogni altra combinazione viene consumata senza effetto, così Ctrl+F7 non apre mai la richiesta di F7.
 - I caratteri AltGr (`@ # [ ]` sulla tastiera italiana) arrivano come rune semplici e finiscono nella ricerca digitando.
 - La cattura dei tasti avviene a livello di applicazione e solo quando la pagina in primo piano è `main`; con una finestra di dialogo aperta i tasti vanno alla finestra.
-- Ctrl+C viene consumato dalla cattura (diventa "unità C:") e non chiude il programma.
+- Ctrl+C viene consumato dalla cattura senza effetto e non chiude il programma.
 
 ---
 
@@ -440,15 +483,15 @@ Messaggio di sola lettura: `Archives are read-only here.\nUse F5 or Alt+U to ext
    - origine e destinazione coincidono → `Source and destination are the same:`;
    - cartella dentro sé stessa → `Cannot copy a folder into itself:`;
    - esiste già un elemento di tipo diverso con lo stesso nome → `An item of a different type with the same name already exists:`.
-5. Se ci sono conflitti (**unica domanda rimasta**): `N items already exist at the destination.\nFolders with the same name will be merged.` con `Overwrite` / `Skip existing` / `Cancel`.
-6. Esecuzione in background (§6.10). Fase `Counting files…`: si calcola la dimensione di ogni elemento (`treeSize`, senza seguire link) e il totale.
-7. Gli elementi da saltare (conflitto con *Skip existing*) vengono tolti subito e la loro dimensione aggiunta all'avanzamento. Tutti gli altri passano a **un unico motore di copia** condiviso dall'intera selezione (§6.21), così il parallelismo vale anche tra file marcati singolarmente.
+5. Esecuzione in background (§6.10). Fase `Counting files…`: si calcola la dimensione di ogni elemento (`treeSize`, senza seguire link) e il totale.
+6. **Conflitti, file per file (v1.12)**. Fase `Checking the destination…`: `findConflicts` visita la selezione e trova ogni **file** che esiste già nella destinazione, al primo livello e **dentro le cartelle con lo stesso nome** (che vengono unite). Per ciascuno, in ordine, una domanda (§3.4) con dimensione e data delle due copie: **`Skip`** (predefinito), `Skip all`, `Overwrite`, `Overwrite all`, `Cancel`/Esc (annulla l'intera operazione prima che inizi la copia). Le domande arrivano **tutte prima** della copia: i lavoratori paralleli non vanno fermati e un annullamento non lascia nulla a metà. Fino alla v1.11 c'era una sola domanda (`Overwrite` / `Skip existing` / `Cancel`) per gli elementi di primo livello, e dentro le cartelle unite i file venivano sovrascritti senza chiedere.
+7. I file da saltare finiscono in `opCtx.skip`: il motore non li copia e aggiunge la loro dimensione all'avanzamento. Tutto il resto passa a **un unico motore di copia** condiviso dall'intera selezione (§6.21), così il parallelismo vale anche tra file marcati singolarmente.
 8. **Copia** (`copyAll`), visita in ordine di ogni elemento:
    - cartella: `MkdirAll` con permessi originali più `0700`, poi visita del contenuto; la data delle cartelle viene impostata alla fine, dalla più interna;
    - file: messo in coda ai lavoratori, copiato con `copyFileNative` (§8.4 su Windows; altrove buffer da 1 MB, permessi più `0200`, `Chtimes`); in caso di errore o annullamento il file parziale viene rimosso;
    - symlink: viene ricreato; se non è possibile (tipico di Windows senza privilegi) e punta a un file, si copia il contenuto, altrimenti errore `link not copied`;
    - junction / reparse point verso cartelle: saltati con `folder link (junction) skipped`.
-9. **Spostamento** (`moveAll`): per ogni elemento che non sia una fusione cartella→cartella esistente si prova `os.Rename`, istantaneo sulla stessa unità; la sua dimensione si aggiunge subito all'avanzamento. Gli elementi che non si possono rinominare (unità diverse, fusioni) passano al motore di copia condiviso. Dopo la copia, l'origine di **ciascun elemento** viene eliminata **solo se tutti i suoi file sono stati copiati senza errori e senza annullamento**; altrimenti `source NOT deleted because the copy is incomplete`. L'errore su un elemento non blocca l'eliminazione degli altri, completi.
+9. **Spostamento** (`moveAll`): un file di primo livello saltato non si muove. Per ogni altro elemento che non sia una fusione cartella→cartella esistente si prova `os.Rename` (che sostituisce un file esistente scelto con *Overwrite*), istantaneo sulla stessa unità; la sua dimensione si aggiunge subito all'avanzamento. Gli elementi che non si possono rinominare (unità diverse, fusioni) passano al motore di copia condiviso. Dopo la copia, l'origine di **ciascun elemento** viene eliminata **solo se tutti i suoi file sono stati copiati senza errori e senza annullamento**; altrimenti `source NOT deleted because the copy is incomplete`. L'errore su un elemento non blocca l'eliminazione degli altri, completi. Se in un elemento sono stati **saltati** dei file (v1.12), dalla sorgente si cancella tutto **tranne** quei file e le cartelle che li contengono (`removeExcept`): i file saltati restano dove sono.
 10. Al termine: marcati azzerati, entrambi i pannelli ricaricati, eventuali errori mostrati (§6.11).
 
 ### 6.4 Rinomina (F2)
@@ -459,16 +502,20 @@ Richiesta `New name:` con il nome attuale. Rifiuta `\` e `/` (`use F6 to move`),
 
 Richiesta `Name:`. Usa `MkdirAll`, quindi accetta percorsi annidati e assoluti; il cursore va sul primo segmento creato.
 
-### 6.6 Cestino (F8 / Canc)
+### 6.6 Cancellazione (Canc)
 
-Conferma `Move "<nome>" to the Recycle Bin?` con `Yes` / `No` (`Move N items …` per più elementi).
+F8 non cancella più (v1.12): resta solo **Canc**. Il comportamento dipende dal luogo (`isNetworkLocation`: percorso UNC, oppure lettera di un'unità di tipo rete, §6.30).
+
+**Unità locali → Cestino.** Conferma `Move "<nome>" to the Recycle Bin?` con `Yes` / `No` (`Move N items …` per più elementi).
+
+**Unità di rete → cancellazione definitiva** (v1.12). Conferma `Delete "<nome>" PERMANENTLY?` + `This is a network drive: the Recycle Bin is not used,` + `the deleted items cannot be restored.`, con **`Cancel`** (predefinito) e `Delete`. Poi `deleteAll` in background (` Working `, `Deleting N items permanently`): per ogni elemento `removeTree`, cioè `os.RemoveAll`; se fallisce (file o cartelle di sola lettura) toglie la sola lettura a tutto l'albero (`Chmod`, senza seguire collegamenti) e riprova. Collegamenti e junction vengono rimossi, mai seguiti. Errori raccolti come le altre operazioni.
 
 **Seconda conferma (v1.10)** se fra gli elementi ci sono **cartelle che contengono almeno una sottocartella**:
 - il controllo (`foldersWithSubfolders`) gira in una goroutine, così una share lenta non blocca l'interfaccia; per ogni elemento che è una cartella vera (`os.Lstat`: collegamenti e junction esclusi, il Cestino sposta il collegamento e non il contenuto) legge le voci a blocchi di 256 e si ferma alla prima sottocartella;
 - se nessuna cartella ha sottocartelle si procede subito, senza altre domande (anche cartelle con soli file);
-- altrimenti appare `WARNING: this folder contains subfolders:` (oppure `WARNING: N folders contain subfolders:`), l'elenco dei nomi (al massimo 8, poi `… and N more`) e `They will go to the Recycle Bin with everything inside them.`, con i pulsanti **`Cancel`** (predefinito: Invio annulla) e `Move to Recycle Bin`; Esc annulla.
+- altrimenti appare `WARNING: this folder contains subfolders:` (oppure `WARNING: N folders contain subfolders:`), l'elenco dei nomi (al massimo 8, poi `… and N more`) e `They will go to the Recycle Bin with everything inside them.` (in rete: `They will be deleted PERMANENTLY with everything inside them.`), con i pulsanti **`Cancel`** (predefinito: Invio annulla) e `Move to Recycle Bin` (in rete `Delete permanently`); Esc annulla.
 
-Poi un'unica chiamata di sistema con tutti i percorsi (§8.2), nella fase `Waiting for Windows…`. Su Linux/macOS segue in forma semplificata la specifica freedesktop (`~/.local/share/Trash/files` + `.trashinfo`).
+Cestino: un'unica chiamata di sistema con tutti i percorsi (§8.2), nella fase `Waiting for Windows…`. Su Linux/macOS segue in forma semplificata la specifica freedesktop (`~/.local/share/Trash/files` + `.trashinfo`).
 
 ### 6.7 Compressione ZIP (F9)
 
@@ -566,16 +613,16 @@ Usato da Alt+L e da tutti i campi di destinazione:
   - altrimenti si tronca con `…` finale.
 - Il ridisegno avviene da solo quando cambia la larghezza interna del pannello: un `Draw` personalizzato confronta la larghezza con quella dell'ultimo disegno.
 
-### 6.14 Ricerca ricorsiva (Alt+S)
+### 6.14 Ricerca ricorsiva (Alt+F7; Alt+S fino alla v1.11)
 
 - Form ` Find files in <cartella> ` con i campi `Name (text or *.ext):`, `Containing text (optional):`, `Include hidden:` e i pulsanti `Find` / `Cancel`. Invio in un campo di testo avvia subito la ricerca.
 - Corrispondenza del nome come il filtro (§6.15). Il contenuto è cercato a blocchi da 256 KB con sovrapposizione, senza distinzione di maiuscole (ASCII).
 - I nascosti (e le loro sottocartelle) vengono saltati se non richiesti; le cartelle senza permessi sono ignorate in silenzio.
 - Limite di 2000 risultati. Durante la ricerca: `N found — <cartella>`.
 - Risultati in una lista ` N results — Enter to go there, Esc to close `; Invio porta il pannello alla cartella del risultato con il cursore sul file, attivando la visualizzazione dei nascosti se necessario. Nessun risultato: `No results.`
-- Non disponibile fuori dalle cartelle su disco: `Search works in folders on disk.\nUse Alt+F to filter the current list.`
+- Non disponibile fuori dalle cartelle su disco: `Search works in folders on disk.\nUse Ctrl+F7 to filter the current list.`
 
-### 6.15 Filtro (Alt+F)
+### 6.15 Filtro (Ctrl+F7; Alt+F fino alla v1.11)
 
 Richiesta `Show only (text or *.ext, empty = all):`; vuoto = nessun filtro. Se il testo contiene `* ? [` si usa `filepath.Match` in minuscolo, altrimenti la ricerca "contiene" senza distinzione di maiuscole.
 
@@ -599,7 +646,7 @@ Riquadro a tutto schermo, scorrevole, intitolato ` <nome> — Esc/F3 to close ` 
 
 ### 6.18 Totale cumulativo della selezione
 
-- Ogni volta che la marcatura cambia (Spazio, Ins, `*`, Alt+A) il **bordo superiore del pannello**, a destra e sulla stessa riga del percorso, mostra ` N selected · <dimensione> · M files ` in giallo.
+- Ogni volta che la marcatura cambia (Spazio, Ins, Ctrl+A) il **bordo superiore del pannello**, a destra e sulla stessa riga del percorso, mostra ` N selected · <dimensione> · M files ` in giallo.
 - Una **cartella selezionata** mostra nella colonna dimensione il proprio **totale ricorsivo** (`…` durante la misurazione); smarcata torna `<DIR>`.
 - **File**: contano 1 e la loro dimensione.
 - **Cartelle**: alla marcatura parte una misurazione **ricorsiva in background** (`treeStats`: solo file regolari, i collegamenti non vengono seguiti, gli errori di permesso vengono ignorati). Finché non termina, la cartella non contribuisce al totale, che mostra ` · counting…`; all'arrivo del risultato riga e totale si aggiornano da soli.
@@ -633,7 +680,7 @@ Riquadro a tutto schermo, scorrevole, intitolato ` <nome> — Esc/F3 to close ` 
 - Il contenuto non viene letto.
 - **Solo file**: cartelle, `..`, unità e share vengono ignorate e non vengono mai selezionate.
 - Su Windows il confronto **non distingue maiuscole e minuscole** (`Report.PDF` = `report.pdf`), come il file system; altrove le distingue.
-- Si confronta **ciò che è elencato**: il filtro (Alt+F) e l'impostazione dei nascosti (Alt+H) di ciascun pannello contano. In vista piatta si confrontano i percorsi relativi.
+- Si confronta **ciò che è elencato**: il filtro (Ctrl+F7) e l'impostazione dei nascosti (Alt+H) di ciascun pannello contano. In vista piatta si confrontano i percorsi relativi.
 - Le selezioni precedenti dei due pannelli vengono **sostituite**, e le misure delle cartelle in corso annullate.
 - Funziona con cartelle su disco, share UNC aperte e interno di archivi, anche misti (es. cartella contro contenuto di uno zip). Con un elenco unità o un elenco share appare `Both panels must show a folder (or the inside of an archive).`
 - Esito in barra di stato, fino al tasto successivo: `Compare: left N only here, M newer · right P only here, Q newer`, più ` · K same date, different size` se ce ne sono; se non c'è nulla da selezionare `Compare: same files on both sides (name, size, date ±2 s)`.
@@ -659,12 +706,12 @@ Riquadro a tutto schermo, scorrevole, intitolato ` <nome> — Esc/F3 to close ` 
 - L'insieme delle cartelle osservate viene riallineato dopo ogni lettura (`syncWatches`): si aggiunge la nuova cartella e si rimuove quella abbandonata; una cartella mostrata da entrambi i pannelli è osservata una volta sola.
 - Se le notifiche non sono disponibili (es. NAS che non le supporta) non compare alcun errore: resta **Alt+R**.
 
-### 6.23 Seleziona tutto / niente (`*`)
+### 6.23 Seleziona tutto / inverti (Ctrl+A, v1.12)
 
-- Se nel pannello non c'è nessuna selezione, `*` seleziona **tutti gli elementi elencati** (file e cartelle; mai `..`, unità, share) e avvia la misurazione delle cartelle.
-- Se c'è almeno una selezione, `*` le toglie **tutte** e annulla le misurazioni.
-- `*` non è mai usato dalla ricerca digitando (non può comparire nei nomi Windows); interrompe una ricerca in corso.
-- Funziona anche dentro un archivio. Alt+A (inverti) resta disponibile.
+- Se nel pannello non c'è nessuna selezione, Ctrl+A seleziona **tutti gli elementi elencati** (file e cartelle; mai `..`, unità, share) e avvia la misurazione delle cartelle.
+- Se c'è almeno una selezione, Ctrl+A la **inverte** (`invertMarks`): i selezionati si deselezionano, gli altri si selezionano, con misurazioni avviate e annullate di conseguenza. Con tutto selezionato, quindi, Ctrl+A deseleziona tutto.
+- Interrompe una ricerca digitando in corso. Funziona anche dentro un archivio.
+- Fino alla v1.11: `*` selezionava tutto o deselezionava tutto, Alt+A invertiva; entrambi tolti. `*` ora finisce nella ricerca digitando come qualunque carattere.
 
 ### 6.24 Posizione del cursore dopo una rilettura
 
@@ -674,7 +721,7 @@ Dopo ogni rilettura (fine di una copia, spostamento, cestino, aggiornamento auto
 3. se non ce ne sono (era in fondo all'elenco), sul **primo elemento precedente** ancora presente;
 4. lo scorrimento della lista viene mantenuto.
 
-Esempio: cursore su `photo.jpg`, F8 → il cursore passa a `plain`, il file che seguiva. Con più file selezionati e cancellati insieme vale la stessa regola: si salta al primo superstite dopo la posizione del cursore.
+Esempio: cursore su `photo.jpg`, Canc → il cursore passa a `plain`, il file che seguiva. Con più file selezionati e cancellati insieme vale la stessa regola: si salta al primo superstite dopo la posizione del cursore.
 
 ### 6.25 Vista piatta (Ctrl+B)
 
@@ -690,12 +737,12 @@ Esempio: cursore su `photo.jpg`, F8 → il cursore passa a `plain`, il file che 
 - **Uscita**: Ctrl+B di nuovo, cursore sull'elemento di primo livello che conteneva il file corrente. Ogni **cambio di luogo** (←, Backspace, `..`, Shift+lettera, Alt+L, Alt+V, Ctrl+→/←, Alt+E sull'altro pannello, apertura di un archivio) chiude la vista piatta; se il cambio fallisce, la vista piatta viene ripristinata.
 - **Operazioni**: il percorso completo di ogni voce è cartella + nome relativo, quindi funzionano tutte:
   - **F5/F6**: ogni file va **direttamente** nella cartella di destinazione (`dest\util.go`). Se due file selezionati hanno lo stesso nome: `These names are selected more than once (from different subfolders) and would overwrite each other in one folder:` + elenco (al massimo 8) + `Unmark the duplicates and try again.`; nulla viene copiato.
-  - **F8**, **F3**, Invio: come per un file normale.
+  - **Canc**, **F3**, **F4**, Invio: come per un file normale.
   - **F2**: il campo mostra solo il nome del file; il file resta nella sua sottocartella e la voce viene aggiornata subito.
   - **F9** (ZIP): l'archivio conserva i percorsi relativi.
   - **F7**: crea la cartella sotto la cartella radice (non compare nell'elenco, che mostra solo file).
   - **F12**: confronta i **percorsi relativi**; con due viste piatte confronta due alberi.
-  - Selezione, `*`, Alt+A, filtro (sul percorso relativo), ordinamento (sull'intero albero, es. i file più grandi), ricerca digitando (sul **nome del file**, poi sul percorso).
+  - Selezione, Ctrl+A, filtro (sul percorso relativo), ordinamento (sull'intero albero, es. i file più grandi), ricerca digitando (sul **nome del file**, poi sul percorso).
 - **Aggiornamento**: dopo un'operazione, con Alt+R, Alt+H o una notifica sulla cartella radice, l'albero viene riletto **in background**. L'elenco precedente resta visibile (`updating…`) e, all'arrivo, il cursore segue la regola di §6.24. Le notifiche osservano solo la cartella radice: le modifiche fatte da altri programmi dentro le sottocartelle compaiono con Alt+R.
 
 ### 6.26 Bordo inferiore: file della cartella e spazio libero
@@ -708,12 +755,37 @@ Esempio: cursore su `photo.jpg`, F8 → il cursore passa a `plain`, il file che 
 ### 6.27 Memoria delle cartelle
 
 - **File**: `%APPDATA%\gofm\state.json` (`os.UserConfigDir`); `GOFM_STATE` lo sostituisce (test, uso portatile).
-- **Contenuto** (JSON, `version: 1`): `left`, `right` (cartella del pannello; per un archivio la cartella che lo contiene, per la vista piatta la radice; `""` = elenco unità; `\\server` = elenco share), `active` (`left`/`right`), `driveDirs` (ultima cartella per lettera di unità, usata da Shift+lettera), `basicIcons` (v1.9: `true` = simboli semplici; assente = glifi Nerd Font, quindi i file delle versioni precedenti restano validi senza cambiare `version`).
-- **Salvataggio**: alla fine di ogni lettura di un pannello, a ogni Alt+I e all'uscita, **solo se qualcosa è cambiato**, in modo atomico (file temporaneo + rinomina). Durante la costruzione iniziale dei pannelli non si salva nulla. Gli errori di scrittura sono ignorati.
+- **Contenuto** (JSON, `version: 1`): `left`, `right` (cartella del pannello; per un archivio la cartella che lo contiene, per la vista piatta la radice; `""` = elenco unità; `\\server` = elenco share), `active` (`left`/`right`), `driveDirs` (ultima cartella per lettera di unità, usata da Shift+lettera), `basicIcons` (v1.9: `true` = simboli semplici; assente = glifi Nerd Font, quindi i file delle versioni precedenti restano validi senza cambiare `version`), `colorScheme` (v1.12: `dark` o `light`; assente = navy; un nome sconosciuto vale navy).
+- **Salvataggio**: alla fine di ogni lettura di un pannello, a ogni Alt+I e Ctrl+F9 e all'uscita, **solo se qualcosa è cambiato**, in modo atomico (file temporaneo + rinomina). Durante la costruzione iniziale dei pannelli non si salva nulla. Gli errori di scrittura sono ignorati.
 - **Ripristino** all'avvio, prima degli argomenti della riga di comando (che hanno la precedenza):
   - elenco unità ed elenco share: ripristinati così come sono (se l'elenco share non si legge, il pannello ripiega da solo sulla cartella corrente);
   - cartella: controllata con **timeout di 3 s**; se non risponde → cartella corrente; se non esiste più → la **prima cartella padre esistente** (solo per percorsi locali); altrimenti la cartella corrente;
   - pannello attivo e memoria per unità ripristinati.
+
+### 6.28 Editor esterno (F4, v1.12)
+
+- Modifica il **file sotto il cursore** (non la selezione). Su `..`, unità e share non fa nulla; su una cartella `F4 edits files, not folders.`; dentro un archivio `Files inside an archive cannot be edited.\nExtract them first (F5 or Alt+U).`; in vista piatta usa il percorso completo del file.
+- Comando: variabile d'ambiente **`GOFM_EDITOR`**, altrimenti `notepad.exe` (fuori da Windows nessun predefinito). `editorCommand` lo divide così: un programma tra virgolette seguito da argomenti (`"C:\Program Files\Microsoft VS Code\Code.exe" --reuse-window`); un percorso senza virgolette che esiste come file anche se contiene spazi (`C:\Program Files\Notepad++\notepad++.exe`); altrimenti il primo campo è il programma e il resto sono argomenti. Il file da modificare è sempre l'ultimo argomento.
+- Avvio con `exec.Command`, cartella di lavoro = cartella del file, flag `DETACHED_PROCESS` su Windows (nessuna console condivisa: un programma da console come `code.cmd` non può scrivere sullo schermo di gofm), poi `Process.Release`: gofm **non attende** l'editor. Avviso `Editing <nome> with <programma>`.
+- Errore di avvio: `Cannot start the editor <programma>:` + errore + `Set GOFM_EDITOR to the path of a windowed editor.`
+- Gli editor da terminale (vim, micro…) **non sono supportati**: non avrebbero una console.
+
+### 6.29 Conflitti in copia e spostamento (v1.12)
+
+Vedi §6.3, punti 5–7. In sintesi: `findConflicts` elenca i file della selezione che esistono già nella destinazione, anche dentro le cartelle unite (stesso tipo: file contro file; i tipi diversi annidati restano errori della copia); `resolveConflicts` pone una domanda per file finché una risposta "all" decide il resto; il motore salta i file scelti con *Skip*; negli spostamenti `removeExcept` cancella dalla sorgente tutto tranne i file saltati e le cartelle che li contengono.
+
+### 6.30 Tipi di unità (v1.12)
+
+- `driveKind(radice)` (Windows): `GetDriveType` → `DRIVE_REMOTE` = **rete**, `DRIVE_REMOVABLE` = **rimovibile**, `DRIVE_CDROM` = **CD/DVD**; `DRIVE_FIXED` = **locale**, salvo che il disco sia su bus **USB, 1394, SD o MMC** (`busType`): allora **rimovibile** (i dischi USB esterni Windows li dichiara fissi). Gli altri tipi (RAM disk, sconosciuto) = locale.
+- `busType`: apre `\\.\X:` con accesso 0 (nessun diritto di amministratore), `DeviceIoControl(IOCTL_STORAGE_QUERY_PROPERTY = 0x002D1400)` con `StorageDeviceProperty` / `PropertyStandardQuery`, legge `BusType` all'offset 28 di `STORAGE_DEVICE_DESCRIPTOR`; in caso di errore 0 (= locale).
+- Nell'elenco unità: icona (§3.9) ed etichetta nella colonna dimensione `LOCAL`, `NETWORK`, `REMOVABLE`, `CD/DVD`.
+- `isNetworkLocation(cartella)`: `true` per i percorsi UNC e per le cartelle di un'unità di rete; usato da Canc (§6.6). Fuori da Windows sempre `false`.
+
+### 6.31 Ordinamento (v1.12)
+
+- `entryLess(a, b, tipo, crescente)`: `..` prima, poi le cartelle, poi i file; dentro ciascun gruppo per tipo e senso; a parità di chiave per nome A→Z (senza maiuscole), sempre.
+- Senso iniziale a ogni Alt+O (`defaultAsc`): nome crescente, dimensione e data decrescenti (come fino alla v1.11). Alt+D lo inverte. Il senso è per pannello e non viene salvato.
+- Titolo: `sort: name ↑`, `sort: size ↓`, ecc., sempre presente (↑ crescente: A→Z, dal più piccolo, dal più vecchio; ↓ decrescente).
 
 ---
 
@@ -723,9 +795,12 @@ Esempio: cursore su `photo.jpg`, F8 → il cursore passa a `plain`, il file che 
 gofm/
 ├── main.go          UI: FM, tasti, finestre, runTask/progress, azioni, confronto, expandPath
 ├── panel.go         Panel: luoghi, caricamento, rendering adattivo, totale sul bordo, navigazione, marcatura, cursore dopo rilettura
-├── theme.go         tema blu, famiglie per estensione (colore + tipo di icona), applyTheme
+├── theme.go         tre schemi di colori, applyScheme, famiglie per estensione (colore + tipo di icona)
 ├── icons.go         icone: tipi, glifi Nerd Font, simboli semplici, colore dell'icona
-├── help.go          riepilogo dei tasti (Alt+F1) e tasti della barra in basso
+├── help.go          riepilogo di tutti i tasti (Ctrl+F2)
+├── keybar.go        barra dei tasti: voci per priorità, adattamento alla larghezza, clic del mouse (v1.12)
+├── editor.go        editor esterno (F4): GOFM_EDITOR, avvio staccato (v1.12)
+├── drives.go        tipi di unità, etichette, isNetworkLocation (v1.12)
 ├── statusbar.go     barra di stato a colonne fisse
 ├── watch.go         aggiornamento automatico (fsnotify), raggruppamento degli eventi
 ├── flat.go          vista piatta: visita ricorsiva, attivazione, rilettura in background, nomi doppi
@@ -745,6 +820,7 @@ gofm/
 ├── v19_test.go      test: icone (larghezza, insiemi, tipi, colori, contrasto, layout della riga, memoria)
 ├── v110_test.go     test: confronto nome/dimensione/data, cartelle con sottocartelle, riepilogo dei tasti, focus alla chiusura delle finestre
 ├── v111_test.go     test: compilatore fissato uguale in go.mod e nei workflow, risorse Windows (manifest, versione, icone)
+├── v112_test.go     test: schemi leggibili, unità, ordinamento, tasti nuovi e tolti, barra e clic, editor, conflitti, cancellazione definitiva
 ├── scripts/build-release.sh  pacchetto scaricabile (risorse Windows, zip, SHA-256, note di rilascio dal CHANGELOG)
 ├── winres/          winres.json, icon.png, icon16.png (metadati Windows, go-winres)
 ├── windows-terminal/ profilo di Windows Terminal (fragment JSON) e install-gofm.ps1
@@ -808,6 +884,9 @@ flowchart TB
 | `CopyFileExW` + callback (`syscall.NewCallback`) | `kernel32.dll` | copia di ogni file (§8.4) |
 | `GetOEMCP` | `kernel32.dll` | codepage OEM per i nomi ZIP legacy |
 | `NetShareEnum` + `NetApiBufferFree` | `netapi32.dll` / `x/sys/windows` | elenco share |
+| `GetDriveType` | `x/sys/windows` | tipo di unità: rete, rimovibile, CD/DVD, fissa (v1.12) |
+| `CreateFile` (accesso 0) + `DeviceIoControl(IOCTL_STORAGE_QUERY_PROPERTY)` | `x/sys/windows` | tipo di bus dei dischi fissi: USB/1394/SD/MMC = rimovibile (v1.12) |
+| `CreateProcess` con `DETACHED_PROCESS` | `os/exec` + `syscall.SysProcAttr` | editor esterno di F4 (v1.12) |
 
 ### 8.2 Cestino
 
@@ -955,6 +1034,7 @@ Eseguiti su Linux; su Windows è stata verificata solo la compilazione (`go vet`
 | Tasti | Ctrl+lettera nelle due codifiche, Ctrl+H/I/M, Backspace/Tab/Invio non scambiati, AltGr escluso, Alt+lettera |
 | Selezione | `treeStats` (file regolari e byte, ricorsivo), `plural` |
 | Confronto | `onlyOnOneSide`: cartelle e `..` ignorate, maiuscole indifferenti e distinte, cartella identica senza differenze |
+| v1.12 | `TestSchemesReadable` (3 schemi, nomi unici, navy principale; contrasto di testo, titoli, cartelle, selezione, cursori, barre, tasti, avvisi, etichette, finestre, errori ≥ 4,5:1; bordi, colonne secondarie, selezione sul cursore inattivo ≥ 3:1; `schemeIndex`); i test di colori e icone delle versioni precedenti girano per **ogni schema** (`forEachScheme`); `TestDriveKinds` (icona per tipo, etichette ≤ 9 celle e diverse, `isNetworkLocation` fuori da Windows); `TestSortDirection` (6 combinazioni tipo/senso con `..` e cartelle prima, sensi iniziali, frecce); `TestKeysV112` (FM reale: titolo `sort: name ↑`, Ctrl+A seleziona tutto e poi inverte, `*` e Alt+A senza effetto, Alt+D e Alt+O con la freccia nel titolo, Alt+F7/Ctrl+F7/Ctrl+F2/Canc/F7 aprono una finestra, F8, Alt+F1, Alt+S, Alt+F, Ctrl+Alt+F7 e Ctrl+F5 no); `TestKeyBar` (ordine di priorità, voci che entrano e spaziatura a 0–400 colonne, nessun tasto escluso, `itemAt`; **clic simulati** sulla barra di un FM reale: Alt+D, Ctrl+F2, Ctrl+F9 eseguiti senza spostare il focus, Shift+X senza effetto); `TestColourSchemeSwitch` (tre Ctrl+F9: colori di pannelli e barra, salvataggio in `state.json`, avviso; avvio con lo schema salvato); `TestEditorCommand` (7 casi: predefinito, vuoto, virgolette con argomenti, virgoletta non chiusa, percorso con spazi esistente, comando con argomenti); `TestEditFile` (F4 avvia uno script come editor con argomento e percorso del file senza attenderlo; `..`; editor inesistente → messaggio); `TestConflicts` (copia e spostamento con conflitti al primo livello e annidati: *Overwrite*, *Skip*, *Overwrite*; file saltato intatto nella destinazione e rimasto nella sorgente, gli altri copiati/spostati; testo della domanda con `(newer)`); `TestResolveConflicts` (Skip all, Overwrite all, Cancel, Esc, pulsante predefinito); `TestDeletePermanently` (cartella e file di sola lettura cancellati; avviso `PERMANENTLY`) |
 | v1.11 | `TestPinnedToolchain` (riga `toolchain` in `go.mod`, `tool github.com/tc-hib/go-winres`, `GO_VERSION` uguale nei due workflow, nessun `go-version-file`); `TestWindowsResources` (manifest `as invoker` senza ui-access né auto-elevate e con long-path-aware, campi di versione, esistenza delle icone). Tutti i test, vet (anche `GOOS=windows`) e race detector superati con **Go 1.27.3** |
 | v1.10 | `compareSides`: solo nome come prima (maiuscole indifferenti e distinte, stessa cartella senza differenze); nome+dimensione+data con stessa data, arrotondamento FAT (2 s → uguali), più recente a sinistra e a destra (anche con dimensione diversa), stessa data e dimensione diversa → entrambi, 1 ora → differenza, data sconosciuta con dimensione uguale e diversa, cartelle ignorate, contatori e testo dell'avviso; `foldersWithSubfolders` (cartella con soli file, con sottocartella, vuota, file, inesistente, 600 file prima della sottocartella, collegamento a cartella escluso) e `subfolderWarning` (singolare, 11 cartelle → `… and 3 more`); riepilogo dei tasti senza voci della barra, con le voci attese, righe ≤ 76 celle; **focus**: con `newFM` reale, per destro → sinistro → destro, due finestre aperte e chiuse, il pannello attivo, il focus e i colori dei bordi restano quelli di partenza |
 | v1.9 | insiemi di icone (una cella con `uniseg`, nessun doppione, Nerd Font nell'area a uso privato e simboli fuori); una famiglia = un tipo di icona (7 tipi distinti); `entryKind` (`..`, unità, share, cartella anche con nome da archivio, maiuscole, nome della vista piatta, estensione sconosciuta); colore dell'icona (famiglia anche se selezionato, mai giallo, attenuato se nascosto); **contrasto WCAG** (≥ 4,5:1 sullo sfondo, ≥ 3:1 sul cursore inattivo, testo del cursore ≥ 4,5:1 sul cursore attivo); layout della riga a 40/60/100 colonne (larghezza, cartella senza `\`, colonna marca, estensione conservata, insieme predefinito, simboli dopo Alt+I, icona della cartella selezionata bianca, `SelectedStyle` del cursore attivo e inattivo); `basicIcons` salvato anche quando cambia solo lui |
@@ -968,6 +1048,8 @@ Le fixture 7z sono generate con `py7zr`:
 - `single.7z`: `progetto/città.txt`, `progetto/sub/big.txt` (50 000 righe "riga");
 - `multi.7z`: come `single.7z` più `solo.txt` ("S");
 - `secret.7z`: `solo.txt` con password `pw`.
+
+Prova reale (v1.12) in `tmux` a 120×24: titolo `[sort: name ↑]`; barra con `F4Edit F6Move DelDelete F9Zip F12Compare Ctrl+ASelect Ctrl+BFlat Alt+F7Find Ctrl+F7Filter Alt+UExtract Alt+VDrives`; Ctrl+A seleziona `dir`, `solo.txt`, `top.txt`; F5 verso una cartella con `top.txt`, `dir/a.txt` e `dir/deep/b.txt` già presenti → domande `(1 of 3)` `dir/a.txt` con *Skip* evidenziato e i dati delle due copie, Invio = *Skip*, poi *Overwrite all* → `a.txt` resta quello vecchio, `b.txt` e `top.txt` sovrascritti, `solo.txt` copiato; Alt+D → `sort: name ↓`; Ctrl+F9 → avviso `Colours: dark — Ctrl+F9 for the next scheme` e `"colorScheme": "dark"` nel file di stato. **Non verificabili qui** (solo compilati): tipi di unità reali e bus USB, cancellazione su unità di rete, Notepad con F4, clic del mouse in Windows Terminal, decodifica di Alt+F7, Ctrl+F7, Ctrl+F2, Ctrl+F9 e Ctrl+A nei terminali Windows.
 
 Prova reale (v1.11): eseguibile x64 analizzato con `pefile`: `StringFileInfo` con `ProductName gofm`, `FileVersion 1.11`, `CompanyName rives`, `LegalCopyright`, `OriginalFilename gofm.exe`, `Comments` con il link; versione fissa `1.11.0.0`; risorse `RT_ICON`, `RT_GROUP_ICON`, `RT_VERSION`, `RT_MANIFEST`; manifest con `requestedExecutionLevel level="asInvoker" uiAccess="false"`, `longPathAware true` e Windows 10 tra i sistemi supportati; sottosistema console. Due build consecutive (con risorse rigenerate) identiche byte per byte. Icona controllata a vista a 256 e 16 px. **Non verificato**: come Windows mostra icona e proprietà, e se Defender segnala ancora la 1.11.
 
@@ -1009,6 +1091,7 @@ Prove precedenti: navigazione con le frecce, ricerca digitando, larghezza delle 
 - `go.sum` costruito con un metodo verificato ma senza accesso a `sum.golang.org` (§9.2): la prima compilazione su una macchina normale, o la CI, lo confermano.
 
 **Non verificato su Windows reale** (logica testata solo dove è portabile):
+- v1.12: riconoscimento dei tipi di unità (`GetDriveType`, bus USB via `DeviceIoControl`); cancellazione definitiva su unità mappate e UNC; F4 con Notepad e con editor in `GOFM_EDITOR` (avvio staccato); clic sulla barra dei tasti; decodifica di Alt+F7, Ctrl+F7, Ctrl+F2, Ctrl+F9 e Ctrl+A in Windows Terminal e nella console classica (nella console classica Ctrl+A potrebbe essere intercettato dalla selezione del testo della finestra);
 - Alt+F1 nei vari terminali (decodifica di F1 con il modificatore Alt) e la seconda conferma di F8 con il Cestino reale;
 - l'aspetto di icona e proprietà del file in Esplora risorse; l'effetto dei metadati sulle segnalazioni degli antivirus (riducono la probabilità di un falso positivo, non la escludono);
 - Cestino (`SHFileOperationW`), elenco share (`NetShareEnum`), unità, attributi, data di creazione, `ShellExecute`;
@@ -1026,6 +1109,7 @@ Prove precedenti: navigazione con le frecce, ricerca digitando, larghezza delle 
 |---|---|
 | 1.0 | Doppio pannello, operazioni di base, Cestino, ZIP, ricerca, filtro, anteprima; interfaccia in italiano |
 | 1.1 | Frecce ←/→, interfaccia in inglese, anteprima ed estrazione 7z |
+| 1.12 | **Tasti**: Ctrl+A seleziona tutto / inverte (tolti `*` e Alt+A), **F4** editor esterno (Notepad o `GOFM_EDITOR`), F8 non cancella più (solo Canc), ricerca **Alt+F7**, filtro **Ctrl+F7**, riepilogo **Ctrl+F2** con tutti i tasti, **Alt+D** inverte l'ordinamento con freccia ↑/↓ nel titolo, **Ctrl+F9** tre schemi di colori (navy, dark, light); **barra dei tasti** per priorità secondo la larghezza, senza F2 F3 F5 F7 F10, **cliccabile**; **conflitti file per file** in copia/spostamento (Skip, Skip all, Overwrite, Overwrite all, Cancel), anche dentro le cartelle unite; **cancellazione definitiva** sulle unità di rete; **icone ed etichette per tipo di unità** (locale, rete, rimovibile/USB, CD/DVD) |
 | 1.11 | **Compilatore aggiornato a Go 1.27.3**, fissato in `go.mod` e nei workflow (la 1.10 era stata compilata con Go 1.24.0); **metadati di Windows** negli eseguibili (versione, manifest *asInvoker*, icona) con go-winres; note di rilascio con compilatore, commit e SHA-256; README con verifica dei download e avvisi degli antivirus; verificata la riproducibilità degli eseguibili della 1.10 segnalati da Defender |
 | 1.10 | Correzione: chiudendo una finestra aperta dal pannello destro il focus passava al sinistro (visibile con Ctrl+B); **seconda conferma di F8** per cartelle con sottocartelle (elenco dei nomi, `Cancel` predefinito); **Alt+F1** riepilogo dei tasti non presenti nella barra; **F12 per nome, dimensione e data** (±2 s; selezionata la copia più recente, entrambe se stessa data e dimensione diversa); **Release su GitHub** con pacchetto compilato e SHA-256 (`release.yml`, `scripts/build-release.sh`); regola di lavoro sugli aggiornamenti a ogni versione; nel repository i file della 1.9 che mancavano |
 | 1.9 | **Icone per tipo di file** davanti ai nomi (una per famiglia di colori, più cartella, file generico, `..`, unità, share): glifi Nerd Font, oppure simboli semplici con **Alt+I** (ricordato in `state.json`); colore della famiglia anche sui selezionati, colore del cursore sulla riga del cursore attivo; cartelle senza prefisso `\`; profilo Windows Terminal con **Cascadia Mono NF** e controllo del font nello script |
@@ -1041,7 +1125,7 @@ Prove precedenti: navigazione con le frecce, ricerca digitando, larghezza delle 
 
 ## 13. Prompt per rigenerare il programma
 
-Il prompt seguente è autosufficiente: incollato a un assistente di programmazione con accesso a Go, dovrebbe produrre un programma equivalente alla versione 1.11. Le stringhe dell'interfaccia sono indicate testualmente.
+Il prompt seguente è autosufficiente: incollato a un assistente di programmazione con accesso a Go, dovrebbe produrre un programma equivalente alla versione 1.12. Le stringhe dell'interfaccia sono indicate testualmente.
 
 ````text
 Crea "gofm", un file manager a doppio pannello per il terminale di Windows, in Go (go.mod:
@@ -1052,38 +1136,57 @@ golang.org/x/text (charmap CP437/850/852/858/866 e Windows1252, unicode UTF-16),
 github.com/rivo/uniseg e github.com/bodgit/sevenzip v1.6 (7z in sola lettura).
 Interfaccia interamente in INGLESE. Deve compilare e girare anche su Linux per i test
 (file sys_windows.go e sys_other.go con build tag). Scrivi test unitari per tutta la
-logica portabile. Versione "1.11".
+logica portabile. Versione "1.12".
 
 AVVIO: gofm [left_folder] [right_folder]; -h/--help//? stampa
-"gofm 1.11 — usage: gofm [left_folder] [right_folder]". Argomento non valido -> cartella corrente.
+"gofm 1.12 — usage: gofm [left_folder] [right_folder]". Argomento non valido -> cartella corrente.
 Un argomento \\server apre l'elenco share.
 MEMORIA (state.go): stato JSON {version:1, left, right, active "left"|"right", driveDirs
-{lettera: cartella}, basicIcons bool omitempty} in os.UserConfigDir()/gofm/state.json (GOFM_STATE lo sostituisce),
-scritto in modo atomico (tmp + rename) alla fine di ogni load(), a ogni Alt+I e all'uscita,
-solo se cambiato (basicIcons compreso), mai durante la costruzione iniziale. All'avvio, prima degli argomenti (che
+{lettera: cartella}, basicIcons bool omitempty, colorScheme "dark"|"light" omitempty} in os.UserConfigDir()/gofm/state.json (GOFM_STATE lo sostituisce),
+scritto in modo atomico (tmp + rename) alla fine di ogni load(), a ogni Alt+I e Ctrl+F9 e
+all'uscita, solo se cambiato (basicIcons e colorScheme compresi), mai durante la costruzione iniziale. All'avvio, prima degli argomenti (che
 vincono): "" (unità) e \\server ripristinati come sono; una cartella è controllata con
 os.Stat in goroutine e timeout di 3 s (timeout -> cartella corrente; inesistente e locale
 -> primo padre esistente; altrimenti cartella corrente); pannello attivo e memoria per unità
 ripristinati.
 
-TEMA (theme.go, applyTheme() PRIMA di creare qualsiasi primitive, tutti colori RGB):
-sfondo #0A1946 ovunque (tview.Styles.PrimitiveBackgroundColor); campi/pulsanti/messaggi
-#1E3A78; testo #D5DEEE; bordi inattivi #5A6E9A, attivi #FFE14D; barre in basso #06122E;
-etichette dei form #8FD3FF; nascosti #7F8FB4. Colori per estensione (senza maiuscole):
-archivi #FF79C6, programmi/script #5AF78E, immagini #C792EA, documenti #79C0FF, audio/video
-#FF6B6B, codice/config/log #4EE6C8, sistema/supporto (.dll .sys .bak .tmp .old .dat .db
-.lnk) #9AA3B5, cartelle bianco grassetto, altri #D5DEEE. GIALLO #FFE14D grassetto RISERVATO
-ai selezionati (prevale su tutto); test: ogni famiglia dista >=120 dal giallo e >=60 dalle
-altre in RGB. Cursore di testo: prima di ogni draw screen.SetCursorStyle(
+SCHEMI DI COLORI (theme.go, tutti RGB): struct scheme {name, background, panelBorder,
+activeBorder, title, text, dim, folder, marked, cursorBg, cursorFg, cursorOffBg, cursorOffFg,
+contrastBg, barBg, keyFg, keyBg, noticeFg, noticeBg, label, err, families [7]}; tre schemi
+(nell'ordine dei campi):
+navy (principale) #0A1946 #5A6E9A #FFE14D #FFFFFF #D5DEEE #7F8FB4 #FFFFFF #FFE14D #2AB3C8 #06122E
+  #2B3F6E #FFFFFF #1E3A78 #06122E #06122E #2AB3C8 #06122E #56D4DD #8FD3FF #FF7B72,
+  famiglie #FF79C6 #5AF78E #C792EA #79C0FF #FF6B6B #4EE6C8 #9AA3B5;
+dark #1E1E1E #707070 #FFE14D #FFFFFF #D4D4D4 #8C8C8C #FFFFFF #FFE14D #5FA8E8 #111111 #3C3C3C
+  #FFFFFF #333333 #121212 #111111 #5FA8E8 #111111 #7FD1C7 #9CDCFE #F48771, famiglie come navy;
+light #F6F8FA #808994 #0969DA #1F2328 #1F2328 #636C76 #000000 #986800 #0969DA #FFFFFF #D8DEE4
+  #1F2328 #E6EAEF #E6EAEF #FFFFFF #0969DA #FFFFFF #0969DA #0550AE #B42318,
+  famiglie #BF3989 #1A7F37 #8250DF #0550AE #D80838 #0E7C86 #57606A.
+applyScheme(i) (anche da init(), e in newFM PRIMA di creare le primitive con lo schema salvato)
+imposta le variabili col*, i colori di fileTypes e tview.Styles (PrimitiveBackground =
+background, ContrastBackground = contrastBg, MoreContrastBackground = cursorOffBg, Border e
+Graphics = panelBorder, Title = title, PrimaryText = text, SecondaryText = label, TertiaryText
+= noticeBg, InverseText = background, ContrastSecondaryText = activeBorder). CTRL+F9 passa allo
+schema successivo, FM.recolor() reimposta lo sfondo di pages, layout, pannelli (e il colore
+del titolo), barra di stato e barra tasti e ridisegna; avviso "Colours: <nome> — Ctrl+F9 for
+the next scheme"; salva lo stato. I colori nei tag di tview sono generati (tagColor).
+Colori per estensione (senza maiuscole): archivi, programmi/script, immagini, documenti,
+audio/video, codice/config/log, sistema/supporto (.dll .sys .bak .tmp .old .dat .db .lnk);
+cartelle colore folder grassetto, altri colore text, nascosti dim. Il colore MARKED grassetto è
+RISERVATO ai selezionati (prevale su tutto). Test per OGNI schema: famiglie >=120 dal colore di
+selezione e >=60 tra loro in RGB; contrasto WCAG >= 4,5 per testo, titoli, cartelle,
+selezione, etichette, testo dei cursori, delle barre, dei tasti, degli avvisi, delle finestre
+ed errori; >= 3 per bordi, colonne secondarie, icone e selezione sul cursore inattivo.
+Cursore di testo: prima di ogni draw screen.SetCursorStyle(
 tcell.CursorStyleBlinkingUnderline).
 LAYOUT: due pannelli affiancati (tview.Table selezionabile per riga, bordo, titolo a
-sinistra), sotto una barra di stato e una barra tasti. Pannello attivo: bordo #FFE14D,
-riga cursore sfondo #2AB3C8 testo #06122E; inattivo: bordo #5A6E9A, riga cursore #2B3F6E
-testo bianco. Sul bordo superiore, a destra (stessa riga del percorso, che si accorcia per
+sinistra), sotto una barra di stato e una barra tasti. Pannello attivo: bordo activeBorder,
+riga cursore cursorBg/cursorFg; inattivo: bordo panelBorder, riga cursore
+cursorOffBg/cursorOffFg. Sul bordo superiore, a destra (stessa riga del percorso, che si accorcia per
 fargli posto), in giallo: " N selected · <dimensione> · M files " + " · counting…" se una
 cartella è in misurazione; nascosto se il pannello è troppo stretto.
-Mouse attivo. Titolo = percorso (tagliato a sinistra con "…" se lungo) + eventuale
-"  [filter: X, sort: size|date, hidden shown]".
+Mouse attivo. Titolo = percorso (tagliato a sinistra con "…" se lungo) + "  [filter: X,
+sort: name|size|date ↑|↓, hidden shown]" (sort sempre presente).
 Colonne: marca (1: "*" se marcato, altrimenti spazio), icona (1), nome (si espande),
 dimensione (9, a destra), data (11). tview separa le colonne con uno spazio: il nome va
 troncato a larghezza_interna-4-9-11-2 (min 6) misurando in celle
@@ -1097,46 +1200,37 @@ theme.go porta il suo tipo (struct {kind, color, exts}); entryKind: isUp > isDri
 > isDir > famiglia dell'estensione > kindFile. Glifi Nerd Font (predefiniti) nello stesso
 ordine: U+F016 U+F1C6 U+F120 U+F1C5 U+F0F6 U+F144 U+F1C9 U+F013 U+F07B U+F062 U+F0A0
 U+F233; simboli semplici (codepage 437): · ▒ ♦ ☼ ¶ ♫ § ◘ ► ↑ ■ ≡. Colore dell'icona: colore
-della famiglia ANCHE se l'elemento è marcato; bianco per cartelle/../unità/share; #7F8FB4
+della famiglia ANCHE se l'elemento è marcato; colore folder per cartelle/../unità/share; dim
 se nascosto; #D5DEEE per gli altri file. Riga del cursore: tview ricolora tutta la riga con
 il selectedStyle della tabella; prima di ogni Draw imposta il SelectedStyle della SOLA cella
-icona della riga del cursore: pannello attivo sfondo #2AB3C8 testo #06122E, inattivo
-sfondo #2B3F6E testo = colore dell'icona. Alt+I alterna glifi/simboli, ridisegna i pannelli,
+icona della riga del cursore: pannello attivo sfondo cursorBg testo cursorFg, inattivo
+sfondo cursorOffBg testo = colore dell'icona. Alt+I alterna glifi/simboli, ridisegna i pannelli,
 avviso "Icons: basic symbols — Alt+I for Nerd Font icons" oppure "Icons: Nerd Font (needs
-e.g. Cascadia Mono NF) — Alt+I for basic symbols", salva lo stato. Colonna dimensione: "UP" per "..", "DRIVE", "SHARE"; cartella
+e.g. Cascadia Mono NF) — Alt+I for basic symbols", salva lo stato. Colonna dimensione: "UP" per "..", per le unità "LOCAL"/"NETWORK"/"REMOVABLE"/"CD/DVD", "SHARE"; cartella
 "<DIR>" ma, se SELEZIONATA, il suo totale ricorsivo ("…" durante la misurazione); file:
 dimensione leggibile (B, KB, MB… base 1024, una cifra decimale).
 Data: "02/01 15:04" se dell'anno corrente, altrimenti "02/01/2006"; vuota se sconosciuta.
-Colori: vedi TEMA; tutta la riga usa il colore dell'elemento. Ordinamento: cartelle prima, poi
-nome senza maiuscole | dimensione decrescente | data decrescente; ".." sempre in cima.
-Barra di stato (statusbar.go, Box con Draw che legge lo stato corrente; sfondo #06122E,
+Colori: vedi SCHEMI; tutta la riga usa il colore dell'elemento. Ordinamento (entryLess): ".."
+in cima, cartelle prima, poi per tipo (nome senza maiuscole | dimensione | data) nel senso del
+pannello (sortAsc), a parità per nome A→Z. ALT+O cambia tipo nome→dimensione→data e riparte
+dal senso naturale (nome crescente, dimensione e data decrescenti); ALT+D inverte il senso;
+freccia ↑ crescente, ↓ decrescente.
+Barra di stato (statusbar.go, Box con Draw che legge lo stato corrente; sfondo barBg,
 margine di 1 cella): colonne FISSE a destra "%9s │ %-16s │ %-4s │ %11s" = dimensione
 (file; cartella "<DIR>" o totale se selezionata e misurata) │ data "02/01/2006 15:04" │
 attributi RHSA │ "N items"; colonna NOME che prende il resto (truncateName, estensione
 conservata), "nome — commento" per le share, vuota su "..". Prima del nome, durante la
-ricerca digitando, badge " Search: <testo> " (testo #06122E su #FFE14D) + "no match" rosso.
-Dopo F12 un avviso (testo scuro su #56D4DD) sostituisce tutta la riga fino al tasto
+ricerca digitando, badge " Search: <testo> " (testo cursorFg su marked) + "no match" in err.
+Dopo F12, Ctrl+B, Alt+I, Ctrl+F9 o F4 un avviso (noticeFg su noticeBg) sostituisce tutta la riga fino al tasto
 successivo. Il totale della selezione NON sta qui (sta sul bordo del pannello).
-Barra tasti (sfondo #06122E): "[#06122E:#2AB3C8]Tasto[-:-]Etichetta " per F2 Ren, F3 View, F5 Copy,
-F6 Move, F7 MkDir, F8 Trash, F9 Zip, F10 Quit, F12 Compare, Ctrl+B Flat, Alt+S Find, Alt+F Filter,
-Alt+U Extract, Alt+V Drives, Alt+I Icons, Shift+X Drive X: (lista keybarKeys in help.go).
-
-LUOGHI di un pannello: elenco unità (dir=""; GetLogicalDrives), elenco share
-(dir="\\server"; NetShareEnum livello 1, solo tipo disco, speciali C$/ADMIN$ nascoste
-salvo Alt+H, commento in barra di stato), cartella su disco (anche UNC), dentro un archivio
-(.zip/.7z: stato con percorso, voci, cartella interna; dir = cartella che lo contiene).
-Padre su Windows calcolato con pura logica di stringhe (testabile su Linux):
-C:\a\b->C:\a sel b; C:\a->C:\ sel a; C:\->unità sel "C:\"; \\s\sh\a\b->\\s\sh\a sel b;
-\\s\sh\a->\\s\sh\ sel a; \\s\sh\->\\s sel sh; \\s->unità. Dentro un archivio: risale
-nella cartella interna; dalla radice esce selezionando il nome dell'archivio.
-Riconosci UNC con \\ o //, escludi \\?\ e \\.\. Normalizza: \\server, \\server\share\,
-\\server\share\resto. Dopo ogni caricamento il cursore va sul nome indicato (esatto o
-senza maiuscole). chdir: salva lo stato, carica, in caso di errore ripristina e mostra
-"Cannot open folder:\n<err>" (o "share list"); chiudi l'archivio precedente solo se va a
-buon fine; azzera filtro e marcati. reload: se fallisce risali finché un luogo carica.
-Memorizza l'ultima cartella visitata per ogni lettera di unità.
-Nascosto = attributo Windows H o S, oppure nome che inizia con ".". Link =
-ModeSymlink|ModeIrregular (verifica con os.Stat se punta a una cartella).
+BARRA TASTI (keybar.go): primitiva keyBar (Box) che disegna, con 1 cella di margine e uno
+spazio dopo ogni voce, tasto (keyFg su keyBg) + etichetta (text su barBg) per le voci in
+ordine di priorità finché entrano (alla prima che non entra si ferma): F4 Edit, F6 Move,
+Del Delete, F9 Zip, F12 Compare, Ctrl+A Select, Ctrl+B Flat, Alt+F7 Find, Ctrl+F7 Filter,
+Alt+U Extract, Alt+V Drives, Ctrl+F2 Keys, Alt+O Sort, Alt+D Reverse, Alt+H Hidden, Ctrl+F9
+Colours, Alt+I Icons, Shift+X Drive X:, Alt+L Go to. MAI F2, F3, F5, F7, F10. Ogni voce ha
+una funzione che costruisce l'evento del tasto (tcell.NewEventKey); MouseHandler: clic
+sinistro su una voce -> FM.keys(evento), senza spostare il focus; Shift+X non è cliccabile.
 
 TASTI (cattura a livello di Application, solo quando la pagina in primo piano è "main"):
 - Ctrl+→ SOLO nel pannello sinistro / Ctrl+← SOLO nel pannello destro (KeyRight/KeyLeft con
@@ -1148,15 +1242,19 @@ TASTI (cattura a livello di Application, solo quando la pagina in primo piano è
   (indistinguibile dal Blocco Maiuscole), quindi ogni rune 'A'..'Z' ASCII senza Ctrl/Alt va
   all'unità (ultima cartella su quell'unità se esiste, altrimenti radice; "Drive X: does
   not exist."; fuori da Windows "Shift+<letter> switches drive on Windows only.\nType
-  lower-case letters to search by name."). Le minuscole e gli altri caratteri vanno alla
-  ricerca digitando. "*" ha la precedenza (seleziona tutto/niente).
-- Ctrl+lettera: solo CTRL+B = vista piatta; le altre non fanno nulla (Ctrl+C non deve
-  chiudere l'app). Riconosci DUE codifiche di tcell: KeyCtrlA..Z con ModCtrl, e
+  lower-case letters to search by name."). Le minuscole e gli altri caratteri (anche "*")
+  vanno alla ricerca digitando.
+- Ctrl+lettera: CTRL+B = vista piatta; CTRL+A = se nulla è marcato marca tutti gli elementi
+  elencati (file e cartelle, mai "..", unità, share) e avvia la misura delle cartelle,
+  altrimenti inverte la marcatura; le altre non fanno nulla (Ctrl+C non deve chiudere l'app). Riconosci DUE codifiche di tcell: KeyCtrlA..Z con ModCtrl, e
   Key('A'..'Z') con ModCtrl (win32-input-mode di Windows Terminal). Escludi Ctrl+Alt (AltGr).
-- Alt+lettera (KeyRune+ModAlt senza Ctrl): S cerca, F filtro, U estrai, L vai a percorso,
-  V elenco unità (cursore sull'unità corrente), R aggiorna, O ordina (nome→dimensione→data),
-  H nascosti, A inverti marcatura, E stesso luogo nell'altro pannello (anche dentro un
-  archivio), I icone (Nerd Font <-> simboli), Q esci.
+- Tasti funzione con Ctrl/Alt (KeyF1..KeyF64 con ModCtrl e/o ModAlt), controllati PRIMA dei
+  tasti funzione semplici: ALT+F7 ricerca, CTRL+F7 filtro, CTRL+F2 riepilogo dei tasti,
+  CTRL+F9 schema di colori successivo; ogni altra combinazione non fa nulla.
+- Alt+lettera (KeyRune+ModAlt senza Ctrl): U estrai, L vai a percorso, V elenco unità
+  (cursore sull'unità corrente), R aggiorna, O tipo di ordinamento, D inverte il senso, H
+  nascosti, E stesso luogo nell'altro pannello (anche dentro un archivio), I icone (Nerd Font
+  <-> simboli), Q esci. Alt+S, Alt+F, Alt+A non fanno nulla.
 - Lettere semplici = ricerca digitando: si accumula il testo (ricomincia dopo 1,5 s di
   inattività); salta alla prima voce (esclusa "..") che INIZIA con il testo, altrimenti che
   lo CONTIENE, senza maiuscole; se nessuna corrisponde ignora il carattere e mostra
@@ -1168,10 +1266,7 @@ TASTI (cattura a livello di Application, solo quando la pagina in primo piano è
   .zip/.7z su disco apre l'archivio, su altri file nulla. Invio come → per le cartelle,
   anteprima per i file nell'archivio, altrimenti apertura con ShellExecute "open"
   (xdg-open/open fuori da Windows; errore "Cannot open file:\n").
-- "*" (anche durante una ricerca digitando, che interrompe): se nessuna selezione seleziona
-  TUTTI gli elementi elencati (file e cartelle, mai "..", unità, share) e avvia la misura
-  delle cartelle; altrimenti deseleziona tutto e annulla le misure.
-- Ins marca. TOTALE DELLA SELEZIONE: a ogni marcatura (Spazio, Ins, *, Alt+A) i file contano 1
+- Ins marca. TOTALE DELLA SELEZIONE: a ogni marcatura (Spazio, Ins, Ctrl+A) i file contano 1
   e la loro dimensione; ogni cartella marcata viene misurata ricorsivamente in una goroutine
   (solo file regolari, senza seguire link) con un opCtx annullabile, il risultato arriva con
   QueueUpdateDraw e viene accettato solo se la mappa path->*dirSize contiene ancora lo stesso
@@ -1191,17 +1286,31 @@ sempre. Il risultato fa ridisegnare la riga e il totale sul bordo.
   QueueUpdateDraw, rilegge una volta ogni pannello la cui cartella è dirty. Errori del
   watcher -> rilegge entrambi. Se il watcher non si crea o Add fallisce: nessun messaggio,
   resta Alt+R.
-- F1 non fa nulla. ALT+F1 (KeyF1 con ModAlt, controllato prima degli altri tasti speciali):
-  RIEPILOGO DEI TASTI (help.go) in una TextView con bordo e colori dinamici, titolo
-  " Keys — Esc to close " (se l'altezza supera lo schermo: altezza = schermo, scorrevole, titolo
-  " Keys — ↑↓ to scroll, Esc to close "), larghezza = riga più lunga + 4 (righe <= 76 celle);
-  chiusura con Esc, Invio, F1, q. Sezioni (titolo giallo grassetto, tasto #8FD3FF allineato):
-  Navigation (↑ ↓ con PgUp PgDn Home End, →, ←, Backspace, Enter, Tab / Shift+Tab, Ctrl+→,
-  Ctrl+←, Alt+E, Alt+L, Mouse click), Search and selection (a–z 0–9 …, Space / Ins, *, Alt+A,
-  Esc), Files (Del "same as F8"), View (Alt+O, Alt+H, Alt+R), Program (Alt+F1, Alt+Q "same as
-  F10"); in fondo "The keys in the bar at the bottom are not repeated here." in #7F8FB4.
-  NESSUN tasto della barra in basso: la barra legge keybarKeys, il riepilogo helpSections, e
-  un test verifica che non abbiano voci in comune.
+- F1 e F8 non fanno nulla. CTRL+F2: RIEPILOGO DI TUTTI I TASTI (help.go) in una TextView con
+  bordo e colori dinamici, titolo " Keys — Esc to close " (se l'altezza supera lo schermo:
+  altezza = schermo, scorrevole, titolo " Keys — ↑↓ to scroll, Esc to close "), larghezza =
+  riga più lunga + 4 (righe <= 76 celle); chiusura con Esc, Invio, F2, q. Sezioni (titolo nel
+  colore di selezione grassetto, tasto nel colore label allineato): Navigation (↑ ↓ con PgUp
+  PgDn Home End, →, ←, Backspace, Enter, Tab / Shift+Tab, Ctrl+→, Ctrl+←, Alt+E, Alt+L, Alt+V,
+  Shift+letter, Mouse click), Search and selection (a–z 0–9 …, Space / Ins, Ctrl+A, Esc,
+  Alt+F7, Ctrl+F7), Files (F2, F3, F4, F5, F6, F7, Del, F9, Alt+U, F12), View (Ctrl+B, Alt+O,
+  Alt+D, Alt+H, Alt+R, Alt+I, Ctrl+F9), Program (Ctrl+F2, F10 / Alt+Q). Un test verifica che
+  ogni voce della barra tasti compaia nel riepilogo.
+- F4 EDITOR (editor.go): sul file sotto il cursore (cartella: "F4 edits files, not folders.";
+  archivio: "Files inside an archive cannot be edited.\nExtract them first (F5 or Alt+U).";
+  "..", unità, share: nulla). Comando da GOFM_EDITOR, altrimenti notepad.exe (nessun
+  predefinito fuori da Windows); editorCommand: programma tra virgolette + argomenti, oppure
+  un percorso senza virgolette che esiste come file, oppure primo campo = programma; il file
+  è l'ultimo argomento. exec.Command, Dir = cartella del file, su Windows CreationFlags
+  DETACHED_PROCESS (0x8), Start, Process.Release (non attende). Avviso "Editing <nome> with
+  <programma>"; errore "Cannot start the editor <prog>:\n<err>\n\nSet GOFM_EDITOR to the
+  path of a windowed editor."
+- TIPI DI UNITÀ (drives.go, sys_windows.go): driveType locale/rete/rimovibile/ottica;
+  GetDriveType (REMOTE, REMOVABLE, CDROM; FIXED = locale salvo bus USB 7, 1394 4, SD 0xC, MMC
+  0xD letto con CreateFile("\\.\X:", accesso 0) + DeviceIoControl(0x002D1400, query di 12
+  byte a zero, BusType all'offset 28 del descrittore) = rimovibile). Icone Nerd Font: locale
+  U+F0A0, rete U+F0E8, rimovibile U+F287, CD/DVD U+F192; simboli ■ ≈ ▬ ○.
+  isNetworkLocation: UNC oppure unità di tipo rete.
 - F12 CONFRONTO (compareSides, pura e testata): solo FILE (mai cartelle, "..", unità, share),
   per nome (senza maiuscole su Windows), dimensione e data con tolleranza 2 s. In ciascun
   pannello sostituisce la selezione con: i file che mancano nell'altro; per i file presenti
@@ -1209,16 +1318,16 @@ sempre. Il risultato fa ridisegnare la riga e il totale sul bordo.
   data è uguale (±2 s) ma la dimensione no, il file in ENTRAMBI; data zero = mai più recente.
   Funziona su cartelle, share aperte, interno di archivi e vista piatta (percorsi relativi);
   con un elenco unità/share: "Both panels must show a folder (or the inside of an archive).".
-  Esito in barra di stato (testo scuro su #56D4DD, tutta la riga, fino al tasto successivo):
+  Esito in barra di stato (avviso, tutta la riga, fino al tasto successivo):
   "Compare: left N only here, M newer · right P only here, Q newer" + " · K same date,
   different size" se K > 0, oppure "Compare: same files on both sides (name, size, date ±2 s)".
 - FINESTRE: closeModal memorizza fm.active PRIMA di pages.RemovePage (che rimette il focus
   sul primo elemento del layout, il pannello sinistro, rendendolo attivo) e, se non restano
   finestre, chiama setActive(active, true); altrimenti focus alla finestra sottostante.
-- F2 rinomina, F3 anteprima, F5 copia (nell'archivio: estrai la
+- F2 rinomina, F3 anteprima, F4 editor, F5 copia (nell'archivio: estrai la
   selezione), F6 sposta (nell'archivio: "Archives are read-only here: use F5 to extract
-  instead of moving."), F7 nuova cartella, F8/Canc cestino, F9 zip, F10 esci.
-- Fuori da una cartella su disco: F2/F7/F8/F9 mostrano "Archives are read-only here.\nUse F5
+  instead of moving."), F7 nuova cartella, Canc cancella, F9 zip, F10 esci.
+- Fuori da una cartella su disco: F2/F7/Canc/F9 mostrano "Archives are read-only here.\nUse F5
   or Alt+U to extract the selected items." / "Open a share first (→ or Enter)." /
   "Open a drive first (→ or Enter).".
 Le operazioni agiscono sui marcati, altrimenti sull'elemento sotto il cursore (mai su
@@ -1238,10 +1347,16 @@ mostra "The destination is the other panel:\nopen a folder on disk there first."
 Copy/Move). Ogni elemento va dentro con lo stesso nome. Se la cartella è sparita:
 "Destination folder does not exist:\n" e ricarica l'altro pannello. Blocchi: "Source and destination are the same:\n",
 "Cannot copy a folder into itself:\n", "An item of a different type with the same name
-already exists:\n". Conflitti: "N items already exist at the destination.\nFolders with the
-same name will be merged." con Overwrite / Skip existing / Cancel (le cartelle si uniscono).
-Fase "Counting files…" (dimensione totale senza seguire link, per elemento); gli elementi
-saltati aggiungono subito la loro dimensione ai byte; tutti gli altri vanno a UN SOLO motore
+already exists:\n". Poi subito il lavoro in background. Fase "Counting files…" (dimensione
+totale senza seguire link, per elemento). Fase "Checking the destination…": findConflicts
+elenca i FILE che esistono già nella destinazione, al primo livello e dentro le cartelle con
+lo stesso nome (che si uniscono); per ciascuno, in ordine, askSync (QueueUpdateDraw + canale)
+mostra "A file with this name already exists (i of n):\n\n<percorso relativo alla
+destinazione>\n\nNew:      <dim> · <gg/mm/aaaa hh:mm>[ (newer)]\nExisting: <dim> · <data>[ (newer)]"
+(newer = più recente di oltre 2 s) con i pulsanti Skip (primo = predefinito), Skip all,
+Overwrite, Overwrite all, Cancel; resolveConflicts si ferma alla prima risposta "all", che
+decide i restanti; Cancel/Esc annulla tutto prima di copiare. I file da saltare vanno in
+opCtx.skip: il motore non li copia e aggiunge la loro dimensione ai byte; tutto il resto va a UN SOLO motore
 di copia condiviso dall'intera selezione (copy.go): un visitatore percorre gli elementi in
 ordine, crea le cartelle (MkdirAll perm|0700; date delle cartelle applicate alla fine, dalla
 più interna) e accoda i file (canale da 64) a 4 lavoratori; un gettone unico permette un solo
@@ -1256,7 +1371,9 @@ non sia una fusione di cartelle prova os.Rename (istantaneo, aggiunge la sua dim
 byte); gli altri vanno nel motore di copia condiviso e, dopo, l'origine di CIASCUN elemento
 viene eliminata SOLO se tutti i suoi file sono stati copiati senza errori né annullamento
 ("source NOT deleted because the copy is incomplete"; "copied, but could not delete the
-source: %w"). Alla fine azzera i marcati e ricarica i pannelli.
+source: %w"); un file di primo livello saltato non si muove; se un elemento ha file saltati,
+removeExcept cancella dalla sorgente tutto tranne quei file e le cartelle che li contengono.
+Alla fine azzera i marcati e ricarica i pannelli.
 COPYFILEEX (sys_windows.go): CopyFileExW(longPath(src), longPath(dst), callback, id, NULL,
 flags) con COPY_FILE_NO_BUFFERING (0x1000) per file >= 256 MB. longPath: percorso assoluto
 con prefisso \\?\ (o \\?\UNC\ per le share). Callback LPPROGRESS_ROUTINE creato UNA volta
@@ -1268,7 +1385,13 @@ mancanti. Niente COPY_FILE_FAIL_IF_EXISTS (la scelta Overwrite/Skip è già fatt
 RINOMINA "New name: ": vieta \ / . .. e su Windows : * ? " < > |; nome esistente vietato
 salvo cambio solo di maiuscole. NUOVA CARTELLA "Name: " con MkdirAll, cursore sul primo
 segmento.
-CESTINO: "Move \"nome\" to the Recycle Bin?" Yes/No. Poi, in una goroutine, cerca fra gli
+CANCELLAZIONE (Canc; F8 non cancella): se isNetworkLocation(cartella) -> "Delete \"nome\"
+PERMANENTLY?\n\nThis is a network drive: the Recycle Bin is not used,\nthe deleted items
+cannot be restored." con Cancel (predefinito) / Delete, poi deleteAll in background ("Deleting
+N items permanently"): removeTree = os.RemoveAll e, se fallisce, Chmod di tutto l'albero
+(0666 file, 0777 cartelle, senza seguire link) e nuovo RemoveAll; seconda conferma come sotto
+con "They will be deleted PERMANENTLY with everything inside them." e "Delete permanently".
+Altrimenti CESTINO: "Move \"nome\" to the Recycle Bin?" Yes/No. Poi, in una goroutine, cerca fra gli
 elementi le cartelle vere (os.Lstat, niente link) con almeno una sottocartella (ReadDir a
 blocchi di 256, stop alla prima): se ce ne sono, seconda conferma "WARNING: this folder
 contains subfolders:" / "WARNING: N folders contain subfolders:", i nomi (max 8, poi "… and N
@@ -1321,9 +1444,9 @@ rovina "\\server"); "D:" -> "D:\"; poi Clean. Alt+L "Go to", etichetta
 risolto sulla cartella corrente; cartella -> apri; file -> apri la sua cartella e seleziona
 il file; in caso di errore su un UNC aggiungi "If the share needs a password, connect it
 once with \"net use \\\\server\\share\" or in Explorer, then retry.".
-FILTRO Alt+F "Show only (text or *.ext, empty = all): ": con * ? [ usa filepath.Match in
+FILTRO Ctrl+F7 "Show only (text or *.ext, empty = all): ": con * ? [ usa filepath.Match in
 minuscolo, altrimenti "contiene".
-RICERCA Alt+S (solo su disco, altrimenti "Search works in folders on disk.\nUse Alt+F to
+RICERCA Alt+F7 (solo su disco, altrimenti "Search works in folders on disk.\nUse Ctrl+F7 to
 filter the current list."): Form " Find files in <dir> " con "Name (text or *.ext): ",
 "Containing text (optional): ", checkbox "Include hidden: ", pulsanti Find/Cancel, Invio
 nei campi avvia. WalkDir, salta i nascosti (e le loro cartelle) se non richiesti, ignora
@@ -1385,7 +1508,7 @@ entra in larghezza-4 togli prima lo spazio libero, poi i file; negli elenchi uni
 lo spazio (se noto).
 ELENCO UNITÀ: Alt+V.
 ARCHITETTURA FILE: main.go (FM, tasti, finestre, runTask, azioni, confronto, expandPath),
-theme.go, icons.go, help.go, statusbar.go, watch.go, copy.go, flat.go, state.go,
+theme.go, icons.go, help.go, keybar.go, editor.go, drives.go, statusbar.go, watch.go, copy.go, flat.go, state.go,
 panel.go (Panel, luoghi, rendering, navigazione, marcatura, jumpTo), ops.go (opCtx,
 percorsi, copia/sposta/zip/ricerca), archive.go (ZIP/7z, estrazione, albero, anteprima
 voci), preview.go, unc.go (regole Windows/UNC in pura logica di stringhe, driveLetter),
@@ -1402,7 +1525,12 @@ troncamento (estensione, CJK), date compatte, velocità/ETA (50% a 10 MB/s -> "0
 formatDuration, nextSurvivor, layoutStatus, distanza dei colori, refreshDelay, flatScan,
 duplicateTargets, stato salvato/riletto, restoreDir, diskSpace/diskLabel; icone (larghezza 1
 cella, nessun doppione, una per famiglia, entryKind, colore, contrasto WCAG, layout della
-riga, SelectedStyle del cursore, basicIcons salvato); compareSides (tutti i casi della tabella,
+riga, SelectedStyle del cursore, basicIcons salvato); per OGNI schema i test dei colori e del
+contrasto; tipi di unità; ordinamento nei due sensi; tasti nuovi e tolti con un FM reale;
+barra tasti (priorità, larghezza, clic simulati); cambio di schema e salvataggio;
+editorCommand e F4 con uno script come editor; conflitti annidati in copia e spostamento
+(Skip/Overwrite, file saltati rimasti nella sorgente), resolveConflicts; cancellazione
+definitiva di file di sola lettura; compareSides (tutti i casi della tabella,
 2 s, 1 ora, data zero), foldersWithSubfolders/subfolderWarning, riepilogo senza tasti della
 barra, focus che resta sul pannello attivo dopo la chiusura di finestre (newFM reale); i test che
 dipendono da Linux (cestino freedesktop, socket Unix, symlink senza privilegi) si saltano

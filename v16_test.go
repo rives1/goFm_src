@@ -62,25 +62,27 @@ func TestLayoutStatusFixedColumns(t *testing.T) {
 }
 
 func TestFileColoursNeverLookMarked(t *testing.T) {
-	mr, mg, mb := colMarked.RGB()
-	for _, ft := range fileTypes {
-		r, g, b := ft.color.RGB()
-		d := (r-mr)*(r-mr) + (g-mg)*(g-mg) + (b-mb)*(b-mb)
-		if d < 120*120 {
-			t.Errorf("type %q colour too close to the mark colour", ft.exts)
+	forEachScheme(t, func(t *testing.T) {
+		mr, mg, mb := colMarked.RGB()
+		for _, ft := range fileTypes {
+			r, g, b := ft.color.RGB()
+			d := (r-mr)*(r-mr) + (g-mg)*(g-mg) + (b-mb)*(b-mb)
+			if d < 120*120 {
+				t.Errorf("type %q colour too close to the mark colour", ft.exts)
+			}
 		}
-	}
-	for _, e := range []entry{{name: "x.pdf"}, {name: "x.zip"}, {name: "dir", isDir: true}, {name: ".h", hidden: true}, {name: "plain"}} {
-		if c, _ := entryStyle(e, false); c == colMarked {
-			t.Errorf("%s unmarked uses the mark colour", e.name)
+		for _, e := range []entry{{name: "x.pdf"}, {name: "x.zip"}, {name: "dir", isDir: true}, {name: ".h", hidden: true}, {name: "plain"}} {
+			if c, _ := entryStyle(e, false); c == colMarked {
+				t.Errorf("%s unmarked uses the mark colour", e.name)
+			}
+			if c, _ := entryStyle(e, true); c != colMarked {
+				t.Errorf("%s marked does not use the mark colour", e.name)
+			}
 		}
-		if c, _ := entryStyle(e, true); c != colMarked {
-			t.Errorf("%s marked does not use the mark colour", e.name)
+		if c, _ := entryStyle(entry{name: "REPORT.PDF"}, false); c != fileTypes[family("x.pdf")].color {
+			t.Error("extension match must ignore case")
 		}
-	}
-	if c, _ := entryStyle(entry{name: "REPORT.PDF"}, false); c != fileTypes[family("x.pdf")].color {
-		t.Error("extension match must ignore case")
-	}
+	})
 }
 
 func TestRefreshDelay(t *testing.T) {
@@ -91,13 +93,15 @@ func TestRefreshDelay(t *testing.T) {
 }
 
 func TestFileTypeColoursDistinct(t *testing.T) {
-	for i, a := range fileTypes {
-		for _, b := range fileTypes[i+1:] {
-			r1, g1, b1 := a.color.RGB()
-			r2, g2, b2 := b.color.RGB()
-			if d := (r1-r2)*(r1-r2) + (g1-g2)*(g1-g2) + (b1-b2)*(b1-b2); d < 60*60 {
-				t.Errorf("%q and %q look alike", a.exts[:8], b.exts[:8])
+	forEachScheme(t, func(t *testing.T) {
+		for i, a := range fileTypes {
+			for _, b := range fileTypes[i+1:] {
+				r1, g1, b1 := a.color.RGB()
+				r2, g2, b2 := b.color.RGB()
+				if d := (r1-r2)*(r1-r2) + (g1-g2)*(g1-g2) + (b1-b2)*(b1-b2); d < 60*60 {
+					t.Errorf("%q and %q look alike", a.exts[:8], b.exts[:8])
+				}
 			}
 		}
-	}
+	})
 }

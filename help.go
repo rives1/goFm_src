@@ -1,7 +1,7 @@
 package main
 
-// Key summary (Alt+F1): every shortcut that is NOT already shown in the key bar at the
-// bottom of the screen. A test checks that the two lists never overlap.
+// Key summary (Ctrl+F2, v1.12): every shortcut. The key bar shows only as many as
+// fit, so the summary lists them all (a test checks that every key bar item is here).
 
 import (
 	"fmt"
@@ -10,14 +10,6 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
-
-// keybarKeys are the shortcuts of the key bar, in order.
-var keybarKeys = [][2]string{
-	{"F2", "Ren"}, {"F3", "View"}, {"F5", "Copy"}, {"F6", "Move"},
-	{"F7", "MkDir"}, {"F8", "Trash"}, {"F9", "Zip"}, {"F10", "Quit"}, {"F12", "Compare"},
-	{"Ctrl+B", "Flat"}, {"Alt+S", "Find"}, {"Alt+F", "Filter"}, {"Alt+U", "Extract"}, {"Alt+V", "Drives"},
-	{"Alt+I", "Icons"}, {"Shift+X", "Drive X:"},
-}
 
 type helpSection struct {
 	title string
@@ -36,26 +28,42 @@ var helpSections = []helpSection{
 		{"Ctrl+←", "(right panel) same location in the left panel"},
 		{"Alt+E", "same location in the other panel"},
 		{"Alt+L", `go to a path: C:\x, %USERPROFILE%, ~, \\server\share`},
-		{"Mouse click", "select a row and activate its panel"},
+		{"Alt+V", "drive list"},
+		{"Shift+letter", "go to that drive (last folder used there)"},
+		{"Mouse click", "select a row; on the key bar: run that key"},
 	}},
 	{"Search and selection", [][2]string{
-		{"a–z 0–9 …", "quick search by name (Shift+letter = drive)"},
+		{"a–z 0–9 …", "quick search by name (lower-case letters)"},
 		{"Space / Ins", "mark or unmark, then move down"},
-		{"*", "nothing marked: mark all; otherwise unmark all"},
-		{"Alt+A", "invert the marks"},
+		{"Ctrl+A", "nothing marked: mark all; otherwise invert"},
 		{"Esc", "end search, then clear filter, then marks"},
+		{"Alt+F7", "find files by name and/or content"},
+		{"Ctrl+F7", "filter the panel (text or *.ext)"},
 	}},
 	{"Files", [][2]string{
-		{"Del", "move to the Recycle Bin (same as F8)"},
+		{"F2", "rename"},
+		{"F3", "view / properties"},
+		{"F4", "edit with the external editor (GOFM_EDITOR)"},
+		{"F5", "copy to the other panel (in an archive: extract)"},
+		{"F6", "move to the other panel"},
+		{"F7", "new folder"},
+		{"Del", "delete: Recycle Bin; permanent on network drives"},
+		{"F9", "compress to ZIP"},
+		{"Alt+U", "extract an archive"},
+		{"F12", "compare the panels (name, size, date)"},
 	}},
 	{"View", [][2]string{
+		{"Ctrl+B", "flat view of the folder tree"},
 		{"Alt+O", "sort by name → size → date"},
+		{"Alt+D", "reverse the sort direction (↑ ↓ in the title)"},
 		{"Alt+H", "show/hide hidden files and admin shares"},
 		{"Alt+R", "refresh both panels, re-measure marked folders"},
+		{"Alt+I", "icons: Nerd Font ↔ basic symbols"},
+		{"Ctrl+F9", "next colour scheme: navy → dark → light"},
 	}},
 	{"Program", [][2]string{
-		{"Alt+F1", "this summary"},
-		{"Alt+Q", "quit (same as F10)"},
+		{"Ctrl+F2", "this summary"},
+		{"F10 / Alt+Q", "quit"},
 	}},
 }
 
@@ -72,17 +80,16 @@ func helpText() string {
 		if i > 0 {
 			b.WriteString("\n")
 		}
-		fmt.Fprintf(&b, "[#FFE14D::b]%s[-::-]\n", s.title)
+		fmt.Fprintf(&b, "[%s::b]%s[-::-]\n", tagColor(colMarked), s.title)
 		for _, k := range s.keys {
 			pad := strings.Repeat(" ", w-len([]rune(k[0])))
-			fmt.Fprintf(&b, "  [#8FD3FF]%s[-]%s  %s\n", tview.Escape(k[0]), pad, tview.Escape(k[1]))
+			fmt.Fprintf(&b, "  [%s]%s[-]%s  %s\n", tagColor(colLabel), tview.Escape(k[0]), pad, tview.Escape(k[1]))
 		}
 	}
-	b.WriteString("\n[#7F8FB4]The keys in the bar at the bottom are not repeated here.[-]")
-	return b.String()
+	return strings.TrimSuffix(b.String(), "\n")
 }
 
-// showKeys opens the key summary (Alt+F1). Esc, Enter, F1, Alt+F1 or q close it.
+// showKeys opens the key summary (Ctrl+F2). Esc, Enter, F2 or q close it.
 func (fm *FM) showKeys() {
 	var name string
 	text := helpText()
@@ -90,7 +97,7 @@ func (fm *FM) showKeys() {
 	tv.SetBorder(true).SetTitle(" Keys — Esc to close ")
 	tv.SetInputCapture(func(ev *tcell.EventKey) *tcell.EventKey {
 		switch {
-		case ev.Key() == tcell.KeyEscape, ev.Key() == tcell.KeyEnter, ev.Key() == tcell.KeyF1,
+		case ev.Key() == tcell.KeyEscape, ev.Key() == tcell.KeyEnter, ev.Key() == tcell.KeyF2,
 			ev.Key() == tcell.KeyRune && ev.Rune() == 'q':
 			fm.closeModal(name)
 			return nil

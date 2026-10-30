@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -305,4 +306,77 @@ func diskSpace(path string) (free, total uint64, err error) {
 	var totalFree uint64
 	err = windows.GetDiskFreeSpaceEx(p16, &free, &total, &totalFree)
 	return free, total, err
+}
+
+// ---------- kinds of drive (v1.12) ----------
+
+const ioctlStorageQueryProperty = 0x002D1400 // CTL_CODE(IOCTL_STORAGE_BASE, 0x500, METHOD_BUFFERED, FILE_ANY_ACCESS)
+
+// Bus types (STORAGE_BUS_TYPE) of external drives that Windows reports as fixed.
+const (
+	busType1394 = 0x4
+	busTypeUsb  = 0x7
+	busTypeSd   = 0xC
+	busTypeMmc  = 0xD
+)
+
+// driveKind classifies a drive root such as `C:\`. GetDriveType tells network,
+// removable and optical drives apart; USB disks are reported as fixed, so for fixed
+// drives the bus type is asked to the storage driver (no administrator rights needed:
+// the volume is opened with no access rights, only for the query).
+func driveKind(root string) driveType {
+	p, err := windows.UTF16PtrFromString(root)
+	if err != nil {
+		return driveLocal
+	}
+	switch windows.GetDriveType(p) {
+	case windows.DRIVE_REMOTE:
+		return driveNetwork
+	case windows.DRIVE_REMOVABLE:
+		return driveRemovable
+	case windows.DRIVE_CDROM:
+		return driveOptical
+	case windows.DRIVE_FIXED:
+		switch busType(root) {
+		case busTypeUsb, busType1394, busTypeSd, busTypeMmc:
+			return driveRemovable
+		}
+	}
+	return driveLocal
+}
+
+// busType returns the STORAGE_BUS_TYPE of the disk behind a drive root, or 0.
+func busType(root string) uint32 {
+	if len(root) < 2 {
+		return 0
+	}
+	vol, err := windows.UTF16PtrFromString(`\\.\` + root[:2])
+	if err != nil {
+		return 0
+	}
+	h, err := windows.CreateFile(vol, 0, windows.FILE_SHARE_READ|windows.FILE_SHARE_WRITE, nil,
+		windows.OPEN_EXISTING, 0, 0)
+	if err != nil {
+		return 0
+	}
+	defer windows.CloseHandle(h)
+	// STORAGE_PROPERTY_QUERY{PropertyId: StorageDeviceProperty, QueryType: PropertyStandardQuery}
+	var query [12]byte
+	var out [1024]byte // STORAGE_DEVICE_DESCRIPTOR followed by its strings
+	var n uint32
+	if err := windows.DeviceIoControl(h, ioctlStorageQueryProperty, &query[0], uint32(len(query)),
+		&out[0], uint32(len(out)), &n, nil); err != nil || n < 32 {
+		return 0
+	}
+	return *(*uint32)(unsafe.Pointer(&out[28])) // STORAGE_DEVICE_DESCRIPTOR.BusType
+}
+
+// ---------- external editor (v1.12) ----------
+
+const defaultEditor = "notepad.exe"
+
+// detach starts a program without gofm's console (DETACHED_PROCESS), so a console
+// program (e.g. code.cmd) cannot write over gofm's screen.
+func detach(cmd *exec.Cmd) {
+	cmd.SysProcAttr = &syscall.SysProcAttr{CreationFlags: 0x00000008}
 }

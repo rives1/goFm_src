@@ -22,6 +22,13 @@ import (
 
 func listDrives() []string { return nil }
 
+func driveKind(root string) driveType { return driveLocal }
+
+// No default editor outside Windows: set GOFM_EDITOR.
+const defaultEditor = ""
+
+func detach(cmd *exec.Cmd) {}
+
 func fileAttrs(fi fs.FileInfo) (string, bool) { return "", false }
 
 func createdTime(fi fs.FileInfo) (time.Time, bool) { return time.Time{}, false }

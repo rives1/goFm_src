@@ -85,7 +85,7 @@ func (b *statusBar) Draw(screen tcell.Screen) {
 		return
 	}
 	if fm.notice != "" {
-		tview.Print(screen, "[#06122E:#56D4DD] "+tview.Escape(fm.notice)+" [-:-]", x+1, y, w-1, tview.AlignLeft, colText)
+		tview.Print(screen, "["+tagColor(colNoticeFg)+":"+tagColor(colNoticeBg)+"] "+tview.Escape(fm.notice)+" [-:-]", x+1, y, w-1, tview.AlignLeft, colText)
 		return
 	}
 	col := x + 1
