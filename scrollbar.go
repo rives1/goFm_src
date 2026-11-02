@@ -92,6 +92,9 @@ func (v *panelView) MouseHandler() func(action tview.MouseAction, event *tcell.E
 		if v.rightClick(action, event, setFocus) { // v1.16: right button marks
 			return true, nil
 		}
+		if v.doubleClick(action, event, setFocus) { // v1.18: double click = Enter
+			return true, nil
+		}
 		return v.Table.MouseHandler()(action, event, setFocus)
 	}
 }

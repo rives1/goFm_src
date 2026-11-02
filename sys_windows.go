@@ -244,6 +244,10 @@ func copyProgress(totalSize, transferred, streamSize, streamTransferred, streamN
 	t := int64(transferred)
 	st.o.bytes.Add(t - st.last)
 	st.last = t
+	// v1.18: a pause holds the copy here, between two chunks (CopyFileEx calls back
+	// from the copying thread and waits for the answer). A server-side copy may call
+	// back only at the end of the file: the pause then starts with the next file.
+	st.o.waitIfPaused()
 	if st.o.cancelled() {
 		return progressCancel
 	}

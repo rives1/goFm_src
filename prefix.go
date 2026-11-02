@@ -149,23 +149,7 @@ func (fm *FM) prefixRename() {
 		fm.runTask("Adding \""+prefix+"\" to "+describe(names), func(o *opCtx) {
 			res = o.addPrefix(p.dir, names, prefix)
 		}, func(*opCtx) {
-			if p.flat {
-				for i := range p.flatEntries {
-					if nw, ok := res.renamed[p.flatEntries[i].name]; ok {
-						p.flatEntries[i].name, p.flatEntries[i].lname, p.flatEntries[i].fam = nw, "", 0
-					}
-				}
-			}
-			p.marked = map[string]bool{} // nothing marked afterwards
-			if nw, ok := res.renamed[cursor]; ok {
-				cursor = nw
-			}
-			_ = p.load(cursor)
-			if len(res.skipped) > 0 {
-				fm.showMessage("Add prefix", skippedText(res, len(names)))
-			} else {
-				fm.notice = fmt.Sprintf("Renamed %s", plural(int64(len(res.renamed)), "item"))
-			}
+			fm.afterRename(p, cursor, res, len(names), "Add prefix")
 		})
 	})
 }
@@ -205,4 +189,27 @@ func (fm *FM) promptPreview(title, label, initial string, preview func(string) s
 		AddItem(view, maxPreview+1, 0, false)
 	box.SetBorder(true).SetTitle(" " + tview.Escape(title) + " ")
 	name = fm.openModal(box, 76, 5+maxPreview+1+2, form)
+}
+
+// afterRename updates a panel after Ctrl+K or Ctrl+R: renamed entries of the flat view
+// get their new names, nothing stays marked, the cursor follows its item, and the
+// skipped items are listed (otherwise a notice says how many were renamed).
+func (fm *FM) afterRename(p *Panel, cursor string, res prefixResult, total int, title string) {
+	if p.flat {
+		for i := range p.flatEntries {
+			if nw, ok := res.renamed[p.flatEntries[i].name]; ok {
+				p.flatEntries[i].name, p.flatEntries[i].lname, p.flatEntries[i].fam = nw, "", 0
+			}
+		}
+	}
+	p.marked = map[string]bool{} // nothing marked afterwards
+	if nw, ok := res.renamed[cursor]; ok {
+		cursor = nw
+	}
+	_ = p.load(cursor)
+	if len(res.skipped) > 0 {
+		fm.showMessage(title, skippedText(res, total))
+	} else {
+		fm.notice = fmt.Sprintf("Renamed %s", plural(int64(len(res.renamed)), "item"))
+	}
 }

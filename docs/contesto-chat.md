@@ -1,6 +1,6 @@
-# gofm — contesto per proseguire in una nuova chat (versione 1.17)
+# gofm — contesto per proseguire in una nuova chat (versione 1.18)
 
-> Da allegare all'inizio di una nuova chat. Contiene: stato del progetto, cose in sospeso, regole di lavoro, note tecniche sull'ambiente di sviluppo e, in fondo, le **specifiche compatte complete della 1.17**. Il dettaglio di ogni scelta, con motivazioni e storico, è in `docs/gofm-documentazione.md` nel repository.
+> Da allegare all'inizio di una nuova chat. Contiene: stato del progetto, cose in sospeso, regole di lavoro, note tecniche sull'ambiente di sviluppo e, in fondo, le **specifiche compatte complete della 1.18**. Il dettaglio di ogni scelta, con motivazioni e storico, è in `docs/gofm-documentazione.md` nel repository.
 
 ## A. Dove sono le cose
 
@@ -8,17 +8,18 @@
 - **Copia locale** (PC dell'utente): `C:\Users\ammin\Documents\Claude CLI\gofm-repo\goFm_src`.
 - **Cartella dei pacchetti**: `C:\Users\ammin\Documents\Claude CLI\gofm-repo\`, con `gofm-<versione>-windows.zip`, `.sha256`, `gofm-<versione>-repo.zip`, `gofm-<versione>-specifiche-compatte.md`, `gofm-<versione>-contesto-chat.md` e `microsoft-false-positive-submission.md`. Nel repository: `docs/contesto-chat.md`.
 - **Stato git al 02/11/2026**:
-  - 1.16 inviata dall'utente (`origin/main` = `456177b`);
-  - commit `versione 1.17` con tag annotato `v1.17` (questo file è nel commit stesso).
-- **SHA-256 degli eseguibili**: nelle note della Release `v1.17` su GitHub e nel file `gofm-1.17-contesto-chat.md` della cartella dei pacchetti (qui non possono stare: l'eseguibile incorpora il commit che contiene questo file).
+  - 1.17 inviata dall'utente e pubblicata (Release `v1.17`);
+  - commit `versione 1.18` con tag annotato `v1.18` (questo file è nel commit stesso).
+- **SHA-256 degli eseguibili**: nelle note della Release `v1.18` su GitHub e nel file `gofm-1.18-contesto-chat.md` della cartella dei pacchetti (qui non possono stare: l'eseguibile incorpora il commit che contiene questo file).
 
 ## B. In sospeso
 
-1. **Push** della 1.17 e controllo della Release.
-2. **Prove su Windows reale** della 1.17: F5/F6 verso una share con molti file già presenti (confronto dei tempi con la 1.16: è il guadagno atteso maggiore); Ctrl+A su molte cartelle di un NAS; barra dei tasti abbreviata.
+1. **Push** della 1.18 e controllo della Release.
+2. **Prove su Windows reale** della 1.18: doppio clic in Windows Terminal e nella console classica; Pause/Resume durante una copia grande verso una share (con `CopyFileExW` e, tra cartelle dello stesso server, con la copia lato server: lì la pausa può scattare solo a fine file); Ctrl+R con cambio di sole maiuscole su NTFS e su share; Ctrl+U; vista piatta con nomi doppi.
+   Della 1.17: F5/F6 verso una share con molti file già presenti (confronto dei tempi con la 1.16: è il guadagno atteso maggiore); Ctrl+A su molte cartelle di un NAS; barra dei tasti abbreviata.
 3. **Prove delle versioni precedenti** ancora da fare: 1.16 Ctrl+I/O/P/W, Shift+Canc, clic destro; 1.15 barra di scorrimento con il mouse, Shift+frecce; 1.14 Ctrl+T e Ctrl+K, albero su unità di rete lente.
 4. **Ottimizzazioni valutate e non ancora fatte** (valutazione del 02/11/2026): ricerca per contenuto in parallelo (punto 4), tabella "virtuale" che costruisce solo le righe visibili (punto 6: render ≈ 250 ms con 200 000 voci), archivi grandi (9), lettura asincrona dei rami dell'albero (10).
-5. **Scelte di Claude da confermare**: (1.17) un file aggiunto nella sorgente dopo la preparazione della copia non viene copiato; 3 misure di cartelle in parallelo. (1.16) dopo Ctrl+O/Ctrl+I le marcature restano; Ctrl+O/I/P subito dopo Ctrl+A nella barra. (1.15) Shift+PgUp/PgDn/Home/End includono la riga d'arrivo solo se è la prima o l'ultima; nell'albero Shift+frecce sono movimenti normali. (1.14) Ctrl+T rifiutato anche dall'elenco share; albero non ricordato; nessuna ricerca digitando nell'albero. (1.13) `gofm.ini` letto anche in una cartella non scrivibile; `networkDelete` + `networkDeleteDefault`; *Merge* predefinito.
+5. **Scelte di Claude da confermare**: (1.18) chiudendo l'albero il pannello destro, se era già sulla stessa cartella, mantiene il suo cursore; con nomi doppi in vista piatta il "primo" è il primo nell'ordine dell'elenco; Ctrl+U rifiutato con l'albero aperto; Pause ha il focus (Invio mette in pausa, Esc annulla). (1.17) un file aggiunto nella sorgente dopo la preparazione della copia non viene copiato; 3 misure di cartelle in parallelo. (1.16) dopo Ctrl+O/Ctrl+I le marcature restano; Ctrl+O/I/P subito dopo Ctrl+A nella barra. (1.15) Shift+PgUp/PgDn/Home/End includono la riga d'arrivo solo se è la prima o l'ultima; nell'albero Shift+frecce sono movimenti normali. (1.14) Ctrl+T rifiutato anche dall'elenco share; albero non ricordato; nessuna ricerca digitando nell'albero. (1.13) `gofm.ini` letto anche in una cartella non scrivibile; `networkDelete` + `networkDeleteDefault`; *Merge* predefinito.
 6. **Defender**: segnalazione a Microsoft (`microsoft-false-positive-submission.md`); soluzione stabile = firma del codice (serve un account dell'utente).
 7. **Prove su Windows della 1.12** ancora da fare (tipi di unità, Canc in rete, F4, clic sulla barra dei tasti, decodifica di Alt+F7, Ctrl+F7, Ctrl+F2, Ctrl+F9, Ctrl+A).
 8. **Domanda aperta** sull'alternativa a *Cascadia Mono NF* (va chiesto il motivo).
@@ -52,6 +53,7 @@
 | 1.9 | icone per tipo di file (Nerd Font / simboli, Alt+I) |
 | 1.10 | correzione del focus alla chiusura delle finestre; seconda conferma per cartelle con sottocartelle; riepilogo dei tasti; F12 per nome+dimensione+data; Release GitHub con pacchetto |
 | 1.11 | Go 1.27.3 fissato; metadati Windows (versione, manifest, icona); build riproducibile; nota sui falsi positivi degli antivirus |
+| 1.18 | cursore sul primo elemento entrando e chiudendo vista piatta/albero; doppio clic = Invio; Ctrl+R iniziali maiuscole; nomi doppi in vista piatta con domanda Skip/Overwrite; Ctrl+U scambia i pannelli; Pause/Resume in copia, spostamento e incolla |
 | 1.17 | prestazioni: preparazione della copia in un solo percorso, misura delle cartelle 3 alla volta, ordinamento e totali senza ricalcoli; benchmark; barra dei tasti con `C+` |
 | 1.16 | appunti di gofm (Ctrl+O copia, Ctrl+I taglia, Ctrl+P incolla); Ctrl+W esce (F10 nulla); ultimo prefisso di Ctrl+K; clic destro marca; Shift+Canc senza conferma |
 | 1.15 | barra di scorrimento cliccabile e trascinabile; copia su sé stessi saltabile (Skip, Skip all, Cancel); selezione con Shift+frecce/PgUp/PgDn/Home/End; contesto anche in `docs/contesto-chat.md` |
@@ -61,9 +63,9 @@
 
 ---
 
-## Specifiche compatte 1.17
+## Specifiche compatte 1.18
 
-Riepilogo per riprendere il lavoro in una nuova chat. Il codice completo è nel repository <https://github.com/rives1/goFm_src> (copia locale: `C:\Users\ammin\Documents\Claude CLI\gofm-repo\goFm_src`) e in `gofm-1.17-repo.zip`; la documentazione estesa (con motivazioni, storico e prompt di rigenerazione) è in `docs/gofm-documentazione.md`.
+Riepilogo per riprendere il lavoro in una nuova chat. Il codice completo è nel repository <https://github.com/rives1/goFm_src> (copia locale: `C:\Users\ammin\Documents\Claude CLI\gofm-repo\goFm_src`) e in `gofm-1.18-repo.zip`; la documentazione estesa (con motivazioni, storico e prompt di rigenerazione) è in `docs/gofm-documentazione.md`.
 
 ### 0. Regole di lavoro
 
@@ -82,7 +84,7 @@ Riepilogo per riprendere il lavoro in una nuova chat. Il codice completo è nel 
 
 File manager a **doppio pannello** per il terminale di Windows (Windows Terminal consigliato, funziona anche nella console classica), stile Norton/Midnight/Total Commander. **Go** (minimo 1.24; release compilate con **Go 1.27.3**, fissato in `go.mod` con `toolchain go1.27.3` e nei workflow), un solo eseguibile senza dipendenze: `gofm.exe` (x64, circa 7 MB) e `gofm-arm64.exe`. Librerie: tview v0.42, tcell v2.13.10, uniseg, bodgit/sevenzip v1.6 (7z in sola lettura), fsnotify v1.8, x/sys, x/text. Compila e gira anche su Linux e macOS, per sviluppo e test.
 
-Avvio: `gofm [left_folder] [right_folder]`; `-h`, `--help` o `/?` stampa `gofm 1.17 — usage: …`. Senza argomenti riapre le ultime cartelle (§5.13).
+Avvio: `gofm [left_folder] [right_folder]`; `-h`, `--help` o `/?` stampa `gofm 1.18 — usage: …`. Senza argomenti riapre le ultime cartelle (§5.13).
 
 ### 2. Interfaccia
 
@@ -141,7 +143,7 @@ I test verificano che ogni famiglia disti almeno 120 dal giallo e almeno 60 dall
 - Durante la ricerca digitando compare il badge ` Search: … ` (e `no match` in rosso).
 - Un avviso, per esempio dopo F12, Ctrl+B, Alt+I, Ctrl+F9 o F4, sostituisce la riga fino al tasto successivo.
 
-**Barra dei tasti** (v1.12, `keybar.go`): voci per priorità, **quante ne entrano** nella larghezza (alla prima che non entra si ferma): F4 Edit · F6 Move · Del Delete · F9 Zip · F12 Compare · Ctrl+A Select · Ctrl+O Copy · Ctrl+I Cut · Ctrl+P Paste · Ctrl+T Tree · Ctrl+K Prefix · Ctrl+B Flat · Alt+F7 Find · Ctrl+F7 Filter · Alt+U Extract · Alt+V Drives · Ctrl+F2 Keys · Alt+O Sort · Alt+D Reverse · Alt+H Hidden · Ctrl+F9 Colours · Alt+I Icons · Shift+X Drive X: · Alt+L Go to. A 80 colonne 8 voci, a 120 11, tutte da 215. **Mai** F2, F3, F5, F7 (F10 non fa nulla dalla v1.16). Dalla v1.17 `Ctrl+` è scritto `C+` con la lettera minuscola (`C+a`, `C+F7`); il riepilogo usa i nomi completi. **Clic** su una voce = evento del tasto passato a `FM.keys`, il focus resta al pannello; Shift+X non è cliccabile.
+**Barra dei tasti** (v1.12, `keybar.go`): voci per priorità, **quante ne entrano** nella larghezza (alla prima che non entra si ferma): F4 Edit · F6 Move · Del Delete · F9 Zip · F12 Compare · Ctrl+A Select · Ctrl+O Copy · Ctrl+I Cut · Ctrl+P Paste · Ctrl+T Tree · Ctrl+K Prefix · Ctrl+R Caps · Ctrl+U Swap · Ctrl+B Flat · Alt+F7 Find · Ctrl+F7 Filter · Alt+U Extract · Alt+V Drives · Ctrl+F2 Keys · Alt+O Sort · Alt+D Reverse · Alt+H Hidden · Ctrl+F9 Colours · Alt+I Icons · Shift+X Drive X: · Alt+L Go to. A 80 colonne 9 voci, a 120 14, a 200 21, tutte e 26 da 258 (v1.18). **Mai** F2, F3, F5, F7 (F10 non fa nulla dalla v1.16). Dalla v1.17 `Ctrl+` è scritto `C+` con la lettera minuscola (`C+a`, `C+F7`); il riepilogo usa i nomi completi. **Clic** su una voce = evento del tasto passato a `FM.keys`, il focus resta al pannello; Shift+X non è cliccabile.
 
 **Riepilogo dei tasti (Ctrl+F2, v1.12)**: finestra con **tutti** i tasti (sezioni Navigation, Search and selection, Files, View, Program); righe ≤ 76 celle, altezza limitata allo schermo con scorrimento; si chiude con Esc, Invio, F2, `q`. Un test verifica che ogni voce della barra vi compaia.
 
@@ -159,6 +161,7 @@ I test verificano che ogni famiglia disti almeno 120 dal giallo e almeno 60 dall
 - **Luoghi possibili**: elenco unità (`dir=""`), elenco share (`\\server`, con `NetShareEnum`; `C$` e `ADMIN$` solo con Alt+H), cartella (anche UNC), interno di un archivio .zip/.7z, vista piatta.
 - **Cartella superiore** (calcolata con logica di stringhe): `C:\` porta all'elenco unità; `\\srv\sh\` porta all'elenco share; `\\srv` porta all'elenco unità.
 - **Cambio cartella**: se la lettura fallisce, si ripristina lo stato precedente.
+- **Cursore dopo un caricamento (v1.18, `firstRow`)**: sul nome richiesto; senza nome (entrata in cartella, unità, archivio, Alt+L, Shift+lettera, chiusura di vista piatta e albero) sulla **prima voce dopo `..`** (`..` se la cartella è vuota). Risalendo (←, Backspace, `..`) sulla cartella lasciata.
 - **Rilettura**: il cursore resta sullo stesso elemento; se è sparito va al successivo ancora presente, altrimenti al precedente. Lo scorrimento viene mantenuto.
 
 ### 4. Tasti
@@ -169,13 +172,15 @@ I test verificano che ogni famiglia disti almeno 120 dal giallo e almeno 60 dall
 | → | entra in cartella, unità o share; apre .zip/.7z; su un file normale niente |
 | ← | cartella superiore o uscita dall'archivio |
 | Backspace | cancella un carattere della ricerca, altrimenti cartella superiore |
-| Invio | apre la cartella; nell'archivio mostra l'anteprima; altrimenti apre il file con il programma associato |
+| Invio / **doppio clic** | apre la cartella; nell'archivio mostra l'anteprima; altrimenti apre il file con il programma associato (doppio clic dalla v1.18) |
 | Tab | cambia pannello |
 | lettere **minuscole** e altri caratteri (anche `*`) | ricerca digitando (prima per inizio del nome, poi per contenimento; azzerata dopo 1,5 s) |
 | **Shift+lettera** (maiuscola A–Z) | va all'unità, nell'ultima cartella usata lì. Indistinguibile dal Blocco Maiuscole: con Blocco Maiuscole attivo ogni lettera cambia unità |
 | **Ctrl+A** | nulla selezionato: seleziona tutto (file e cartelle); altrimenti **inverte** (v1.12, sostituisce `*` e Alt+A) |
 | **Ctrl+B** | vista piatta sì/no (§5.10) |
 | **Ctrl+T** | vista ad albero sì/no (§5.15, v1.14) |
+| **Ctrl+U** | scambia i due pannelli, evidenziazione sullo stesso lato (§5.20, v1.18) |
+| **Ctrl+R** | iniziali maiuscole nei nomi (§5.20, v1.18) |
 | **Ctrl+K** | prefisso ai nomi (§5.16, v1.14); le altre Ctrl+lettera non fanno nulla (Ctrl+C non chiude) |
 | Ctrl+→ (pannello sinistro) / Ctrl+← (pannello destro) | stesso luogo nel pannello opposto |
 | **Shift+↑/↓** | inverte la marcatura dell'elemento sotto il cursore e si sposta (v1.15) |
@@ -220,7 +225,7 @@ Le operazioni agiscono sui selezionati, altrimenti sull'elemento sotto il cursor
   - su Windows `CopyFileExW` con callback di avanzamento e annullamento (`PROGRESS_CANCEL`), `COPY_FILE_NO_BUFFERING` per file ≥ 256 MB, percorsi `\\?\`;
   - altrove copia con buffer da 1 MB.
 - Lo **spostamento** rinomina subito ciò che può (stessa unità) e copia il resto; l'origine viene eliminata solo per gli elementi copiati completamente.
-- Avanzamento: finestra ` Working ` con barra da 60 caratteri, percentuale, `X of Y · velocità/s · m:ss left` (velocità media sugli ultimi 5 s) e pulsante Cancel.
+- Avanzamento: finestra ` Working ` con barra da 60 caratteri, percentuale, `X of Y · velocità/s · m:ss left` (velocità media sugli ultimi 5 s) e pulsante Cancel; per copia, spostamento e incolla anche **Pause/Resume** (v1.18, §5.20).
 
 #### 5.2 Altre operazioni
 - **F2**: rinomina; non accetta `\ / . ..` né `: * ? " < > |`; in vista piatta il file resta nella sua sottocartella.
@@ -269,8 +274,8 @@ Le operazioni agiscono sui selezionati, altrimenti sull'elemento sotto il cursor
 - Funziona solo in cartelle su disco.
 - Si costruisce in una finestra annullabile e mostra solo i file, con il percorso relativo (`src\deep\util.go`).
 - Link e junction non vengono seguiti; i nascosti seguono Alt+H; massimo 200 000 file.
-- Ctrl+B di nuovo, oppure ogni cambio di cartella, torna alla vista normale.
-- F5/F6 mettono tutti i file direttamente nella destinazione e rifiutano i nomi doppi elencandoli.
+- Ctrl+B di nuovo, oppure ogni cambio di cartella, torna alla vista normale; chiudendo con Ctrl+B il cursore va sul primo elemento (v1.18).
+- F5/F6 mettono tutti i file direttamente nella destinazione; i **nomi doppi** non sono più rifiutati: una domanda per ogni file in più (v1.18, §5.20).
 - F12 confronta i percorsi relativi; la ricerca digitando confronta il nome del file.
 - Dopo un'operazione la lista si rilegge in background (`updating…`).
 - Le notifiche osservano solo la cartella radice: le modifiche nelle sottocartelle compaiono con Alt+R.
@@ -339,6 +344,13 @@ La freccia indica il pannello che cambia; nella direzione opposta non succede nu
 - `panelTotals`: totali di bordi e barra di stato calcolati una volta dopo ogni `render` (o se cambia il numero di voci/marcature), non a ogni fotogramma.
 - Benchmark (`bench_test.go`, Linux): preparazione di F5 su 10 000 file con metà presenti 76,6 → 21,3 ms e 30 106 → 15 105 stat; ordinamento di 200 000 nomi 545 → 148 ms; fotogramma con 200 000 voci 3,08 → 1,05 ms. Resta: `render` ricostruisce tutte le righe (≈ 250 ms con 200 000 voci).
 
+##### 5.20 Novità della v1.18
+- **Doppio clic** (`panelView.doubleClick`): `MouseLeftDoubleClick` sulla riga del cursore = `Panel.enter()` (Invio); su un'altra riga sposta solo il cursore; il pannello prende il focus.
+- **Ctrl+R** (`capitalize.go`): maiuscola la prima lettera del nome e quella dopo spazio, `_`, `-`; **resto invariato**, **estensione invariata** (cartelle: tutto il nome; `.profile` senza estensione). Selezionati o elemento sotto il cursore, file e cartelle. Nessun cambiamento → avviso. Conferma con anteprima `vecchio → nuovo` (max 6), **Rename** predefinito / Cancel. `renameEach`: nome esistente di un altro file → saltato; stesso file (`os.SameFile`, cambio di sole maiuscole) → rinominato; poi `afterRename` comune a Ctrl+K.
+- **Nomi doppi in vista piatta**: `resolveDuplicates` in una goroutine con `askSync`; il primo con un nome è "scelto", per ogni altro `Selected files with the same name (i of n):` + `Chosen:`/`This one:` (percorso relativo alla cartella comune, dimensione, data, `(newer)`); **Skip** (predefinito, tiene lo scelto) / Skip all / Overwrite (prende questo) / Overwrite all / Cancel-Esc (annulla tutto); i file scartati restano nella sorgente; poi `transferPairs` con le domande di sempre.
+- **Ctrl+U** (`swapPanels`): scambia i puntatori `fm.left`/`fm.right` e il layout (tutto lo stato viaggia con il pannello, anche le misure in background); evidenziazione sullo stesso lato; stato salvato; avviso `Panels swapped — Ctrl+U to swap them back`; rifiutato con l'albero.
+- **Pausa** (`runTaskEx(…, pausable)` per F5, F6, Ctrl+P): pulsanti **Pause** (focus) → **Resume**, e Cancel; `opCtx.paused` + `waitIfPaused` (passi di 100 ms, esce con Cancel) nei lavoratori prima di ogni file, nel Reader della copia, nella callback di `CopyFileExW`, prima delle rinomine e in `scanNode`; in pausa `PAUSED — press Resume to go on` e campioni della velocità azzerati. Con la copia lato server SMB la pausa può scattare solo a fine file.
+
 ### 6. Codice
 
 | File | Contenuto |
@@ -361,7 +373,8 @@ La freccia indica il pannello che cambia; nella direzione opposta non succede nu
 | state.go | memoria delle cartelle |
 | config.go | file accanto all'eseguibile, scrivibilità, `gofm.ini` (v1.13) |
 | tree.go | vista ad albero (v1.14) |
-| prefix.go | prefisso ai nomi (v1.14) |
+| prefix.go | prefisso ai nomi (v1.14); `afterRename` |
+| capitalize.go | iniziali maiuscole, Ctrl+R (v1.18) |
 | scrollbar.go | barra di scorrimento e Shift+movimento (v1.15) |
 | clipboard.go | appunti di gofm e clic destro (v1.16) |
 | scan.go | preparazione di copia/spostamento in un solo percorso (v1.17) |
@@ -375,6 +388,7 @@ La freccia indica il pannello che cambia; nella direzione opposta non succede nu
 | scripts/make-small-icons.py | icone a 32 e 48 px disegnate a pixel (Pillow) |
 | v111_test.go | compilatore fissato, risorse Windows |
 | v112_test.go | schemi, unità, ordinamento, tasti, barra e clic, editor, conflitti, cancellazione definitiva |
+| v118_test.go | cursore sul primo elemento, doppio clic, Ctrl+R, nomi doppi, Ctrl+U, pausa |
 | v117_test.go | scan, copia/spostamento con l'albero, stesso ordinamento, cache delle voci, totali, misura limitata, barra abbreviata |
 | v116_test.go | applicazione in esecuzione su schermo simulato (`runUI`, `waitUI`): uscita, appunti, incolla nell'albero, Shift+Canc, ultimo prefisso, clic destro |
 | v115_test.go | barra (calcolo, schermo simulato, clic/trascinamento, albero), Shift+movimento, copia su sé stessi |
@@ -422,6 +436,7 @@ La freccia indica il pannello che cambia; nella direzione opposta non succede nu
 - icona e proprietà del file in Esplora risorse; effetto dei metadati su Defender (prima verifica con la Release 1.11);
 - v1.12: tipi di unità e bus USB, cancellazione su unità di rete, F4 con Notepad, clic sulla barra, decodifica di Alt+F7, Ctrl+F7, Ctrl+F2, Ctrl+F9 e Ctrl+A nei terminali Windows (nella console classica Ctrl+A potrebbe essere intercettato dalla selezione del testo).
 
+- v1.18: doppio clic nei terminali Windows; pausa con `CopyFileExW` e con la copia lato server; Ctrl+R con cambio di sole maiuscole su NTFS e share; Ctrl+R/Ctrl+U nei terminali.
 - v1.17: guadagno della preparazione della copia su share Windows (atteso il maggiore); misura limitata su NAS.
 - v1.16: Ctrl+I (distinto da Tab), Ctrl+O, Ctrl+P, Ctrl+W, Shift+Canc e clic destro nei terminali Windows; nella console classica Ctrl+Tab arriva come Ctrl+I.
 - v1.15: mouse sulla barra (clic e trascinamento) e Shift+frecce/PgUp/PgDn/Home/End nei terminali Windows.

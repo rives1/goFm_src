@@ -72,6 +72,7 @@ func (o *opCtx) scan(pairs []copyPair, move bool) *copyPlan {
 }
 
 func (o *opCtx) scanNode(n *scanNode, plan *copyPlan) {
+	o.waitIfPaused()
 	if o.cancelled() || n.fi == nil {
 		return
 	}

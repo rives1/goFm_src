@@ -326,19 +326,36 @@ func (p *Panel) load(selectName string) error {
 	defer p.fm.saveState()
 
 	p.render()
-	row := 0
-	for i, e := range list {
-		if strings.EqualFold(e.name, selectName) {
-			row = i
-			if e.name == selectName {
-				break
-			}
-		}
-	}
+	row := firstRow(list, selectName)
 	p.table.Select(0, 0)
 	p.table.ScrollToBeginning()
 	p.table.Select(row, 0)
 	return nil
+}
+
+// firstRow is where the cursor goes after a listing is loaded: on selectName (exact
+// match first, then ignoring case); without a name, or when it is not there, on the
+// first item after ".." (v1.18: entering a folder, closing the flat view or the tree),
+// or on ".." when the folder is empty.
+func firstRow(list []entry, selectName string) int {
+	row := -1
+	if selectName != "" {
+		for i, e := range list {
+			if strings.EqualFold(e.name, selectName) {
+				row = i
+				if e.name == selectName {
+					break
+				}
+			}
+		}
+	}
+	if row < 0 {
+		row = 0
+		if len(list) > 1 && list[0].isUp {
+			row = 1
+		}
+	}
+	return row
 }
 
 // followTree keeps the tree view (Ctrl+T) in step with the right panel: a new folder

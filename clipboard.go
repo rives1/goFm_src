@@ -103,3 +103,32 @@ func (v *panelView) rightClick(action tview.MouseAction, event *tcell.EventMouse
 	}
 	return false
 }
+
+// doubleClick (v1.18): a double click on a row acts as Enter (opens the folder, or
+// the file with its program, or previews an archive entry). The first click of the
+// pair has already put the cursor on the row; a double click that lands on another
+// row (two quick clicks on different rows) only moves the cursor there.
+func (v *panelView) doubleClick(action tview.MouseAction, event *tcell.EventMouse, setFocus func(tview.Primitive)) bool {
+	if action != tview.MouseLeftDoubleClick {
+		return false
+	}
+	x, y := event.Position()
+	if !v.InRect(x, y) {
+		return false
+	}
+	row, _ := v.CellAt(x, y)
+	p := v.p
+	if row < 0 || row >= len(p.entries) {
+		return true
+	}
+	setFocus(v)
+	if p.fm != nil && p.fm.active != p {
+		p.fm.setActive(p, false)
+	}
+	if cur, _ := v.GetSelection(); cur != row {
+		v.Select(row, 0)
+		return true
+	}
+	p.enter()
+	return true
+}

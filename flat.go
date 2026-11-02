@@ -69,12 +69,8 @@ func (o *opCtx) flatScan(root string, showHidden bool) (list []entry, truncated 
 func (fm *FM) toggleFlat() {
 	p := fm.active
 	if p.flat {
-		sel := ""
-		if e := p.current(); e != nil && !e.isUp { // cursor on the top-level item that contains it
-			sel = strings.SplitN(e.name, string(filepath.Separator), 2)[0]
-		}
 		p.exitFlat()
-		_ = p.load(sel)
+		_ = p.load("") // v1.18: cursor on the first item (it was the item containing the file)
 		return
 	}
 	if !p.onDisk() {
@@ -163,4 +159,95 @@ func duplicateTargets(targets []string) []string {
 		}
 	}
 	return dups
+}
+
+// dupQuestion is one question about files of the selection that would land on the
+// same name in the destination (flat view, v1.18): chosen is the file that goes there
+// so far, dup the next one with that name; this is question i of n.
+type dupQuestion struct {
+	chosen, dup copyPair
+	i, n        int
+}
+
+// resolveDuplicates keeps one file per destination name. The first file with a name
+// goes there; for each later one ask answers like a conflict: Skip keeps the chosen
+// file, Overwrite takes this one instead, Skip all and Overwrite all decide the rest,
+// Cancel or Esc ("") cancel the whole operation (ok = false). The files left out are
+// neither copied nor moved. The order of the items is kept.
+func resolveDuplicates(pairs []copyPair, ask func(q dupQuestion) string) (kept []copyPair, ok bool) {
+	count := map[string]int{}
+	for _, pr := range pairs {
+		count[normPath(pr.to)]++
+	}
+	n := 0
+	for _, c := range count {
+		n += c - 1
+	}
+	pos := map[string]int{}
+	all, i := "", 0
+	for _, pr := range pairs {
+		k := normPath(pr.to)
+		j, seen := pos[k]
+		if !seen {
+			pos[k] = len(kept)
+			kept = append(kept, pr)
+			continue
+		}
+		answer := all
+		if answer == "" {
+			answer = ask(dupQuestion{kept[j], pr, i, n})
+		}
+		i++
+		switch answer {
+		case conflictSkip:
+		case conflictSkipAll:
+			all = conflictSkip
+		case conflictOverwrite:
+			kept[j] = pr
+		case conflictOverwriteAll:
+			all = conflictOverwrite
+			kept[j] = pr
+		default:
+			return nil, false
+		}
+	}
+	return kept, true
+}
+
+// commonDir is the deepest folder that contains both paths.
+func commonDir(a, b string) string {
+	da, db := filepath.Dir(a), filepath.Dir(b)
+	for !isWithin(da, db) && !samePath(da, db) {
+		up := filepath.Dir(da)
+		if up == da {
+			return ""
+		}
+		da = up
+	}
+	return da
+}
+
+// dupText is the question about two selected files with the same name: the paths
+// are shown from their common folder, with size and date of both.
+func dupText(q dupQuestion) string {
+	base := commonDir(q.chosen.from, q.dup.from)
+	rel := func(p string) string {
+		if r, err := filepath.Rel(base, p); err == nil && base != "" {
+			return r
+		}
+		return p
+	}
+	info := func(p string, other string) string {
+		fi, err := os.Lstat(p)
+		if err != nil {
+			return rel(p)
+		}
+		s := rel(p) + " · " + humanSize(fi.Size()) + " · " + fi.ModTime().Local().Format("02/01/2006 15:04")
+		if oi, err := os.Lstat(other); err == nil && fi.ModTime().Sub(oi.ModTime()) > dateTolerance {
+			s += " (newer)"
+		}
+		return s
+	}
+	return fmt.Sprintf("Selected files with the same name (%d of %d):\n\n%s\n\nChosen:   %s\nThis one: %s\n\nSkip keeps the chosen file; Overwrite takes this one instead.",
+		q.i+1, q.n, filepath.Base(q.dup.to), info(q.chosen.from, q.dup.from), info(q.dup.from, q.chosen.from))
 }

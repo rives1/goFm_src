@@ -1,6 +1,6 @@
 # gofm — Documentazione di progetto e specifiche
 
-**Versione documentata:** 1.17 · **Data:** 02/11/2026 · **Licenza:** MIT, © 2026 rives
+**Versione documentata:** 1.18 · **Data:** 02/11/2026 · **Licenza:** MIT, © 2026 rives
 **Linguaggio:** Go (minimo 1.24; release compilate con **Go 1.27.3**) · **Piattaforma bersaglio:** Windows 64 bit (x64, ARM64) · **Interfaccia:** inglese
 
 ---
@@ -80,7 +80,7 @@ Avvio:
 gofm.exe                        :: entrambi i pannelli nella cartella corrente
 gofm.exe C:\Progetti D:\Backup  :: pannello sinistro e destro
 gofm.exe \\nas                  :: un pannello sull'elenco delle share di \\nas
-gofm.exe -h | --help | /?       :: stampa "gofm 1.17 — usage: gofm [left_folder] [right_folder]"
+gofm.exe -h | --help | /?       :: stampa "gofm 1.18 — usage: gofm [left_folder] [right_folder]"
 ```
 
 Un argomento non valido (inesistente o non cartella) viene sostituito dalla cartella corrente.
@@ -122,6 +122,12 @@ Ogni scelta è stata presa con l'utente o motivata esplicitamente.
 | Uscita (v1.16) | **Ctrl+W** e Alt+Q chiudono subito; **F10 non fa più nulla** | Richiesta dell'utente (v1.16). |
 | Shift+Canc (v1.16) | Cancella **senza la prima conferma**: Cestino sulle unità locali, cancellazione definitiva su quelle di rete (anche lì senza conferma); **resta** l'avviso per le cartelle con sottocartelle; `networkDelete = off` resta rispettato | Scelte dell'utente (v1.16). Diverso da Esplora risorse, dove Shift+Canc significa "senza Cestino": qui significa "senza domanda". |
 | Clic destro (v1.16) | **Inverte** la marcatura dell'elemento sotto il puntatore e vi porta il cursore; nessun menu | Scelta dell'utente (v1.16). |
+| Cursore entrando (v1.18) | Entrando in una cartella, un'unità, un archivio o una sua sottocartella, chiudendo la vista piatta o l'albero: cursore sul **primo elemento dopo `..`** (su `..` se la cartella è vuota). Risalendo (← / Backspace / `..`) resta sulla cartella da cui si esce | Scelte dell'utente (v1.18). Regola unica in `firstRow`, usata da `Panel.load` quando non c'è un nome da selezionare o non viene trovato; le riletture (`reload`) mantengono la posizione come prima (§6.24). |
+| Doppio clic (v1.18) | Doppio clic su una riga = **Invio** (cartella, file con il programma associato, anteprima nell'archivio) | Richiesta dell'utente. Il primo clic della coppia ha già portato il cursore sulla riga; se il secondo cade su un'altra riga (due clic veloci su righe diverse) il cursore si sposta soltanto. |
+| Iniziali maiuscole (Ctrl+R, v1.18) | Prima lettera di ogni parola maiuscola, parole separate da **spazio, `_`, `-`**; **le altre lettere restano come sono**; **estensione invariata**; selezionati o elemento sotto il cursore, file e cartelle; finestra con **anteprima** (Rename predefinito); nomi esistenti saltati | Scelte dell'utente (v1.18). Lasciare le altre lettere com'erano non rovina sigle (`IVA`) e maiuscole volute. Su Windows un cambio di sole maiuscole è una rinomina normale: `os.SameFile` distingue "il nome esiste già" da "è lo stesso file". |
+| Nomi doppi in vista piatta (v1.18) | Al posto del rifiuto, **una domanda per ogni file in più** con lo stesso nome di destinazione: il primo nell'elenco è "scelto"; Skip (predefinito) lo tiene, Overwrite prende questo al suo posto, Skip all / Overwrite all decidono il resto, Cancel annulla tutto | Scelta dell'utente (v1.18): stessa logica e stessi pulsanti dei conflitti con i file già presenti. Il file scartato non viene copiato né spostato. |
+| Scambio dei pannelli (Ctrl+U, v1.18) | I due pannelli si scambiano di lato con tutto il loro stato; l'**evidenziazione resta sullo stesso lato** (come Total Commander) | Scelta dell'utente (v1.18). Si scambiano gli oggetti `Panel` (puntatori `fm.left`/`fm.right` e posizione nel layout), non il loro contenuto: le misure delle cartelle e le riletture della vista piatta in background restano legate al pannello giusto. Rifiutato durante l'albero. |
+| Pausa (v1.18) | Pulsante **Pause** (diventa **Resume**) nella finestra di avanzamento di **copia, spostamento e incolla**; la pausa ferma anche a metà di un file; velocità e tempo residuo ripartono da zero alla ripresa | Scelta dell'utente (v1.18). Attesa in `opCtx.waitIfPaused` (controllo ogni 100 ms, esce subito con Cancel) nei lavoratori prima di ogni file, nel lettore della copia Go, nella callback di `CopyFileExW` (tra un blocco e l'altro), nelle rinomine dello spostamento e nella lettura delle cartelle. Con la copia lato server di SMB Windows può chiamare la callback solo a fine file: la pausa scatta allora con il file successivo. |
 | Ultimo prefisso (v1.16) | Ctrl+K ripropone l'ultimo prefisso usato nella sessione; non salvato all'uscita | Richiesta dell'utente (v1.16). |
 | Barra di scorrimento (v1.15) | Sul **bordo destro** di pannelli e albero, **solo se l'elenco non entra** nel riquadro: cursore `█` nel colore del bordo, lungo quanto la parte visibile (almeno 1 riga), nella posizione della parte visibile; **clic** o **trascinamento** sul bordo destro portano il cursore al punto corrispondente dell'elenco | Richiesta e scelte dell'utente (v1.15). Il binario è il bordo stesso, così non si perde una colonna. Il clic sposta il cursore (non solo la vista), così la barra di stato e le operazioni seguono il punto scelto. |
 | Copia su sé stessi (v1.15) | Elementi che finirebbero su sé stessi (stessa cartella nei due pannelli) o cartelle che finirebbero dentro sé stesse: **una domanda per elemento**, `Skip` (predefinito) / `Skip all` / `Cancel`; gli altri elementi procedono; se sono tutti saltati, solo un avviso. Vale per F5 e F6 | Richiesta e scelte dell'utente (v1.15). Fino alla v1.14 un solo elemento del genere bloccava l'intera operazione con un errore. Non c'è *Overwrite*: copiare un elemento su sé stesso non ha senso. |
@@ -216,8 +222,8 @@ Le colonne fisse sono separate da ` │ ` e scritte in `#7F8FB4`; il nome in `#D
 
 Primitiva propria (`keyBar`, `keybar.go`, v1.12). Sfondo della barra dello schema; per ogni voce il tasto (testo `keyFg` su `keyBg`, nello schema navy `#06122E` su `#2AB3C8`) seguito dall'etichetta, poi uno spazio; un carattere di margine a sinistra.
 
-- **Voci in ordine di priorità** (`keybarItems`): `F4 Edit · F6 Move · Del Delete · F9 Zip · F12 Compare · Ctrl+A Select · Ctrl+B Flat · Alt+F7 Find · Ctrl+F7 Filter · Alt+U Extract · Alt+V Drives · Ctrl+F2 Keys · Alt+O Sort · Alt+D Reverse · Alt+H Hidden · Ctrl+F9 Colours · Alt+I Icons · Shift+X Drive X: · Alt+L Go to`.
-- **Adattamento alla larghezza** (`keybarLayout`): si aggiungono voci finché entrano; alla prima che non entra ci si ferma (niente voci successive più corte "infilate" dopo, per non cambiare l'ordine). A 80 colonne entrano le prime 8 (fino a Ctrl+F7 Filter esclusa), a 120 le prime 11, a 200 le prime 17; per tutte e 19 servono 215 colonne.
+- **Voci in ordine di priorità** (`keybarItems`, v1.18): `F4 Edit · F6 Move · Del Delete · F9 Zip · F12 Compare · Ctrl+A Select · Ctrl+O Copy · Ctrl+I Cut · Ctrl+P Paste · Ctrl+T Tree · Ctrl+K Prefix · Ctrl+R Caps · Ctrl+U Swap · Ctrl+B Flat · Alt+F7 Find · Ctrl+F7 Filter · Alt+U Extract · Alt+V Drives · Ctrl+F2 Keys · Alt+O Sort · Alt+D Reverse · Alt+H Hidden · Ctrl+F9 Colours · Alt+I Icons · Shift+X Drive X: · Alt+L Go to`; dalla v1.17 nella barra `Ctrl+` è scritto `C+` con la lettera minuscola.
+- **Adattamento alla larghezza** (`keybarLayout`): si aggiungono voci finché entrano; alla prima che non entra ci si ferma (niente voci successive più corte "infilate" dopo, per non cambiare l'ordine). Con le 26 voci della v1.18: a 80 colonne entrano le prime 9 (fino a Ctrl+P Paste), a 120 le prime 14, a 200 le prime 21; per tutte servono 258 colonne.
 - **Mai mostrati**: F2, F3, F5, F7 (scelta dell'utente); F8 e, dalla v1.16, F10 non hanno più funzioni. Restano nel riepilogo Ctrl+F2.
 - **Clic del mouse** (`MouseHandler`): il clic sinistro su una voce costruisce l'evento del tasto (`tcell.NewEventKey`) e lo passa a `FM.keys`, esattamente come una pressione reale; il focus resta sul pannello. Shift+X è solo un'indicazione: il clic non fa nulla. Con una finestra di dialogo aperta il clic arriva alla finestra, non alla barra.
 
@@ -401,11 +407,12 @@ A ogni cambio di cartella riuscito su un percorso con lettera di unità, `lastDi
 | → | entra in cartella / unità / share / `..`; su `.zip`/`.7z` (solo su disco) apre l'archivio; su altri file nulla |
 | ← | padre (o esce dall'archivio) |
 | Backspace | se la ricerca digitando è attiva cancella un carattere, altrimenti padre |
-| Invio | cartelle come →; file dentro un archivio → anteprima; altri file → apertura con il programma associato |
+| Invio / doppio clic | cartelle come →; file dentro un archivio → anteprima; altri file → apertura con il programma associato (doppio clic dalla v1.18) |
 | Tab / Shift+Tab | cambia pannello attivo |
 | Shift+*lettera* (lettera maiuscola) | va a quell'unità (vedi §4.2); messaggio se non esiste; fuori da Windows `Shift+<letter> switches drive on Windows only.` + `Type lower-case letters to search by name.`. Con il Blocco Maiuscole attivo ogni lettera è un cambio di unità |
 | Ctrl+B | **vista piatta** on/off (§6.25) |
 | Ctrl+T | **vista ad albero** on/off (§6.34, v1.14) |
+| Ctrl+U | **scambia i due pannelli**; l'evidenziazione resta sullo stesso lato (§6.39, v1.18) |
 | Ctrl+altre lettere | nessuna funzione, tranne Ctrl+A (§5.2) (fino alla v1.7 cambiavano unità) |
 | Alt+L | `Go to`: digita un percorso (vedi §6.12) |
 | Alt+V | elenco unità, con il cursore sull'unità corrente; icona ed etichetta per tipo di unità (§6.30) |
@@ -414,7 +421,7 @@ A ogni cambio di cartella riuscito su un percorso con lettera di unità, `lastDi
 | Alt+E | come sopra, verso l'altro pannello in qualunque direzione |
 | Alt+R | aggiorna entrambi i pannelli, rimisura le cartelle selezionate e **rilegge `gofm.ini`** (v1.13, §6.33; l'aggiornamento dei pannelli è comunque automatico, §6.22) |
 | Alt+I | icone: glifi Nerd Font ↔ simboli semplici (§3.9); la scelta è ricordata |
-| Mouse | clic per selezionare e attivare un pannello; clic su una voce della barra dei tasti = quel tasto (§3.3) |
+| Mouse | clic per selezionare e attivare un pannello; **doppio clic = Invio** (v1.18); clic su una voce della barra dei tasti = quel tasto (§3.3) |
 
 ### 5.2 Selezione
 
@@ -439,6 +446,7 @@ Agiscono sugli elementi marcati; se non ce ne sono, sull'elemento sotto il curso
 | F6 | Sposta **subito** nella cartella dell'altro pannello | rifiutato: `Archives are read-only here: use F5 to extract instead of moving.` |
 | F7 | Nuova cartella (accetta `a\b\c`) | messaggio sola lettura |
 | Ctrl+K | **Prefisso** ai nomi dei selezionati o dell'elemento sotto il cursore (§6.35, v1.14) | messaggio sola lettura |
+| Ctrl+R | **Iniziali maiuscole** nelle parole dei nomi (§6.39, v1.18) | messaggio sola lettura |
 | F4 | **Modifica** il file sotto il cursore con l'editor esterno (§6.28) | `Files inside an archive cannot be edited.` |
 | Canc | Cestino sulle unità locali, **cancellazione definitiva** sulle unità di rete; seconda conferma se ci sono cartelle con sottocartelle (§6.6) | messaggio sola lettura |
 | F8 | nessuna funzione (cancellava fino alla v1.11) | — |
@@ -606,6 +614,7 @@ Copy "huge.bin"
 - **Tempo residuo** = (totale − fatto) / velocità, formato `m:ss` oppure `h:mm:ss`.
 - Il file corrente è troncato a sinistra con `…` a 66 caratteri.
 - `Cancel` o Esc impostano l'annullamento e il testo diventa `Cancelling…`. Le operazioni lo controllano tra un file e l'altro e durante ogni lettura.
+- **Pausa (v1.18)**: `runTaskEx(titolo, pausable, …)`; con `pausable` (F5, F6, Ctrl+P) il riquadro ha i pulsanti **`Pause`** (primo, con il focus) e `Cancel`. Pause imposta `opCtx.paused` e diventa **`Resume`**; Esc annulla anche durante la pausa. In pausa la riga di velocità diventa `<fatto> of <totale> · PAUSED — press Resume to go on` (con una fase in corso la riga `PAUSED …` si aggiunge sotto la fase); i campioni della velocità vengono scartati e non se ne raccolgono, così alla ripresa velocità e tempo residuo si ricalcolano senza contare la pausa. Le altre operazioni (estrazione, ZIP, cancellazione, vista piatta…) hanno solo Cancel.
 - Alla fine: chiusura del riquadro, ricaricamento dei pannelli, callback dell'operazione, poi resoconto (§6.11).
 
 ### 6.11 Errori
@@ -765,9 +774,9 @@ Esempio: cursore su `photo.jpg`, Canc → il cursore passa a `plain`, il file ch
   - le cartelle illeggibili vengono saltate in silenzio;
   - limite di **200 000 file** (`maxFlatEntries`): oltre, l'elenco si ferma e il titolo lo segnala.
 - **Avviso** in barra di stato: `Flat view: N files in <cartella> and its subfolders — Ctrl+B to go back`.
-- **Uscita**: Ctrl+B di nuovo, cursore sull'elemento di primo livello che conteneva il file corrente. Ogni **cambio di luogo** (←, Backspace, `..`, Shift+lettera, Alt+L, Alt+V, Ctrl+→/←, Alt+E sull'altro pannello, apertura di un archivio) chiude la vista piatta; se il cambio fallisce, la vista piatta viene ripristinata.
+- **Uscita**: Ctrl+B di nuovo, cursore sul **primo elemento** della cartella (v1.18; prima sull'elemento di primo livello che conteneva il file corrente). Ogni **cambio di luogo** (←, Backspace, `..`, Shift+lettera, Alt+L, Alt+V, Ctrl+→/←, Alt+E sull'altro pannello, apertura di un archivio) chiude la vista piatta; se il cambio fallisce, la vista piatta viene ripristinata.
 - **Operazioni**: il percorso completo di ogni voce è cartella + nome relativo, quindi funzionano tutte:
-  - **F5/F6**: ogni file va **direttamente** nella cartella di destinazione (`dest\util.go`). Se due file selezionati hanno lo stesso nome: `These names are selected more than once (from different subfolders) and would overwrite each other in one folder:` + elenco (al massimo 8) + `Unmark the duplicates and try again.`; nulla viene copiato.
+  - **F5/F6** (e Ctrl+P): ogni file va **direttamente** nella cartella di destinazione (`dest\util.go`). Se più file selezionati hanno lo stesso nome (v1.18; fino alla 1.17 l'operazione veniva rifiutata): una domanda per ogni file in più, vedi §6.39.
   - **Canc**, **F3**, **F4**, Invio: come per un file normale.
   - **F2**: il campo mostra solo il nome del file; il file resta nella sua sottocartella e la voce viene aggiornata subito.
   - **F9** (ZIP): l'archivio conserva i percorsi relativi.
@@ -901,6 +910,27 @@ Vedi §6.3, punti 5–8. In sintesi: `findConflicts` elenca i file della selezio
 
 Il conteggio delle stat è fatto con `strace -c` su un test che esegue solo la preparazione. La ricostruzione completa delle righe a ogni marcatura (punto 6 della valutazione) resta il costo maggiore sugli elenchi enormi: circa 250 ms con 200 000 voci.
 
+### 6.39 Novità della v1.18
+
+**Cursore sul primo elemento.** `firstRow(list, nome)`: con un nome lo cerca (prima esatto, poi senza maiuscole: con due nomi che differiscono solo per le maiuscole vince l'ultimo, come prima); senza nome o se non c'è, la prima voce dopo `..` (`..` se è l'unica). Vale per ogni `load` con nome vuoto o assente: entrata in cartella, unità, share, archivio e sue sottocartelle, Alt+L, Shift+lettera, chiusura della vista piatta (`load("")`) e dell'albero (il pannello sinistro con `chdir(cartella, "")`; quello destro, se era già sulla stessa cartella, non viene riletto e mantiene il cursore). Risalire passa il nome della cartella lasciata, quindi il cursore va lì. Le riletture usano `nextSurvivor` (§6.24).
+
+**Doppio clic** (`panelView.doubleClick`, in `clipboard.go` accanto al clic destro): gestisce `tview.MouseLeftDoubleClick` (tview lo genera al posto del secondo clic entro 500 ms). Riga sotto il puntatore con `CellAt`; fuori dall'elenco nulla; il pannello prende il focus e diventa attivo; se la riga è quella del cursore chiama `Panel.enter()` (l'azione di Invio), altrimenti sposta solo il cursore.
+
+**Iniziali maiuscole (Ctrl+R, `capitalize.go`).**
+- `titleWords`: maiuscola (`unicode.ToUpper`) la prima lettera del nome e ogni lettera che segue spazio, `_` o `-`; il resto invariato. `capitalizedName(nome, cartella)`: per i file l'estensione (`filepath.Ext`) resta com'è (`foto.JPG` → `Foto.JPG`, `archive.tar.gz` → `Archive.tar.gz`); un nome che inizia con un punto senza altri punti (`.profile`) non ha estensione; per le cartelle tutto il nome (`some dir.v2` → `Some Dir.v2`).
+- Elementi: `selectedNames()` (selezionati o elemento sotto il cursore; file e cartelle); fuori da una cartella su disco i messaggi di sola lettura. Se nessun nome cambia: avviso `Ctrl+R: the words of <descr> already start with capitals`.
+- Conferma (Modal) `Capitalize the words of this name?` / `… of N names?` + `vecchio → nuovo` (al massimo 6, poi `… and N more`) + eventuale `N names already capitalized: left as they are.` + `A name that already exists is skipped.`; pulsanti **`Rename`** (predefinito) e `Cancel`.
+- In background `renameEach(cartella, nomi, nuovoNome)` (generalizzazione di `addPrefix`): salta i nomi che non cambiano; se il nuovo nome esiste ed **è un altro file** → saltato; se è **lo stesso file** (`os.SameFile`: cambio di sole maiuscole su un file system che non le distingue) → rinominato. Dopo: `afterRename` comune a Ctrl+K (voci della vista piatta aggiornate, nessuna selezione, cursore che segue il suo elemento, elenco dei saltati `Renamed N of M items…` oppure avviso `Renamed N items`).
+
+**Nomi doppi in vista piatta.** In `transfer`, se `duplicateTargets` trova destinazioni uguali (con `normPath`: senza maiuscole su Windows), una goroutine esegue `resolveDuplicates(coppie, chiedi)` con `askSync`:
+- il primo file con un nome è "scelto"; per ogni file successivo con lo stesso nome la domanda `Selected files with the same name (i of n):` + nome + `Chosen:   <percorso> · <dim> · <data>` + `This one: <percorso> · <dim> · <data>` (percorsi relativi alla cartella comune dei due; ` (newer)` sul più recente di oltre 2 s) + `Skip keeps the chosen file; Overwrite takes this one instead.`, con i pulsanti dei conflitti: **Skip** (predefinito), Skip all, Overwrite, Overwrite all, Cancel (o Esc: annulla tutto);
+- le coppie scartate non vengono copiate né spostate (restano nella sorgente); l'ordine degli elementi resta quello della selezione;
+- poi `transferPairs` prosegue come sempre (copia su sé stessi, cartelle omonime, file già presenti nella destinazione), con il titolo calcolato sugli elementi rimasti.
+
+**Scambio dei pannelli (Ctrl+U, `FM.swapPanels`).** Con l'albero aperto `This needs the two panels:…` (sul pannello dell'albero vale l'avviso dell'albero). Altrimenti `fm.left, fm.right = fm.right, fm.left`, `panelsBox` ricostruito, `setActive` sul pannello che ora sta sul lato che era attivo, stato salvato, avviso `Panels swapped — Ctrl+U to swap them back`. Cartella, archivio, vista piatta, filtro, ordinamento e senso, nascosti, selezioni e misure, cursore e scorrimento viaggiano con il pannello; Ctrl+→/Ctrl+← seguono i lati.
+
+**Pausa**: vedi §6.10 e la tabella delle decisioni.
+
 ---
 
 ## 7. Architettura del codice
@@ -920,7 +950,8 @@ gofm/
 ├── clipboard.go     appunti di gofm (Ctrl+O, Ctrl+I, Ctrl+P) e clic destro (v1.16)
 ├── scrollbar.go     barra di scorrimento (disegno, clic e trascinamento) e selezione con Shift+movimento (v1.15)
 ├── tree.go          vista ad albero (Ctrl+T): nodi, apertura, pannello destro che segue con ritardo, tasti (v1.14)
-├── prefix.go        prefisso ai nomi (Ctrl+K): anteprima, rinomina, nomi saltati (v1.14)
+├── prefix.go        prefisso ai nomi (Ctrl+K): anteprima, rinomina, nomi saltati (v1.14); afterRename comune a Ctrl+R
+├── capitalize.go    iniziali maiuscole (Ctrl+R): titleWords, capitalizedName, renameEach, anteprima (v1.18)
 ├── drives.go        tipi di unità, etichette, isNetworkLocation (v1.12)
 ├── statusbar.go     barra di stato a colonne fisse
 ├── watch.go         aggiornamento automatico (fsnotify), raggruppamento degli eventi
@@ -943,6 +974,7 @@ gofm/
 ├── v111_test.go     test: compilatore fissato uguale in go.mod e nei workflow, risorse Windows (manifest, versione, icone)
 ├── v112_test.go     test: schemi leggibili, unità, ordinamento, tasti nuovi e tolti, barra e clic, editor, conflitti, cancellazione definitiva
 ├── v117_test.go     test: scan (conflitti, dimensioni, albero), copia e spostamento con l'albero, rinomina non letta, stesso ordinamento di prima, cache delle voci, totali, misura delle cartelle limitata, barra abbreviata
+├── v118_test.go     test: firstRow e cursore (entrata, risalita, cartella vuota, vista piatta, albero), doppio clic, iniziali maiuscole (casi, renameEach con stesso file, finestra), nomi doppi (resolveDuplicates, testo, F5 reale in vista piatta), Ctrl+U, pausa (motore, lettore, testo, pulsante nella finestra reale), tasti nuovi
 ├── v116_test.go     test con l'applicazione in esecuzione su schermo simulato: Ctrl+W/Alt+Q/F10, appunti (copia, taglio, incolla su sé stessi, elementi spariti, vista ad albero), Shift+Canc, ultimo prefisso, clic destro
 ├── v115_test.go     test: cursore della barra, barra su pannello e albero, clic e trascinamento, Shift+movimento, copia su sé stessi
 ├── v114_test.go     test: albero (radice, apertura/chiusura, nascosti, tasti rifiutati, Tab, F5/F6/F12, albero che segue il pannello, uscita, ritardo di 150 ms, rifiuti), prefisso (anteprima, rinomina con nomi saltati e vista piatta, finestra e caratteri non digitabili)
@@ -1162,6 +1194,7 @@ Eseguiti su Linux; su Windows è stata verificata solo la compilazione (`go vet`
 | Tasti | Ctrl+lettera nelle due codifiche, Ctrl+H/I/M, Backspace/Tab/Invio non scambiati, AltGr escluso, Alt+lettera |
 | Selezione | `treeStats` (file regolari e byte, ricorsivo), `plural` |
 | Confronto | `onlyOnOneSide`: cartelle e `..` ignorate, maiuscole indifferenti e distinte, cartella identica senza differenze |
+| v1.18 | `TestFirstRow` (nome esatto, senza maiuscole, assente, vuoto, cartella vuota, elenco unità); `TestCursorOnFirstItem` (FM reale: chdir, →, ← sulla cartella lasciata, cartella vuota su `..`, apertura e chiusura della vista piatta, chiusura dell'albero); `TestDoubleClick` (doppio clic su un'altra riga = solo spostamento, sulla riga del cursore = Invio in una cartella, su `..` = risalita, sotto l'elenco nulla, focus al pannello); `TestCapitalize` (11 casi: `_`, `-`, spazi doppi, cifre, estensioni maiuscole e doppie, nome con punto iniziale, lettere accentate, cartelle con punto); `TestRenameEach` (sottocartella della vista piatta, nome esistente saltato, **stesso file** con un collegamento fisico che simula un file system senza maiuscole: rinominato); `TestCapitalizeDialog` (applicazione in esecuzione: Ctrl+A, Ctrl+R, Invio = Rename, cartella compresa, nome già a posto lasciato, avviso; nulla da cambiare = solo avviso); `TestResolveDuplicates` (tre file con un nome e due con un altro: Skip, Overwrite/Skip, Overwrite all, Skip all, Esc, nessun doppio = nessuna domanda); `TestDupText`; `TestFlatDuplicatesCopy` (vista piatta reale, Ctrl+A, F5: Skip → resta il primo, due Tab + Invio = Overwrite → il secondo, Esc → nulla copiato); `TestSwapPanels` (lati, evidenziazione, focus, cartella, cursore, selezioni, senso, filtro, layout, `state.json`, avviso, ritorno, rifiuto con l'albero); `TestPauseEngine` (in pausa nessun byte e nessun file, ripresa completa, Cancel durante la pausa, lettore fermo a metà file); `TestPauseText`; `TestPauseButton` (copia reale rallentata: pulsanti Pause/Cancel, Pause → Resume, nessun file copiato durante la pausa, ripresa fino alla fine; un'operazione non sospendibile ha solo Cancel); `TestKeysV118`. Race detector superato |
 | v1.17 | `TestScanPlan` (conflitti al primo livello e annidati nello stesso ordine, file contro cartella escluso, totale e dimensioni per coppia, albero conservato; `findConflicts` uguale e senza effetti sulle coppie); `TestCopyUsesPlan` (con l'albero un file creato dopo la preparazione non viene copiato, senza albero sì: prova che nulla viene riletto); `TestMovePlan` (fusione con l'albero e origine rimossa; spostamento verso nome libero sulla stessa unità non letto e rinominato; `sameVolume`); `TestSortKeysSameOrder` (2 000 voci casuali, 3 tipi × 2 sensi: ordine identico al confronto della v1.16); `TestEntryCaches`; `TestPanelTotalsCache` (totali dopo Ins, marcature cambiate senza render, rilettura); `TestFolderSizesPool` (Ctrl+A su 12 cartelle con l'applicazione in esecuzione: tutte misurate, posti liberati); `TestBarKey` (`C+a`, `C+F7`, Alt e F invariati; barra disegnata con `C+aSelect` e senza `Ctrl+`; riepilogo con i nomi completi). Benchmark in `bench_test.go` (§6.38) |
 | v1.16 | `runUI`/`waitUI`: l'applicazione gira davvero su uno schermo simulato e i test agiscono sul thread dell'interfaccia, così compiti in background, loro finestre e completamento funzionano come nel programma reale. `TestQuitKeys` (F10 senza effetto, Ctrl+W e Alt+Q chiudono, anche dall'albero); `TestClipboard` (Ctrl+P senza appunti → avviso; Ctrl+O su file e cartella e incolla nell'altro pannello, appunti conservati e sorgente intatta; Ctrl+I e incolla → spostato e appunti svuotati; incolla nella stessa cartella → domanda di v1.15 e Skip; elemento cancellato nel frattempo → messaggio); `TestPasteInTree`; `TestShiftDelete` (file nel Cestino senza domande; cartella con sottocartelle → avviso con pulsante di cancellazione, Esc non cancella; Canc normale chiede ancora); `TestPrefixRemembered` (campo vuoto la prima volta, rinomina, poi riproposto; non nello stato); `TestRightClickMarks` (marca, cursore e focus; secondo clic smarca; `..` mai). `TestHelpListsAllKeys` aggiornato: `Ctrl+W / Alt+Q` al posto di `F10 / Alt+Q` |
 | v1.15 | `TestScrollThumb` (7 casi di inizio/lunghezza, elenco che entra, `scrollTarget` agli estremi e al centro); `TestPanelScrollbar` (schermo simulato: cursore della barra sulla colonna del bordo con 50 file; clic in basso → ultima riga e focus al pannello; trascinamento in alto → prima riga; movimento senza tasto ignorato; con 3 file nessuna barra e nessun trascinamento); `TestTreeScrollbar` (barra e clic nell'albero); `TestShiftRows` (8 casi); `TestShiftMarks` (FM reale: `..` mai marcato, Shift+↓ ×3, cartella marcata misurata, Shift+↑ ×2 come in Total Commander, Shift+End fino all'ultima riga compresa, Shift+Home, frecce normali senza effetto, Ctrl+Shift escluso); `TestSelfCopy` (F5 e F6 con i due pannelli sulla stessa cartella: una domanda per file con Skip predefinito, poi avviso; file intatto; cartella nella propria sottocartella con Esc; `askSelfCopies` con Skip, Skip all, Cancel e senza elementi da chiedere) |
@@ -1181,6 +1214,8 @@ Le fixture 7z sono generate con `py7zr`:
 - `single.7z`: `progetto/città.txt`, `progetto/sub/big.txt` (50 000 righe "riga");
 - `multi.7z`: come `single.7z` più `solo.txt` ("S");
 - `secret.7z`: `solo.txt` con password `pw`.
+
+Prova reale (v1.18) in `tmux` a 120×26: all'avvio e con → il cursore è sul primo elemento (`src`, poi `a`), ← torna su `src`; Ctrl+U scambia le cartelle dei due titoli con l'avviso e la barra mostra `C+rCaps C+uSwap`; Ctrl+R su `big.bin` mostra `big.bin → Big.bin`, Invio rinomina; vista piatta di `src` con `a/x.txt` e `b/x.txt`, Ctrl+A, F5 → domanda `(1 of 1)` con `Chosen: a/x.txt · 2 B` e `This one: b/x.txt · 3 B`, due Tab + Invio = Overwrite → nella destinazione `x.txt` = `BB` e `y.txt`; Ctrl+B chiude con il cursore su `a`; copia di un file da 2 GB → pulsanti `Pause  Cancel`, Invio → `PAUSED — press Resume to go on`, percentuale ferma e `Resume`, Invio → copia completata (2 147 483 648 byte). **Non provati qui**: il doppio clic in un terminale reale (tmux non genera i clic) e la pausa con `CopyFileExW`.
 
 Prova reale (v1.17) in `tmux` a 120×14: barra `F4Edit F6Move DelDelete F9Zip F12Compare C+aSelect C+oCopy C+iCut C+pPaste C+tTree C+kPrefix C+bFlat Alt+F7Find`; F5 di una cartella con 10 000 file verso una destinazione con 5 000 già presenti → domanda *Merge*, poi `A file with this name already exists (1 of 5000)`, *Overwrite all* → 200 file per cartella. **Non verificabile qui**: il guadagno su una share Windows reale (atteso il maggiore, perché ogni controllo evitato è un viaggio in rete).
 
@@ -1239,6 +1274,7 @@ Prove precedenti: navigazione con le frecce, ricerca digitando, larghezza delle 
 - `go.sum` costruito con un metodo verificato ma senza accesso a `sum.golang.org` (§9.2): la prima compilazione su una macchina normale, o la CI, lo confermano.
 
 **Non verificato su Windows reale** (logica testata solo dove è portabile):
+- v1.18: doppio clic in Windows Terminal e nella console classica (intervallo di 500 ms di tview); pausa durante `CopyFileExW` (callback bloccata) e con la copia lato server di SMB; Ctrl+R con cambio di sole maiuscole su NTFS e su share; Ctrl+R e Ctrl+U nei terminali Windows;
 - v1.17: preparazione della copia su share Windows (nessuna stat per file attesa, perché `ReadDir` su Windows fornisce già dimensioni e date: da misurare); misura limitata delle cartelle su NAS;
 - v1.16: decodifica di Ctrl+I (distinto da Tab), Ctrl+O, Ctrl+P, Ctrl+W e Shift+Canc in Windows Terminal e nella console classica; clic destro;
 - v1.15: clic e trascinamento sulla barra in Windows Terminal e nella console classica (eventi del mouse con il tasto premuto); Shift+frecce, Shift+PgUp/PgDn/Home/End nei due terminali;
@@ -1262,6 +1298,7 @@ Prove precedenti: navigazione con le frecce, ricerca digitando, larghezza delle 
 |---|---|
 | 1.0 | Doppio pannello, operazioni di base, Cestino, ZIP, ricerca, filtro, anteprima; interfaccia in italiano |
 | 1.1 | Frecce ←/→, interfaccia in inglese, anteprima ed estrazione 7z |
+| 1.18 | **Cursore sul primo elemento** entrando in una cartella e chiudendo vista piatta e albero (risalendo resta sulla cartella lasciata); **doppio clic = Invio**; **Ctrl+R** iniziali maiuscole (spazio `_` `-`, resto ed estensione invariati, anteprima, nomi esistenti saltati); **nomi doppi in vista piatta** con domanda Skip/Overwrite invece del rifiuto; **Ctrl+U** scambia i pannelli; **Pause/Resume** in copia, spostamento e incolla |
 | 1.17 | **Prestazioni**: preparazione di copia/spostamento in un solo percorso (stat per file dimezzate su Linux, azzerate su Windows), misura delle cartelle 3 alla volta con ridisegni raggruppati, ordinamento 3,7× più veloce, totali per fotogramma 3× più veloci; benchmark in `bench_test.go`; **barra dei tasti** con `C+` al posto di `Ctrl+` |
 | 1.16 | **Appunti di gofm**: Ctrl+O copia, Ctrl+I taglia, Ctrl+P incolla nella cartella del pannello attivo; **Ctrl+W** esce (F10 non fa più nulla); Ctrl+K ripropone l'ultimo prefisso della sessione; **clic destro** marca/smarca; **Shift+Canc** senza conferma (resta l'avviso per le sottocartelle) |
 | 1.15 | **Barra di scorrimento** su pannelli e albero (solo se l'elenco non entra), cliccabile e trascinabile; **copia su sé stessi** saltabile elemento per elemento (Skip, Skip all, Cancel) anche per le cartelle dentro sé stesse; **selezione con Shift+frecce** e Shift+PgUp/PgDn/Home/End; file di contesto anche in `docs/contesto-chat.md` |
@@ -1283,7 +1320,7 @@ Prove precedenti: navigazione con le frecce, ricerca digitando, larghezza delle 
 
 ## 13. Prompt per rigenerare il programma
 
-Il prompt seguente è autosufficiente: incollato a un assistente di programmazione con accesso a Go, dovrebbe produrre un programma equivalente alla versione 1.17. Le stringhe dell'interfaccia sono indicate testualmente.
+Il prompt seguente è autosufficiente: incollato a un assistente di programmazione con accesso a Go, dovrebbe produrre un programma equivalente alla versione 1.18. Le stringhe dell'interfaccia sono indicate testualmente.
 
 ````text
 Crea "gofm", un file manager a doppio pannello per il terminale di Windows, in Go (go.mod:
@@ -1294,10 +1331,10 @@ golang.org/x/text (charmap CP437/850/852/858/866 e Windows1252, unicode UTF-16),
 github.com/rivo/uniseg e github.com/bodgit/sevenzip v1.6 (7z in sola lettura).
 Interfaccia interamente in INGLESE. Deve compilare e girare anche su Linux per i test
 (file sys_windows.go e sys_other.go con build tag). Scrivi test unitari per tutta la
-logica portabile. Versione "1.17".
+logica portabile. Versione "1.18".
 
 AVVIO: gofm [left_folder] [right_folder]; -h/--help//? stampa
-"gofm 1.17 — usage: gofm [left_folder] [right_folder]". Argomento non valido -> cartella corrente.
+"gofm 1.18 — usage: gofm [left_folder] [right_folder]". Argomento non valido -> cartella corrente.
 Un argomento \\server apre l'elenco share.
 MEMORIA (state.go): stato JSON {version:1, left, right, active "left"|"right", driveDirs
 {lettera: cartella}, basicIcons bool omitempty, colorScheme "dark"|"light" omitempty} in state.json NELLA CARTELLA DELL'ESEGUIBILE
@@ -1407,7 +1444,7 @@ successivo. Il totale della selezione NON sta qui (sta sul bordo del pannello).
 BARRA TASTI (keybar.go): primitiva keyBar (Box) che disegna, con 1 cella di margine e uno
 spazio dopo ogni voce, tasto (keyFg su keyBg) + etichetta (text su barBg) per le voci in
 ordine di priorità finché entrano (alla prima che non entra si ferma): F4 Edit, F6 Move,
-Del Delete, F9 Zip, F12 Compare, Ctrl+A Select, Ctrl+O Copy, Ctrl+I Cut, Ctrl+P Paste, Ctrl+T Tree, Ctrl+K Prefix, Ctrl+B Flat, Alt+F7 Find, Ctrl+F7 Filter,
+Del Delete, F9 Zip, F12 Compare, Ctrl+A Select, Ctrl+O Copy, Ctrl+I Cut, Ctrl+P Paste, Ctrl+T Tree, Ctrl+K Prefix, Ctrl+R Caps, Ctrl+U Swap, Ctrl+B Flat, Alt+F7 Find, Ctrl+F7 Filter,
 Alt+U Extract, Alt+V Drives, Ctrl+F2 Keys, Alt+O Sort, Alt+D Reverse, Alt+H Hidden, Ctrl+F9
 Colours, Alt+I Icons, Shift+X Drive X:, Alt+L Go to. MAI F2, F3, F5, F7 (F10 non fa nulla). Ogni voce ha
 una funzione che costruisce l'evento del tasto (tcell.NewEventKey); MouseHandler: clic
@@ -1427,7 +1464,7 @@ TASTI (cattura a livello di Application, solo quando la pagina in primo piano è
   vanno alla ricerca digitando.
 - Ctrl+lettera: CTRL+B = vista piatta; CTRL+A = se nulla è marcato marca tutti gli elementi
   elencati (file e cartelle, mai "..", unità, share) e avvia la misura delle cartelle,
-  altrimenti inverte la marcatura; CTRL+T = vista ad albero; CTRL+K = prefisso; CTRL+O copia e CTRL+I taglia negli appunti di gofm, CTRL+P incolla; CTRL+W esce; le altre non fanno nulla (Ctrl+C non deve chiudere l'app). Riconosci DUE codifiche di tcell: KeyCtrlA..Z con ModCtrl, e
+  altrimenti inverte la marcatura; CTRL+T = vista ad albero; CTRL+K = prefisso; CTRL+R = iniziali maiuscole; CTRL+U = scambio dei pannelli; CTRL+O copia e CTRL+I taglia negli appunti di gofm, CTRL+P incolla; CTRL+W esce; le altre non fanno nulla (Ctrl+C non deve chiudere l'app). Riconosci DUE codifiche di tcell: KeyCtrlA..Z con ModCtrl, e
   Key('A'..'Z') con ModCtrl (win32-input-mode di Windows Terminal). Escludi Ctrl+Alt (AltGr).
 - Tasti funzione con Ctrl/Alt (KeyF1..KeyF64 con ModCtrl e/o ModAlt), controllati PRIMA dei
   tasti funzione semplici: ALT+F7 ricerca, CTRL+F7 filtro, CTRL+F2 riepilogo dei tasti,
@@ -1446,7 +1483,13 @@ TASTI (cattura a livello di Application, solo quando la pagina in primo piano è
 - Tab/Shift+Tab cambia pannello. ← padre. → entra in cartella/unità/share/"..", su
   .zip/.7z su disco apre l'archivio, su altri file nulla. Invio come → per le cartelle,
   anteprima per i file nell'archivio, altrimenti apertura con ShellExecute "open"
-  (xdg-open/open fuori da Windows; errore "Cannot open file:\n").
+  (xdg-open/open fuori da Windows; errore "Cannot open file:\n"). DOPPIO CLIC su una riga
+  (tview.MouseLeftDoubleClick) = Invio se la riga è quella del cursore, altrimenti sposta solo
+  il cursore; il pannello prende il focus.
+- CURSORE DOPO UN CARICAMENTO (firstRow): sul nome richiesto (esatto, altrimenti senza
+  maiuscole, vince l'ultimo); senza nome o se non c'è, sulla prima voce dopo ".." (".." se è
+  l'unica). Risalire passa il nome della cartella lasciata; chiudere vista piatta e albero
+  usa il nome vuoto.
 - Ins marca. TOTALE DELLA SELEZIONE: a ogni marcatura (Spazio, Ins, Ctrl+A) i file contano 1
   e la loro dimensione; ogni cartella marcata viene misurata ricorsivamente in una goroutine
   (solo file regolari, senza seguire link) con un opCtx annullabile, il risultato arriva con
@@ -1531,9 +1574,22 @@ sempre. Il risultato fa ridisegnare la riga e il totale sul bordo.
   i messaggi di sola lettura; elementi spariti tolti (nessuno -> "The copied items no longer
   exist." e appunti vuoti); poi transfer(elementi, cartella del pannello attivo, taglio): la
   stessa funzione di F5/F6 con tutte le domande; dopo un taglio appunti vuoti. Funziona anche
-  nel pannello destro dell'albero. CLIC DESTRO su una riga: inverte la marcatura (no "..",
+  nel pannello destro dell'albero. CTRL+U (swapPanels): con l'albero aperto "This needs the two
+  panels:\nleave the tree view with Ctrl+T first."; altrimenti scambia i puntatori fm.left e
+  fm.right (non il loro contenuto), ricostruisce il Flex dei pannelli, attiva il pannello che ora
+  sta sul lato che era attivo, salva lo stato, avviso "Panels swapped — Ctrl+U to swap them
+  back". CLIC DESTRO su una riga: inverte la marcatura (no "..",
   unità, share), cursore sulla riga, focus al pannello. SHIFT+CANC: come Canc senza la prima
   conferma (anche in rete), con il controllo delle sottocartelle.
+- INIZIALI MAIUSCOLE (capitalize.go, Ctrl+R): titleWords = ToUpper sulla prima lettera e su
+  ogni lettera dopo ' ', '_' o '-', il resto invariato; per i file estensione (filepath.Ext)
+  invariata (".profile" non ha estensione), per le cartelle tutto il nome. Elementi =
+  selectedNames(); nessun cambiamento -> avviso "Ctrl+R: the words of <descr> already start
+  with capitals". Conferma "Capitalize the words of this name?" / "… of N names?" + righe
+  "vecchio → nuovo" (max 6, poi "… and N more") + "N names already capitalized: left as they
+  are." + "A name that already exists is skipped.", pulsanti Rename (predefinito) / Cancel.
+  renameEach in runTask: salta i nomi invariati; nuovo nome esistente e os.SameFile falso ->
+  saltato, vero (solo maiuscole) -> rinominato; poi afterRename (comune a Ctrl+K).
 - PREFISSO (prefix.go, Ctrl+K): il campo propone l'ultimo prefisso usato nella sessione (non
   salvato). elementi = selezionati o quello sotto il cursore (no "..",
   unità, share), file e cartelle; fuori da una cartella su disco i messaggi di sola lettura.
@@ -1701,8 +1757,14 @@ dopo un errore di password, totale = somma delle dimensioni non compresse selezi
 Messaggio senza archivio sotto il cursore: "Put the cursor on a .zip or .7z file\n(or press
 → to browse it and pick files).".
 
-AVANZAMENTO: runTask(titolo, fn, fatto) apre un riquadro 72x12 " Working " (TextView +
-Form con pulsante "Cancel", anche Esc -> testo "Cancelling…"). Contatori atomici: total,
+AVANZAMENTO: runTask(titolo, fn, fatto) = runTaskEx(titolo, false, …) apre un riquadro 72x12
+" Working " (TextView + Form con pulsante "Cancel", anche Esc -> testo "Cancelling…"). Con
+pausable (copia, spostamento, incolla) il Form ha prima il pulsante "Pause" che alterna
+opCtx.paused e diventa "Resume"; waitIfPaused (attesa a passi di 100 ms, esce con
+l'annullamento) nei lavoratori prima di ogni file, nel Reader della copia, nella callback di
+CopyFileExW, prima delle rinomine dello spostamento e in scanNode; in pausa la riga della
+velocità è "<fatto> of <totale> · PAUSED — press Resume to go on" (sotto la fase, se c'è) e i
+campioni della velocità vengono azzerati e non raccolti. Contatori atomici: total,
 bytes (incrementati da un Reader che verifica anche l'annullamento), files, cur, phase.
 Ticker da 250 ms con QueueUpdateDraw: con phase -> titolo+fase; senza total ->
 "N files processed" + file; altrimenti barra di 60 caratteri █/░ + " NN%",
@@ -1759,13 +1821,15 @@ link/junction non seguiti e link a cartelle non elencati, nascosti (attributo o 
 con il loro contenuto salvo Alt+H, errori ignorati, limite 200000 (variabile
 maxFlatEntries; titolo "flat view, first 200000"). Avviso "Flat view: N files in <dir> and
 its subfolders — Ctrl+B to go back". Titolo "[flat view]" (+ ", updating…" durante una
-rilettura). Ctrl+B di nuovo: esce con il cursore sul primo componente del percorso
-relativo. Ogni chdir e l'apertura di un archivio escono dalla vista piatta (ripristinata se
+rilettura). Ctrl+B di nuovo: esce con il cursore sul primo elemento. Ogni chdir e l'apertura di un archivio escono dalla vista piatta (ripristinata se
 chdir fallisce). fullPath = dir + nome relativo, quindi tutte le operazioni funzionano;
-F5/F6 mettono ogni file DIRETTAMENTE nella destinazione (Base del nome) e, se due
-destinazioni coincidono, rifiutano con "These names are selected more than once (from
-different subfolders)\nand would overwrite each other in one folder:\n<nomi, max
-8>\n\nUnmark the duplicates and try again."; F2 mostra solo il nome e rinomina nella stessa
+F5/F6 mettono ogni file DIRETTAMENTE nella destinazione (Base del nome); se più
+destinazioni coincidono (normPath), resolveDuplicates in una goroutine con askSync: il primo
+è "scelto", per ogni altro "Selected files with the same name (i of n):\n\n<nome>\n\nChosen:
+<rel> · <dim> · <data>\nThis one: <rel> · <dim> · <data>[ (newer)]\n\nSkip keeps the chosen
+file; Overwrite takes this one instead." (rel = relativo alla cartella comune) con i pulsanti
+dei conflitti; Skip tiene lo scelto, Overwrite lo sostituisce, gli "all" decidono il resto,
+Cancel/Esc annulla; poi transferPairs con le coppie rimaste; F2 mostra solo il nome e rinomina nella stessa
 sottocartella aggiornando la voce; F12 confronta i percorsi relativi; la ricerca digitando
 confronta l'inizio del NOME del file, poi il percorso. reload() in vista piatta: usa la
 lista in memoria e avvia rescanFlat in background (annulla la precedente; all'arrivo, se la
@@ -1783,7 +1847,7 @@ entra in larghezza-4 togli prima lo spazio libero, poi i file; negli elenchi uni
 lo spazio (se noto).
 ELENCO UNITÀ: Alt+V.
 ARCHITETTURA FILE: main.go (FM, tasti, finestre, runTask, azioni, confronto, expandPath),
-theme.go, icons.go, help.go, keybar.go, editor.go, config.go, tree.go, prefix.go, scrollbar.go, clipboard.go, scan.go, drives.go, statusbar.go, watch.go, copy.go, flat.go, state.go,
+theme.go, icons.go, help.go, keybar.go, editor.go, config.go, tree.go, prefix.go, capitalize.go, scrollbar.go, clipboard.go, scan.go, drives.go, statusbar.go, watch.go, copy.go, flat.go, state.go,
 panel.go (Panel, luoghi, rendering, navigazione, marcatura, jumpTo), ops.go (opCtx,
 percorsi, copia/sposta/zip/ricerca), archive.go (ZIP/7z, estrazione, albero, anteprima
 voci), preview.go, unc.go (regole Windows/UNC in pura logica di stringhe, driveLetter),
@@ -1808,7 +1872,9 @@ editorCommand e F4 con uno script come editor; conflitti annidati in copia e spo
 definitiva di file di sola lettura; scan (conflitti, dimensioni, albero riusato, rinomina non letta), stesso ordinamento della
 versione precedente, totali in cache, misura limitata delle cartelle, barra abbreviata;
 applicazione in esecuzione su schermo simulato (runUI) per appunti,
-Shift+Canc, ultimo prefisso; tasti di uscita; clic destro; barra (calcolo, schermo simulato, clic e trascinamento),
+Shift+Canc, ultimo prefisso; tasti di uscita; clic destro; firstRow e cursore sul primo
+elemento, doppio clic, iniziali maiuscole (casi, stesso file, finestra), nomi doppi in vista
+piatta, Ctrl+U, pausa (motore, lettore, testo, pulsante); barra (calcolo, schermo simulato, clic e trascinamento),
 Shift+movimento, copia su sé stessi; albero (apertura, chiusura, rifiuti, ritardo di 150 ms con
 timer sostituibile, pannello che segue e albero che segue, uscita), prefisso (anteprima,
 nomi saltati, vista piatta, caratteri non digitabili); gofm.ini (sintassi, testo creato, avvio, Alt+R che applica

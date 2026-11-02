@@ -15,7 +15,7 @@ import (
 	"github.com/rivo/tview"
 )
 
-const version = "1.17"
+const version = "1.18"
 
 type FM struct {
 	app     *tview.Application
@@ -429,7 +429,8 @@ func (fm *FM) keys(ev *tcell.EventKey) *tcell.EventKey {
 
 	// Ctrl+B: flat view; Ctrl+A: mark all, or invert the marks; Ctrl+T: tree view;
 	// Ctrl+K: add a prefix to the names (v1.14); Ctrl+O copy, Ctrl+I cut, Ctrl+P paste,
-	// Ctrl+W quit (v1.16). Other Ctrl+letters are not used (drives moved to
+	// Ctrl+W quit (v1.16); Ctrl+R capitalize the words of the names, Ctrl+U swap the
+	// panels (v1.18). Other Ctrl+letters are not used (drives moved to
 	// Shift+letter).
 	if l, ok := ctrlLetter(ev); ok {
 		fm.resetQuickSearch()
@@ -442,6 +443,10 @@ func (fm *FM) keys(ev *tcell.EventKey) *tcell.EventKey {
 			fm.toggleTree()
 		case 'K':
 			fm.prefixRename()
+		case 'R':
+			fm.capitalizeNames()
+		case 'U':
+			fm.swapPanels()
 		case 'O':
 			fm.clipboardPut(false)
 		case 'I':
@@ -887,6 +892,18 @@ func (fm *FM) promptEx(title, label, initial string, allowEmpty bool, cb func(st
 // runTask runs fn in the background in a progress dialog with a Cancel button.
 // When fn sets o.total, the dialog shows a progress bar, speed and time left.
 func (fm *FM) runTask(title string, fn func(o *opCtx), done func(o *opCtx)) {
+	fm.runTaskEx(title, false, fn, done)
+}
+
+// Labels of the pause button (v1.18).
+const (
+	pauseLabel  = "Pause"
+	resumeLabel = "Resume"
+)
+
+// runTaskEx is runTask; pausable adds a Pause button (copies and moves, v1.18) that
+// becomes Resume while the operation is paused. Esc still cancels.
+func (fm *FM) runTaskEx(title string, pausable bool, fn func(o *opCtx), done func(o *opCtx)) {
 	o := &opCtx{}
 	var name string
 	text := tview.NewTextView().SetDynamicColors(false)
@@ -894,6 +911,22 @@ func (fm *FM) runTask(title string, fn func(o *opCtx), done func(o *opCtx)) {
 	cancel := func() {
 		o.cancel.Store(true)
 		text.SetText(title + "\n\nCancelling…")
+	}
+	if pausable {
+		form.AddButton(pauseLabel, nil)
+		pause := form.GetButton(0)
+		pause.SetSelectedFunc(func() {
+			if o.cancelled() {
+				return
+			}
+			paused := !o.paused.Load()
+			o.paused.Store(paused)
+			if paused {
+				pause.SetLabel(resumeLabel)
+			} else {
+				pause.SetLabel(pauseLabel)
+			}
+		})
 	}
 	form.AddButton("Cancel", cancel).SetCancelFunc(cancel)
 	box := tview.NewFlex().SetDirection(tview.FlexRow).
@@ -973,7 +1006,15 @@ func (m *rateMeter) rate() float64 {
 }
 
 func progressText(title string, o *opCtx, m *rateMeter, width int, now time.Time) string {
+	if o.paused.Load() {
+		// Nothing moves during a pause: the speed restarts from scratch on Resume,
+		// so the estimate is not dragged down by the time spent paused.
+		m.samples = nil
+	}
 	if ph := loadString(&o.phase); ph != "" {
+		if o.paused.Load() {
+			ph += "\n\nPAUSED — press Resume to go on"
+		}
 		return title + "\n\n" + ph
 	}
 	cur := loadString(&o.cur)
@@ -987,13 +1028,17 @@ func progressText(title string, o *opCtx, m *rateMeter, width int, now time.Time
 	if done > total {
 		done = total
 	}
-	m.add(now, done)
+	if !o.paused.Load() {
+		m.add(now, done)
+	}
 	frac := float64(done) / float64(total)
 	barW := width - 6
 	filled := int(frac * float64(barW))
 	bar := strings.Repeat("█", filled) + strings.Repeat("░", barW-filled)
 	speed, eta := "", "estimating time left…"
-	if r := m.rate(); r > 0 {
+	if o.paused.Load() {
+		eta = "PAUSED — press Resume to go on"
+	} else if r := m.rate(); r > 0 {
 		speed = humanSize(int64(r)) + "/s · "
 		eta = formatDuration(time.Duration(float64(total-done)/r*float64(time.Second))) + " left"
 	} else if done == total {
@@ -1160,73 +1205,93 @@ func (fm *FM) transfer(items []string, dest string, move bool, after func()) {
 		for _, pr := range pairs {
 			targets = append(targets, pr.to)
 		}
-		if dups := duplicateTargets(targets); len(dups) > 0 { // flat view: same name from different subfolders
-			fm.showMessage("Error", fmt.Sprintf("These names are selected more than once (from different subfolders)\n"+
-				"and would overwrite each other in one folder:\n%s\n\nUnmark the duplicates and try again.",
-				strings.Join(dups[:min(len(dups), 8)], "\n")))
+		if dups := duplicateTargets(targets); len(dups) > 0 {
+			// Flat view: files with the same name from different subfolders (v1.18; they
+			// were refused before). One question per extra file, like a conflict, asked
+			// from a goroutine so each answer can shape the next question; then the
+			// usual checks with the files kept.
+			go func() {
+				kept, ok := resolveDuplicates(pairs, func(q dupQuestion) string {
+					return fm.askSync(dupText(q), conflictButtons)
+				})
+				fm.app.QueueUpdateDraw(func() {
+					if ok {
+						fm.transferPairs(kept, items, dest, verb, move, after)
+					}
+				})
+			}()
 			return
 		}
-		for _, pr := range pairs {
-			if selfCopyReason(pr) != "" {
-				continue // asked below: Skip, Skip all or Cancel (v1.15)
-			}
-			if fi, err := os.Lstat(pr.to); err == nil {
-				sfi, _ := os.Lstat(pr.from)
-				if sfi != nil && sfi.IsDir() != fi.IsDir() {
-					fm.showMessage("Error", "An item of a different type with the same name already exists:\n"+pr.to)
-					return
-				}
-			}
+		fm.transferPairs(pairs, items, dest, verb, move, after)
+	}(dest)
+}
+
+// transferPairs goes on with transfer once every destination name is unique.
+func (fm *FM) transferPairs(pairs []copyPair, items []string, dest, verb string, move bool, after func()) {
+	items = items[:0:0] // the title describes what is really copied (duplicates left out)
+	for _, pr := range pairs {
+		items = append(items, pr.from)
+	}
+	for _, pr := range pairs {
+		if selfCopyReason(pr) != "" {
+			continue // asked below: Skip, Skip all or Cancel (v1.15)
 		}
-		start := func() {
-			fm.runTask(verb+" "+describe(items), func(o *opCtx) {
-				// One walk (v1.17): sizes, total and the files that already exist at the
-				// destination, also inside folders that will be merged; then one question
-				// per existing file (v1.12), until an "all" answer.
-				o.setPhase("Reading the folders…")
-				plan := o.scan(pairs, move)
-				o.total.Store(plan.total)
-				conflicts := plan.conflicts
-				if o.cancelled() {
-					return
-				}
-				skip, ok := resolveConflicts(conflicts, func(i int) string {
-					return fm.askSync(conflictText(conflicts[i], i, len(conflicts), dest), conflictButtons)
-				})
-				if !ok {
-					o.cancel.Store(true)
-					return
-				}
-				o.skip = skip
-				o.setPhase("")
-				// One shared engine for all the items: small files are copied in parallel
-				// across the whole selection, big files one at a time. Skipped files stay
-				// where they are; the others go on.
-				if move {
-					o.movePlan(pairs, plan)
-				} else {
-					o.copyPlan(pairs, plan)
-				}
-			}, func(*opCtx) { after() })
-		}
-		// Items copied onto themselves (v1.15): one question each, Skip, Skip all or
-		// Cancel. Then the folders with the same name at the destination (v1.13): merge
-		// them, or cancel the whole operation; after Merge, existing files are asked
-		// one by one.
-		fm.askSelfCopies(pairs, verb, func(kept []copyPair) {
-			if len(kept) == 0 {
-				fm.notice = verb + ": nothing to do, every item was skipped"
-				fm.updateStatus()
+		if fi, err := os.Lstat(pr.to); err == nil {
+			sfi, _ := os.Lstat(pr.from)
+			if sfi != nil && sfi.IsDir() != fi.IsDir() {
+				fm.showMessage("Error", "An item of a different type with the same name already exists:\n"+pr.to)
 				return
 			}
-			pairs = kept
-			var srcDirs, dstDirs []string
-			for _, pr := range pairs {
-				srcDirs, dstDirs = append(srcDirs, pr.from), append(dstDirs, pr.to)
+		}
+	}
+	start := func() {
+		fm.runTaskEx(verb+" "+describe(items), true, func(o *opCtx) {
+			// One walk (v1.17): sizes, total and the files that already exist at the
+			// destination, also inside folders that will be merged; then one question
+			// per existing file (v1.12), until an "all" answer.
+			o.setPhase("Reading the folders…")
+			plan := o.scan(pairs, move)
+			o.total.Store(plan.total)
+			conflicts := plan.conflicts
+			if o.cancelled() {
+				return
 			}
-			fm.askMerge(sameNameFolders(srcDirs, dstDirs), dest, "Files that exist in both are asked about one by one.", start)
-		})
-	}(dest)
+			skip, ok := resolveConflicts(conflicts, func(i int) string {
+				return fm.askSync(conflictText(conflicts[i], i, len(conflicts), dest), conflictButtons)
+			})
+			if !ok {
+				o.cancel.Store(true)
+				return
+			}
+			o.skip = skip
+			o.setPhase("")
+			// One shared engine for all the items: small files are copied in parallel
+			// across the whole selection, big files one at a time. Skipped files stay
+			// where they are; the others go on.
+			if move {
+				o.movePlan(pairs, plan)
+			} else {
+				o.copyPlan(pairs, plan)
+			}
+		}, func(*opCtx) { after() })
+	}
+	// Items copied onto themselves (v1.15): one question each, Skip, Skip all or
+	// Cancel. Then the folders with the same name at the destination (v1.13): merge
+	// them, or cancel the whole operation; after Merge, existing files are asked
+	// one by one.
+	fm.askSelfCopies(pairs, verb, func(kept []copyPair) {
+		if len(kept) == 0 {
+			fm.notice = verb + ": nothing to do, every item was skipped"
+			fm.updateStatus()
+			return
+		}
+		pairs = kept
+		var srcDirs, dstDirs []string
+		for _, pr := range pairs {
+			srcDirs, dstDirs = append(srcDirs, pr.from), append(dstDirs, pr.to)
+		}
+		fm.askMerge(sameNameFolders(srcDirs, dstDirs), dest, "Files that exist in both are asked about one by one.", start)
+	})
 }
 
 // selfCopyReason says why an item cannot be copied or moved where asked: it would land
@@ -1910,4 +1975,29 @@ func expandPath(p string) string {
 		p += `\` // "D:" -> "D:\" (otherwise it means the drive's current folder)
 	}
 	return filepath.Clean(p)
+}
+
+// swapPanels is Ctrl+U (v1.18): the two panels change sides with everything they show
+// (folder or archive, flat view, filter, sort, hidden files, marks, cursor). The
+// highlight stays on the same side, so the active panel now shows what the other one
+// showed. The Panel objects themselves move, so work running in the background for a
+// panel (folder sizes, flat view re-reads) still finds it.
+func (fm *FM) swapPanels() {
+	if fm.tree != nil {
+		fm.showMessage("Swap panels", treeTwoPanels)
+		return
+	}
+	leftActive := fm.active == fm.left
+	fm.left, fm.right = fm.right, fm.left
+	fm.panelsBox.Clear().
+		AddItem(fm.left.table, 0, 1, true).
+		AddItem(fm.right.table, 0, 1, false)
+	if leftActive {
+		fm.setActive(fm.left, true)
+	} else {
+		fm.setActive(fm.right, true)
+	}
+	fm.saveState()
+	fm.notice = "Panels swapped — Ctrl+U to swap them back"
+	fm.updateStatus()
 }

@@ -75,6 +75,14 @@ func (c *copier) worker() {
 		if j.fi.Size() >= bigFileLimit {
 			c.big <- struct{}{}
 		}
+		c.o.waitIfPaused() // no new file starts during a pause
+		if c.o.cancelled() {
+			if j.fi.Size() >= bigFileLimit {
+				<-c.big
+			}
+			c.fail(j.root, j.src, errCancelled)
+			continue
+		}
 		c.o.step(j.src)
 		err := copyOneFile(c.o, j.src, j.dst, j.fi)
 		if j.fi.Size() >= bigFileLimit {
@@ -235,6 +243,10 @@ func (o *opCtx) movePlan(pairs []copyPair, plan *copyPlan) {
 		di, derr := os.Lstat(p.to)
 		merge := derr == nil && di.IsDir() && si.IsDir()
 		if !merge {
+			o.waitIfPaused()
+			if o.cancelled() {
+				break
+			}
 			if err := os.Rename(p.from, p.to); err == nil {
 				o.step(p.from)
 				o.bytes.Add(p.size)

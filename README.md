@@ -79,7 +79,7 @@ uses a function key, **Alt+letter**, **Ctrl+letter**, or **Shift+letter** (drive
 | ↑ ↓ PgUp PgDn Home End | move the cursor |
 | → | enter folder / browse inside a .zip or .7z (does nothing on other files) |
 | ← / Backspace | parent folder, or leave the archive |
-| Enter | open folder / open file with its program (preview, inside an archive) |
+| Enter / double click | open folder / open file with its program (preview, inside an archive) |
 | Tab | switch panel |
 | *lower-case letters* | quick search: jump to the first name starting with (or containing) what you type (case does not matter for the match); Backspace deletes a character, Esc ends it |
 | Shift+*letter* | go to that drive (Shift+D → D:), returning to the last folder you used there |
@@ -99,6 +99,8 @@ uses a function key, **Alt+letter**, **Ctrl+letter**, or **Shift+letter** (drive
 | F6 | move to the other panel's folder, **at once** |
 | F7 | new folder (accepts `a\b\c`) |
 | Ctrl+K | **add a prefix** to the names of the marked files and folders, or of the item under the cursor (see *Adding a prefix*) |
+| Ctrl+R | **capitalize** each word of the names (see *Capitalizing names*) |
+| Ctrl+U | **swap** the two panels (the highlight stays on the same side) |
 | Ctrl+O / Ctrl+I | **copy** / **cut** the marked items (or the one under the cursor) to gofm's clipboard |
 | Ctrl+P | **paste** them into the folder of the active panel (see *Copy, cut and paste*) |
 | Del | delete: to the **Recycle Bin** on local drives, **permanently** on network drives (see *Deleting*) |
@@ -124,6 +126,8 @@ uses a function key, **Alt+letter**, **Ctrl+letter**, or **Shift+letter** (drive
 F1, F8 and F10 do nothing. The **key bar** at the bottom shows as many shortcuts as fit the window, operations first (F2, F3, F5 and F7 are never shown there); **click** a shortcut in the bar to run it. To save room, the bar writes Ctrl as **C** and the letter in lower case: `C+a` is Ctrl+A, `C+F7` is Ctrl+F7 (the summary, Ctrl+F2, uses the full names).
 
 Operations act on marked items; if nothing is marked, on the item under the cursor.
+
+When you enter a folder, a drive or an archive, or close the flat view or the tree view, the cursor goes to the **first item** (not `..`); going up with ← or Backspace puts it on the folder you came from.
 
 ### Keyboard notes
 
@@ -183,11 +187,15 @@ The clipboard is gofm's own, not Windows' one, and is lost when gofm is closed. 
 
 Ctrl+K asks for a text and puts it **before the names** of the marked files and folders (or of the item under the cursor when nothing is marked), e.g. `2026_` turns `report.pdf` into `2026_report.pdf`. The dialog shows a **preview** of the first new names. The field proposes the **last prefix used** since gofm was started (it is not kept after quitting). An empty text cancels; characters that names cannot contain (`\ / : * ? " < > |`) cannot be typed. An item whose new name **already exists** is not renamed: the others are, and a message lists the skipped ones. Afterwards nothing is marked. In the flat view each item stays in its own subfolder.
 
+## Capitalizing names (Ctrl+R)
+
+Ctrl+R puts a **capital letter at the start of every word** of the names of the marked files and folders (or of the item under the cursor). A word starts at the beginning of the name and after a space, `_` or `-`; the other letters stay as they are, and so does the extension of a file: `rapporto_IVA-q3.pdf` → `Rapporto_IVA-Q3.pdf`, `my file.JPG` → `My File.JPG`. A dialog shows the new names first (*Rename* is the default button); names that are already capitalized are left alone. An item whose new name already exists is not renamed and is listed at the end. On Windows a change of case only is a normal rename.
+
 ## Flat view (Ctrl+B)
 
 Ctrl+B lists **every file of the current folder and of all its subfolders** in one list, with names relative to the folder (`src\deep\util.go`). Everything works on it: marking, copy, move, Recycle Bin, rename (the file stays in its subfolder), preview, compress, compare, filter, sort (e.g. by size across the whole tree), quick search (on the file name).
 
-- **Copy and move put all files directly into the destination folder** (`src\deep\util.go` → `dest\util.go`). If two marked files have the same name, gofm refuses and lists them, so they cannot overwrite each other.
+- **Copy and move put all files directly into the destination folder** (`src\deep\util.go` → `dest\util.go`). If two or more marked files have the **same name**, gofm asks about each extra one, showing both files with size and date: *Skip* (the default: keep the file chosen so far), *Skip all*, *Overwrite* (take this one instead), *Overwrite all*, *Cancel*. The files left out are neither copied nor moved. Then the usual questions about files already in the destination follow.
 - Ctrl+B again, or moving to any other folder or drive, returns to the normal view.
 - Hidden files and folders follow Alt+H. Folders, links to folders and junctions are not listed.
 - The list stops at 200,000 files (the title says so). It is built with a progress window that can be cancelled.
@@ -256,7 +264,7 @@ Marked folders are measured at most three at a time, so marking hundreds of fold
 
 ## Progress
 
-Copy, move, compress and extract show a progress bar with bytes done, speed (averaged over the last 5 seconds) and an estimate of the time left. During a parallel copy the file shown is the last one started. Sizes are counted first, so very large folders spend a moment on "Counting files…". A move within the same drive is an instant rename.
+Copy, move, compress and extract show a progress bar with bytes done, speed (averaged over the last 5 seconds) and an estimate of the time left. Copies, moves and pastes also have a **Pause** button (it becomes *Resume*): a pause stops at once, also in the middle of a big file, and Cancel still works while paused; the speed and the time left are measured again after Resume. (With a server-side copy between folders of the same server, Windows reports progress only at the end of each file, so the pause starts with the next file.) During a parallel copy the file shown is the last one started. Sizes are counted first, so very large folders spend a moment on "Counting files…". A move within the same drive is an instant rename.
 
 ## Display
 

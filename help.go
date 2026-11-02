@@ -31,6 +31,7 @@ var helpSections = []helpSection{
 		{"Alt+V", "drive list"},
 		{"Shift+letter", "go to that drive (last folder used there)"},
 		{"Mouse click", "select a row; key bar: run the key; scroll bar: jump"},
+		{"Double click", "same as Enter: open the folder or the file"},
 		{"Right click", "mark or unmark the item"},
 	}},
 	{"Search and selection", [][2]string{
@@ -54,6 +55,7 @@ var helpSections = []helpSection{
 		{"Shift+Del", "delete without confirmation (Recycle Bin)"},
 		{"F7", "new folder"},
 		{"Ctrl+K", "add a prefix to the names of the marked items"},
+		{"Ctrl+R", "capitalize each word of the names (after space _ -)"},
 		{"Del", "delete: Recycle Bin; permanent on network drives"},
 		{"F9", "compress to ZIP"},
 		{"Alt+U", "extract an archive"},
@@ -62,6 +64,7 @@ var helpSections = []helpSection{
 	{"View", [][2]string{
 		{"Ctrl+B", "flat view of the folder tree"},
 		{"Ctrl+T", "tree on the left, folder contents on the right"},
+		{"Ctrl+U", "swap the two panels"},
 		{"Alt+O", "sort by name → size → date"},
 		{"Alt+D", "reverse the sort direction (↑ ↓ in the title)"},
 		{"Alt+H", "show/hide hidden files and admin shares"},

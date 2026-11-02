@@ -23,7 +23,8 @@ var errCancelled = errors.New("operation cancelled")
 // The worker goroutine writes the counters; the UI goroutine only reads them.
 type opCtx struct {
 	cancel atomic.Bool
-	errs   []string // written by the workers (under errMu), read after they finish
+	paused atomic.Bool // v1.18: Pause in the progress dialog of copies and moves
+	errs   []string    // written by the workers (under errMu), read after they finish
 	errMu  sync.Mutex
 	total  atomic.Int64    // bytes expected (0 = unknown)
 	bytes  atomic.Int64    // bytes processed so far
@@ -34,6 +35,18 @@ type opCtx struct {
 }
 
 func (o *opCtx) cancelled() bool { return o.cancel.Load() }
+
+// pauseCheck is how often a paused operation looks whether it may go on.
+const pauseCheck = 100 * time.Millisecond
+
+// waitIfPaused blocks while the operation is paused (v1.18: Pause button of copies
+// and moves). It returns at once when the operation is cancelled, so Cancel works
+// during a pause.
+func (o *opCtx) waitIfPaused() {
+	for o.paused.Load() && !o.cancelled() {
+		time.Sleep(pauseCheck)
+	}
+}
 
 func (o *opCtx) fail(path string, err error) {
 	if errors.Is(err, errCancelled) {
@@ -63,6 +76,7 @@ type cancelReader struct {
 }
 
 func (c cancelReader) Read(b []byte) (int, error) {
+	c.o.waitIfPaused() // a pause stops a file in the middle, too
 	if c.o.cancelled() {
 		return 0, errCancelled
 	}

@@ -2,6 +2,15 @@
 
 All notable changes to gofm. Versions follow the order in which features were added.
 
+## 1.18 — 2026-11-02
+
+- **Cursor on the first item**: entering a folder, a drive or an archive, closing the flat view or the tree view puts the cursor on the first item instead of `..` (an empty folder keeps it on `..`). Going up with ← or Backspace still puts it on the folder you came from.
+- **Double click** on a file or folder works like Enter.
+- **Ctrl+R** capitalizes each word of the names of the marked items (or of the one under the cursor): a word starts at the beginning and after a space, `_` or `-`; the other letters and the extension are left as they are (`rapporto_IVA-q3.pdf` → `Rapporto_IVA-Q3.pdf`). A dialog shows the new names first; existing names are skipped.
+- **Flat view, files with the same name**: instead of refusing, F5/F6 (and Ctrl+P) ask about each extra file with that name, like a conflict — Skip (keeps the file chosen so far), Skip all, Overwrite (takes this one instead), Overwrite all, Cancel.
+- **Ctrl+U** swaps the two panels, with everything they show; the highlight stays on the same side.
+- **Pause and Resume** in the progress window of copies, moves and pastes; a pause also stops a file in the middle, and the speed and time left start again on Resume.
+
 ## 1.17 — 2026-11-02
 
 Faster, measured with the benchmarks added in `bench_test.go` (`go test -run XXX -bench .`):
