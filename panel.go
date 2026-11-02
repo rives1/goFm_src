@@ -31,6 +31,27 @@ type entry struct {
 	mod       time.Time
 	attrs     string
 	remark    string
+
+	// Computed once and kept with the entry (v1.17), instead of at every comparison
+	// or every drawn row: lower-case name for sorting and quick search, file family.
+	lname string
+	fam   int8 // family index + 1; 0 = not computed yet
+}
+
+// lower is the lower-case name (computed if the entry was built without it).
+func (e *entry) lower() string {
+	if e.lname == "" && e.name != "" {
+		e.lname = strings.ToLower(e.name)
+	}
+	return e.lname
+}
+
+// family is the colour family of a file (-1: none), cached in the entry.
+func (e *entry) family() int {
+	if e.fam == 0 {
+		e.fam = int8(family(e.name) + 2) // -1 → 1, 0 → 2, …
+	}
+	return int(e.fam) - 2
 }
 
 const (
@@ -103,6 +124,43 @@ type Panel struct {
 	diskKey   string    // folder the space was measured for
 	diskAt    time.Time // when it was measured
 	diskBusy  bool
+
+	renderQueued bool // a render is already queued (renderSoon)
+
+	tot panelTotals // totals shown at every frame, computed once per change (v1.17)
+}
+
+// panelTotals are the figures drawn on the borders and in the status bar. They used
+// to be computed over the whole listing at every frame (every key); now once after
+// each change: render invalidates them, and a different number of entries or marks
+// does too, as a safety net.
+type panelTotals struct {
+	valid             bool
+	nEntries, nMarked int
+	files, size       int64 // listed files (folderTotals)
+	items             int   // entries without ".."
+	mN                int   // marked: count, files and bytes (folders recursively)
+	mFiles, mSize     int64
+	mPending          bool
+}
+
+func (p *Panel) totals() *panelTotals {
+	t := &p.tot
+	if t.valid && t.nEntries == len(p.entries) && t.nMarked == len(p.marked) {
+		return t
+	}
+	*t = panelTotals{valid: true, nEntries: len(p.entries), nMarked: len(p.marked)}
+	for _, e := range p.entries {
+		if !e.isUp {
+			t.items++
+		}
+		if !e.isDir && !e.isUp {
+			t.files++
+			t.size += e.size
+		}
+	}
+	t.mN, t.mFiles, t.mSize, t.mPending = p.markedSummary()
+	return t
 }
 
 // panelView re-renders the rows when the panel width changes, so long names are
@@ -122,7 +180,8 @@ func (v *panelView) Draw(screen tcell.Screen) {
 	v.Table.Draw(screen)
 	drawScrollbar(screen, v.Table)
 	// Files of the folder and free space of the volume on the bottom border, right-aligned.
-	files, size := v.p.folderTotals()
+	tot := v.p.totals()
+	files, size := tot.files, tot.size
 	x, y, w, h := v.GetRect()
 	if d := bottomLabel(w-4, files, size, v.p.listsFiles(), v.p.diskFree, v.p.diskTotal); d != "" {
 		lw := len([]rune(d))
@@ -141,7 +200,8 @@ func (v *panelView) Draw(screen tcell.Screen) {
 // selectionLabel is the cumulative total of the marked items, e.g.
 // " 3 selected · 1.9 MB · 3 files ", or "" when nothing is marked.
 func (p *Panel) selectionLabel() string {
-	n, files, size, pending := p.markedSummary()
+	t := p.totals()
+	n, files, size, pending := t.mN, t.mFiles, t.mSize, t.mPending
 	if n == 0 {
 		return ""
 	}
@@ -301,19 +361,22 @@ func (p *Panel) followTree(moved bool) {
 // sortEntries sorts a listing: folders first, then by the panel's sort type and
 // direction; equal keys fall back to the name, always A→Z.
 func (p *Panel) sortEntries(list []entry) {
+	for i := range list {
+		list[i].lower() // one lower-case copy per entry, not two per comparison
+	}
 	sort.SliceStable(list, func(i, j int) bool {
-		return entryLess(list[i], list[j], p.sortMode, p.sortAsc)
+		return entryLess(&list[i], &list[j], p.sortMode, p.sortAsc)
 	})
 }
 
-func entryLess(a, b entry, mode int, asc bool) bool {
+func entryLess(a, b *entry, mode int, asc bool) bool {
 	if a.isUp != b.isUp {
 		return a.isUp
 	}
 	if a.isDir != b.isDir {
 		return a.isDir // folders first
 	}
-	byName := func() bool { return strings.ToLower(a.name) < strings.ToLower(b.name) }
+	byName := func() bool { return a.lower() < b.lower() }
 	switch mode {
 	case sortSize:
 		if a.size != b.size {
@@ -324,7 +387,7 @@ func entryLess(a, b entry, mode int, asc bool) bool {
 			return a.mod.Before(b.mod) == asc
 		}
 	default:
-		if strings.ToLower(a.name) != strings.ToLower(b.name) {
+		if a.lower() != b.lower() {
 			return byName() == asc
 		}
 	}
@@ -348,6 +411,7 @@ func (p *Panel) styleCursorIcon() {
 }
 
 func (p *Panel) render() {
+	p.tot.valid = false // something changed: totals are computed again once
 	t := p.table
 	row, _ := t.GetSelection()
 	rowOff, colOff := t.GetOffset()
@@ -358,7 +422,9 @@ func (p *Panel) render() {
 	}
 	basic := p.fm != nil && p.fm.basicIcons
 	now := time.Now()
-	for i, e := range p.entries {
+	for i := range p.entries {
+		p.entries[i].family() // computed once per entry, then kept (v1.17)
+		e := p.entries[i]
 		color, attr := entryStyle(e, p.marked[e.name])
 		mark := " "
 		if p.marked[e.name] {
@@ -742,12 +808,16 @@ func (p *Panel) setMarks(names []string) {
 func (p *Panel) jumpTo(prefix string) bool {
 	q := strings.ToLower(prefix)
 	for pass := 0; pass < 2; pass++ {
-		for i, e := range p.entries {
+		for i := range p.entries {
+			e := &p.entries[i]
 			if e.isUp {
 				continue
 			}
-			n := strings.ToLower(e.name)
-			base := strings.ToLower(filepath.Base(e.name)) // flat view: match the file name, not the folder
+			n := e.lower()
+			base := n
+			if p.flat {
+				base = strings.ToLower(filepath.Base(e.name)) // flat view: match the file name, not the folder
+			}
 			if (pass == 0 && strings.HasPrefix(base, q)) || (pass == 1 && strings.Contains(n, q)) {
 				p.table.Select(i, 0)
 				return true
@@ -877,18 +947,44 @@ func (p *Panel) ensureSize(e entry) {
 		return
 	}
 	go func() {
-		files, size := ds.o.treeStats(key)
+		// At most sizeWorkers folders are measured at the same time (v1.17): Ctrl+A on
+		// hundreds of folders no longer starts hundreds of walks on the same disk or
+		// share, which made a spinning disk or a NAS slower for all of them.
+		sizeSlots <- struct{}{}
+		var files, size int64
+		if !ds.o.cancelled() {
+			files, size = ds.o.treeStats(key)
+		}
+		<-sizeSlots // released before talking to the interface
 		if ds.o.cancelled() {
 			return
 		}
 		p.fm.app.QueueUpdateDraw(func() {
 			if p.sizes[key] == ds { // still marked, same listing
 				ds.files, ds.size, ds.done = files, size, true
-				p.render() // size column and top-border total
-				p.fm.updateStatus()
+				p.renderSoon() // size column and top-border total
 			}
 		})
 	}()
+}
+
+// sizeWorkers is how many marked folders are measured at the same time.
+const sizeWorkers = 3
+
+var sizeSlots = make(chan struct{}, sizeWorkers)
+
+// renderSoon redraws the rows once for a burst of changes (v1.17): measurements that
+// finish together cause one render, not one each.
+func (p *Panel) renderSoon() {
+	if p.renderQueued {
+		return
+	}
+	p.renderQueued = true
+	go p.fm.app.QueueUpdateDraw(func() {
+		p.renderQueued = false
+		p.render()
+		p.fm.updateStatus()
+	})
 }
 
 // markedSummary returns how many entries are marked and the cumulative number of files

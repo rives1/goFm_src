@@ -2,6 +2,16 @@
 
 All notable changes to gofm. Versions follow the order in which features were added.
 
+## 1.17 — 2026-11-02
+
+Faster, measured with the benchmarks added in `bench_test.go` (`go test -run XXX -bench .`):
+
+- **Copy and move preparation**: one walk instead of three; each source folder read once and, when the same folder exists at the destination, that folder read once with the names compared in memory, instead of two checks per file. The copy reuses what was read. Linux benchmark, 10 000 files with half already at the destination: 30 106 → 15 105 stat calls, 76.6 → 21.3 ms; on Windows the folder listings already carry sizes and dates, so no per-file check is left (not yet measured on Windows). A move to a free name on the same drive is not read at all. New folders are created with one call.
+- **Marked folders** are measured at most 3 at a time (Ctrl+A on hundreds of folders no longer starts hundreds of scans), and the panel is redrawn once for a burst of results.
+- **Sorting** computes each lower-case name once: 200 000 names 545 → 148 ms, allocations 9.9 M → 0.2 M.
+- **Totals on the borders and in the status bar** are computed once per change instead of at every frame: 200 000 entries, 1 000 marked, 3.1 → 1.05 ms per frame; the file type of each row is computed once.
+- **Key bar**: Ctrl is written as `C` with the letter in lower case (`C+a`, `C+F7`), so more shortcuts fit.
+
 ## 1.16 — 2026-11-02
 
 - **Copy, cut and paste**: Ctrl+O copies and Ctrl+I cuts the marked items (or the one under the cursor) to gofm's own clipboard; Ctrl+P pastes them into the folder of the active panel, with the same questions as F5/F6. Cut items are pasted once. (Ctrl+C/X/V cannot be used: the terminals keep Ctrl+V for pasting text.)

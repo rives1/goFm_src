@@ -5,6 +5,8 @@ package main
 // as if the key had been pressed.
 
 import (
+	"strings"
+
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"github.com/rivo/uniseg"
@@ -59,13 +61,27 @@ type keySlot struct {
 	item, x, w int
 }
 
+// barKey is how a key is written on the bar (v1.17): Ctrl is shortened to "C", and a
+// letter after it is lower case, e.g. Ctrl+A → C+a, Ctrl+F7 → C+F7. The key summary
+// (Ctrl+F2) keeps the full names.
+func barKey(k string) string {
+	rest, ok := strings.CutPrefix(k, "Ctrl+")
+	if !ok {
+		return k
+	}
+	if len(rest) == 1 && rest[0] >= 'A' && rest[0] <= 'Z' {
+		rest = strings.ToLower(rest)
+	}
+	return "C+" + rest
+}
+
 // keybarLayout places the items from the left, in order of priority, while they fit
 // in width cells (one cell of margin on the left, one space after each item).
 func keybarLayout(width int) []keySlot {
 	var slots []keySlot
 	x := 1
 	for i, it := range keybarItems {
-		w := uniseg.StringWidth(it.key) + uniseg.StringWidth(it.label)
+		w := uniseg.StringWidth(barKey(it.key)) + uniseg.StringWidth(it.label)
 		if x+w > width {
 			break
 		}
@@ -92,7 +108,7 @@ func (b *keyBar) Draw(screen tcell.Screen) {
 	for _, s := range keybarLayout(w) {
 		it := keybarItems[s.item]
 		cx := x + s.x
-		for _, r := range it.key {
+		for _, r := range barKey(it.key) {
 			screen.SetContent(cx, y, r, nil, keyStyle)
 			cx++
 		}

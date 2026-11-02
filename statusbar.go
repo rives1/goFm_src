@@ -37,7 +37,7 @@ type statusFields struct {
 }
 
 func (fm *FM) statusFieldsFor(p *Panel) statusFields {
-	f := statusFields{items: fmt.Sprintf("%d items", countReal(p.entries))}
+	f := statusFields{items: fmt.Sprintf("%d items", p.totals().items)}
 	e := p.current()
 	if e == nil || e.isUp {
 		return f

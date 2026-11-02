@@ -18,7 +18,7 @@ Get **`gofm-<version>-windows.zip`** from the [latest release](https://github.co
 To check a download, compare its hash with the one on the release page (PowerShell):
 
 ```
-Get-FileHash .\gofm-1.16-windows.zip     # the zip: see the .sha256 file
+Get-FileHash .\gofm-1.17-windows.zip     # the zip: see the .sha256 file
 Get-FileHash .\gofm.exe                  # the program: see the release notes
 ```
 
@@ -121,7 +121,7 @@ uses a function key, **Alt+letter**, **Ctrl+letter**, or **Shift+letter** (drive
 | Ctrl+F9 | next colour scheme: **navy** (default) → **dark** → **light** (remembered) |
 | Ctrl+F2 | summary of all the keys |
 
-F1, F8 and F10 do nothing. The **key bar** at the bottom shows as many shortcuts as fit the window, operations first (F2, F3, F5 and F7 are never shown there); **click** a shortcut in the bar to run it.
+F1, F8 and F10 do nothing. The **key bar** at the bottom shows as many shortcuts as fit the window, operations first (F2, F3, F5 and F7 are never shown there); **click** a shortcut in the bar to run it. To save room, the bar writes Ctrl as **C** and the letter in lower case: `C+a` is Ctrl+A, `C+F7` is Ctrl+F7 (the summary, Ctrl+F2, uses the full names).
 
 Operations act on marked items; if nothing is marked, on the item under the cursor.
 
@@ -249,6 +249,10 @@ The 2-second tolerance covers FAT/exFAT drives and many NAS, which store times w
 - **Small files are copied 4 at a time** across the whole selection: each file costs a few network round trips, and running them in parallel overlaps the waits (like `robocopy /MT`). **Big files (≥ 64 MB) go one at a time**: parallel big streams do not add bandwidth on one link or disk, and slow down spinning disks.
 - Attributes, dates and alternate data streams are copied; NTFS permissions are inherited from the destination folder, as with an Explorer copy. Paths longer than 260 characters are supported.
 - A move renames instantly what it can (same drive) and copies the rest in one batch; each source is deleted only if all of it was copied.
+
+**Preparing a copy (since 1.17).** Before the first byte is copied, gofm reads each source folder **once** to count the bytes and to find the files that already exist at the destination; when the same folder exists there, it reads that folder once too and compares the names in memory. The copy then uses what was read instead of reading the folders again. Before 1.17 the tree was walked three times and every file cost two separate checks — with 10 000 files already at the destination that is about 20 000 round trips to the server, i.e. minutes on a slow VPN (an estimate: it depends on the latency). A move to a free name on the same drive is a rename and is not read at all.
+
+Marked folders are measured at most three at a time, so marking hundreds of folders on a NAS or a spinning disk does not start hundreds of competing scans.
 
 ## Progress
 

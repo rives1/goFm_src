@@ -90,15 +90,26 @@ func (c *copier) worker() {
 // add walks src and queues its files for copying to dst. root identifies the
 // top-level item, so a move knows which sources were copied completely.
 func (c *copier) add(root int, src, dst string) {
+	c.addNode(root, &scanNode{src: src, dst: dst})
+}
+
+// addNode is add for an item already read by the scan (v1.17): its information and
+// children are used instead of reading the disk again; what the scan did not read is
+// read here.
+func (c *copier) addNode(root int, n *scanNode) {
 	o := c.o
+	src, dst := n.src, n.dst
 	if o.cancelled() {
 		c.fail(root, src, errCancelled)
 		return
 	}
-	fi, err := os.Lstat(src)
-	if err != nil {
-		c.fail(root, src, err)
-		return
+	fi := n.fi
+	if fi == nil {
+		var err error
+		if fi, err = os.Lstat(src); err != nil {
+			c.fail(root, src, err)
+			return
+		}
 	}
 	if o.skip[src] && !fi.IsDir() { // a conflict answered "Skip": the existing file stays
 		o.bytes.Add(fi.Size()) // it counts toward the progress
@@ -131,17 +142,29 @@ func (c *copier) add(root int, src, dst string) {
 		}
 		c.fail(root, src, errors.New("folder link (junction) skipped"))
 	case fi.IsDir():
-		if err := os.MkdirAll(dst, fi.Mode().Perm()|0o700); err != nil {
-			c.fail(root, dst, err)
-			return
+		// A folder known to exist is not created again; a new one is created with one
+		// call (MkdirAll would check every parent first: one round trip each).
+		if !(n.dstInfo != nil && n.dstInfo.IsDir()) {
+			if err := os.Mkdir(dst, fi.Mode().Perm()|0o700); err != nil && !os.IsExist(err) {
+				if err := os.MkdirAll(dst, fi.Mode().Perm()|0o700); err != nil {
+					c.fail(root, dst, err)
+					return
+				}
+			}
 		}
-		des, err := os.ReadDir(src)
-		if err != nil {
-			c.fail(root, src, err)
-			return
+		children := n.children
+		if !n.scanned {
+			des, err := os.ReadDir(src)
+			if err != nil {
+				c.fail(root, src, err)
+				return
+			}
+			for _, de := range des {
+				children = append(children, &scanNode{src: filepath.Join(src, de.Name()), dst: filepath.Join(dst, de.Name())})
+			}
 		}
-		for _, de := range des {
-			c.add(root, filepath.Join(src, de.Name()), filepath.Join(dst, de.Name()))
+		for _, ch := range children {
+			c.addNode(root, ch)
 		}
 		c.dirs = append(c.dirs, dirTime{dst, fi.ModTime()})
 	case mode.IsRegular():
@@ -169,17 +192,31 @@ type copyPair struct {
 }
 
 // copyAll copies every pair with one shared worker pool.
-func (o *opCtx) copyAll(pairs []copyPair) {
+func (o *opCtx) copyAll(pairs []copyPair) { o.copyPlan(pairs, nil) }
+
+// copyPlan copies with the tree of a scan (nil: the engine reads everything).
+func (o *opCtx) copyPlan(pairs []copyPair, plan *copyPlan) {
 	c := newCopier(o)
 	for i, p := range pairs {
-		c.add(i, p.from, p.to)
+		c.addNode(i, planRoot(plan, i, p))
 	}
 	c.finish()
 }
 
+// planRoot is the scanned root of pair i, or a node to be read by the engine.
+func planRoot(plan *copyPlan, i int, p copyPair) *scanNode {
+	if plan != nil && i < len(plan.roots) && plan.roots[i] != nil {
+		return plan.roots[i]
+	}
+	return &scanNode{src: p.from, dst: p.to}
+}
+
 // moveAll renames what it can (same drive: instant) and copies the rest with one
 // shared worker pool; a source is deleted only if all of it was copied.
-func (o *opCtx) moveAll(pairs []copyPair) {
+func (o *opCtx) moveAll(pairs []copyPair) { o.movePlan(pairs, nil) }
+
+// movePlan is moveAll with the tree of a scan.
+func (o *opCtx) movePlan(pairs []copyPair, plan *copyPlan) {
 	c := newCopier(o)
 	var copied []int
 	for i, p := range pairs {
@@ -205,7 +242,7 @@ func (o *opCtx) moveAll(pairs []copyPair) {
 			}
 		}
 		// Different drive or folder merge: copy, delete the source afterwards.
-		c.add(i, p.from, p.to)
+		c.addNode(i, planRoot(plan, i, p))
 		copied = append(copied, i)
 	}
 	failed := c.finish()
@@ -290,43 +327,6 @@ func removeExcept(root string, keep map[string]bool) error {
 type fileConflict struct {
 	src, dst         string
 	srcInfo, dstInfo fs.FileInfo
-}
-
-// findConflicts lists, in order, the files that would overwrite an existing file:
-// top-level files, and files inside folders that will be merged. Items of different
-// types (file against folder) are left to the copy, which reports them.
-func (o *opCtx) findConflicts(pairs []copyPair) []fileConflict {
-	var out []fileConflict
-	var walk func(src, dst string)
-	walk = func(src, dst string) {
-		if o.cancelled() {
-			return
-		}
-		si, err := os.Lstat(src)
-		if err != nil {
-			return
-		}
-		di, err := os.Lstat(dst)
-		if err != nil {
-			return // nothing there: no conflict
-		}
-		switch {
-		case si.IsDir() && di.IsDir():
-			des, err := os.ReadDir(src)
-			if err != nil {
-				return
-			}
-			for _, de := range des {
-				walk(filepath.Join(src, de.Name()), filepath.Join(dst, de.Name()))
-			}
-		case !si.IsDir() && !di.IsDir():
-			out = append(out, fileConflict{src, dst, si, di})
-		}
-	}
-	for _, p := range pairs {
-		walk(p.from, p.to)
-	}
-	return out
 }
 
 // Answers to a conflict, in the order of the buttons: the default (first) one never

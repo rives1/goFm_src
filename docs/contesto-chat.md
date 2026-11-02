@@ -1,6 +1,6 @@
-# gofm — contesto per proseguire in una nuova chat (versione 1.16)
+# gofm — contesto per proseguire in una nuova chat (versione 1.17)
 
-> Da allegare all'inizio di una nuova chat. Contiene: stato del progetto, cose in sospeso, regole di lavoro, note tecniche sull'ambiente di sviluppo e, in fondo, le **specifiche compatte complete della 1.16**. Il dettaglio di ogni scelta, con motivazioni e storico, è in `docs/gofm-documentazione.md` nel repository.
+> Da allegare all'inizio di una nuova chat. Contiene: stato del progetto, cose in sospeso, regole di lavoro, note tecniche sull'ambiente di sviluppo e, in fondo, le **specifiche compatte complete della 1.17**. Il dettaglio di ogni scelta, con motivazioni e storico, è in `docs/gofm-documentazione.md` nel repository.
 
 ## A. Dove sono le cose
 
@@ -8,19 +8,20 @@
 - **Copia locale** (PC dell'utente): `C:\Users\ammin\Documents\Claude CLI\gofm-repo\goFm_src`.
 - **Cartella dei pacchetti**: `C:\Users\ammin\Documents\Claude CLI\gofm-repo\`, con `gofm-<versione>-windows.zip`, `.sha256`, `gofm-<versione>-repo.zip`, `gofm-<versione>-specifiche-compatte.md`, `gofm-<versione>-contesto-chat.md` e `microsoft-false-positive-submission.md`. Nel repository: `docs/contesto-chat.md`.
 - **Stato git al 02/11/2026**:
-  - 1.15 inviata dall'utente (`origin/main` = `f3864d1`);
-  - commit `versione 1.16` con tag annotato `v1.16` (questo file è nel commit stesso).
-- **SHA-256 degli eseguibili**: nelle note della Release `v1.16` su GitHub e nel file `gofm-1.16-contesto-chat.md` della cartella dei pacchetti (qui non possono stare: l'eseguibile incorpora il commit che contiene questo file).
+  - 1.16 inviata dall'utente (`origin/main` = `456177b`);
+  - commit `versione 1.17` con tag annotato `v1.17` (questo file è nel commit stesso).
+- **SHA-256 degli eseguibili**: nelle note della Release `v1.17` su GitHub e nel file `gofm-1.17-contesto-chat.md` della cartella dei pacchetti (qui non possono stare: l'eseguibile incorpora il commit che contiene questo file).
 
 ## B. In sospeso
 
-1. **Push** della 1.16 e controllo della Release.
-2. **Prove su Windows reale** della 1.16: Ctrl+I (distinto da Tab), Ctrl+O, Ctrl+P, Ctrl+W, Shift+Canc nei due terminali; clic destro.
-3. **Prove delle versioni precedenti** ancora da fare: 1.15 clic e trascinamento sulla barra, Shift+frecce; 1.14 Ctrl+T e Ctrl+K, albero su unità di rete lente.
-4. **Scelte di Claude da confermare**: (1.16) dopo Ctrl+O/Ctrl+I le marcature restano; la barra dei tasti mostra Ctrl+O/I/P subito dopo Ctrl+A. (1.15) Shift+PgUp/PgDn/Home/End includono la riga d'arrivo solo se è la prima o l'ultima; nell'albero Shift+frecce sono movimenti normali. (1.14) Ctrl+T rifiutato anche dall'elenco share; albero non ricordato; nessuna ricerca digitando nell'albero. (1.13) `gofm.ini` letto anche in una cartella non scrivibile; `networkDelete` + `networkDeleteDefault`; *Merge* predefinito.
-5. **Defender**: segnalazione a Microsoft (`microsoft-false-positive-submission.md`); soluzione stabile = firma del codice (serve un account dell'utente).
-6. **Prove su Windows della 1.12** ancora da fare (tipi di unità, Canc in rete, F4, clic sulla barra dei tasti, decodifica di Alt+F7, Ctrl+F7, Ctrl+F2, Ctrl+F9, Ctrl+A).
-7. **Domanda aperta** sull'alternativa a *Cascadia Mono NF* (va chiesto il motivo).
+1. **Push** della 1.17 e controllo della Release.
+2. **Prove su Windows reale** della 1.17: F5/F6 verso una share con molti file già presenti (confronto dei tempi con la 1.16: è il guadagno atteso maggiore); Ctrl+A su molte cartelle di un NAS; barra dei tasti abbreviata.
+3. **Prove delle versioni precedenti** ancora da fare: 1.16 Ctrl+I/O/P/W, Shift+Canc, clic destro; 1.15 barra di scorrimento con il mouse, Shift+frecce; 1.14 Ctrl+T e Ctrl+K, albero su unità di rete lente.
+4. **Ottimizzazioni valutate e non ancora fatte** (valutazione del 02/11/2026): ricerca per contenuto in parallelo (punto 4), tabella "virtuale" che costruisce solo le righe visibili (punto 6: render ≈ 250 ms con 200 000 voci), archivi grandi (9), lettura asincrona dei rami dell'albero (10).
+5. **Scelte di Claude da confermare**: (1.17) un file aggiunto nella sorgente dopo la preparazione della copia non viene copiato; 3 misure di cartelle in parallelo. (1.16) dopo Ctrl+O/Ctrl+I le marcature restano; Ctrl+O/I/P subito dopo Ctrl+A nella barra. (1.15) Shift+PgUp/PgDn/Home/End includono la riga d'arrivo solo se è la prima o l'ultima; nell'albero Shift+frecce sono movimenti normali. (1.14) Ctrl+T rifiutato anche dall'elenco share; albero non ricordato; nessuna ricerca digitando nell'albero. (1.13) `gofm.ini` letto anche in una cartella non scrivibile; `networkDelete` + `networkDeleteDefault`; *Merge* predefinito.
+6. **Defender**: segnalazione a Microsoft (`microsoft-false-positive-submission.md`); soluzione stabile = firma del codice (serve un account dell'utente).
+7. **Prove su Windows della 1.12** ancora da fare (tipi di unità, Canc in rete, F4, clic sulla barra dei tasti, decodifica di Alt+F7, Ctrl+F7, Ctrl+F2, Ctrl+F9, Ctrl+A).
+8. **Domanda aperta** sull'alternativa a *Cascadia Mono NF* (va chiesto il motivo).
 
 ## C. Regole di lavoro (fissate dall'utente)
 
@@ -51,6 +52,7 @@
 | 1.9 | icone per tipo di file (Nerd Font / simboli, Alt+I) |
 | 1.10 | correzione del focus alla chiusura delle finestre; seconda conferma per cartelle con sottocartelle; riepilogo dei tasti; F12 per nome+dimensione+data; Release GitHub con pacchetto |
 | 1.11 | Go 1.27.3 fissato; metadati Windows (versione, manifest, icona); build riproducibile; nota sui falsi positivi degli antivirus |
+| 1.17 | prestazioni: preparazione della copia in un solo percorso, misura delle cartelle 3 alla volta, ordinamento e totali senza ricalcoli; benchmark; barra dei tasti con `C+` |
 | 1.16 | appunti di gofm (Ctrl+O copia, Ctrl+I taglia, Ctrl+P incolla); Ctrl+W esce (F10 nulla); ultimo prefisso di Ctrl+K; clic destro marca; Shift+Canc senza conferma |
 | 1.15 | barra di scorrimento cliccabile e trascinabile; copia su sé stessi saltabile (Skip, Skip all, Cancel); selezione con Shift+frecce/PgUp/PgDn/Home/End; contesto anche in `docs/contesto-chat.md` |
 | 1.14 | vista ad albero (Ctrl+T) con pannello destro che segue dopo 150 ms; prefisso ai nomi (Ctrl+K) con anteprima e nomi esistenti saltati |
@@ -59,9 +61,9 @@
 
 ---
 
-## Specifiche compatte 1.16
+## Specifiche compatte 1.17
 
-Riepilogo per riprendere il lavoro in una nuova chat. Il codice completo è nel repository <https://github.com/rives1/goFm_src> (copia locale: `C:\Users\ammin\Documents\Claude CLI\gofm-repo\goFm_src`) e in `gofm-1.16-repo.zip`; la documentazione estesa (con motivazioni, storico e prompt di rigenerazione) è in `docs/gofm-documentazione.md`.
+Riepilogo per riprendere il lavoro in una nuova chat. Il codice completo è nel repository <https://github.com/rives1/goFm_src> (copia locale: `C:\Users\ammin\Documents\Claude CLI\gofm-repo\goFm_src`) e in `gofm-1.17-repo.zip`; la documentazione estesa (con motivazioni, storico e prompt di rigenerazione) è in `docs/gofm-documentazione.md`.
 
 ### 0. Regole di lavoro
 
@@ -80,7 +82,7 @@ Riepilogo per riprendere il lavoro in una nuova chat. Il codice completo è nel 
 
 File manager a **doppio pannello** per il terminale di Windows (Windows Terminal consigliato, funziona anche nella console classica), stile Norton/Midnight/Total Commander. **Go** (minimo 1.24; release compilate con **Go 1.27.3**, fissato in `go.mod` con `toolchain go1.27.3` e nei workflow), un solo eseguibile senza dipendenze: `gofm.exe` (x64, circa 7 MB) e `gofm-arm64.exe`. Librerie: tview v0.42, tcell v2.13.10, uniseg, bodgit/sevenzip v1.6 (7z in sola lettura), fsnotify v1.8, x/sys, x/text. Compila e gira anche su Linux e macOS, per sviluppo e test.
 
-Avvio: `gofm [left_folder] [right_folder]`; `-h`, `--help` o `/?` stampa `gofm 1.16 — usage: …`. Senza argomenti riapre le ultime cartelle (§5.13).
+Avvio: `gofm [left_folder] [right_folder]`; `-h`, `--help` o `/?` stampa `gofm 1.17 — usage: …`. Senza argomenti riapre le ultime cartelle (§5.13).
 
 ### 2. Interfaccia
 
@@ -139,7 +141,7 @@ I test verificano che ogni famiglia disti almeno 120 dal giallo e almeno 60 dall
 - Durante la ricerca digitando compare il badge ` Search: … ` (e `no match` in rosso).
 - Un avviso, per esempio dopo F12, Ctrl+B, Alt+I, Ctrl+F9 o F4, sostituisce la riga fino al tasto successivo.
 
-**Barra dei tasti** (v1.12, `keybar.go`): voci per priorità, **quante ne entrano** nella larghezza (alla prima che non entra si ferma): F4 Edit · F6 Move · Del Delete · F9 Zip · F12 Compare · Ctrl+A Select · Ctrl+O Copy · Ctrl+I Cut · Ctrl+P Paste · Ctrl+T Tree · Ctrl+K Prefix · Ctrl+B Flat · Alt+F7 Find · Ctrl+F7 Filter · Alt+U Extract · Alt+V Drives · Ctrl+F2 Keys · Alt+O Sort · Alt+D Reverse · Alt+H Hidden · Ctrl+F9 Colours · Alt+I Icons · Shift+X Drive X: · Alt+L Go to. A 80 colonne 8 voci, a 120 11, tutte da 215. **Mai** F2, F3, F5, F7 (F10 non fa nulla dalla v1.16). **Clic** su una voce = evento del tasto passato a `FM.keys`, il focus resta al pannello; Shift+X non è cliccabile.
+**Barra dei tasti** (v1.12, `keybar.go`): voci per priorità, **quante ne entrano** nella larghezza (alla prima che non entra si ferma): F4 Edit · F6 Move · Del Delete · F9 Zip · F12 Compare · Ctrl+A Select · Ctrl+O Copy · Ctrl+I Cut · Ctrl+P Paste · Ctrl+T Tree · Ctrl+K Prefix · Ctrl+B Flat · Alt+F7 Find · Ctrl+F7 Filter · Alt+U Extract · Alt+V Drives · Ctrl+F2 Keys · Alt+O Sort · Alt+D Reverse · Alt+H Hidden · Ctrl+F9 Colours · Alt+I Icons · Shift+X Drive X: · Alt+L Go to. A 80 colonne 8 voci, a 120 11, tutte da 215. **Mai** F2, F3, F5, F7 (F10 non fa nulla dalla v1.16). Dalla v1.17 `Ctrl+` è scritto `C+` con la lettera minuscola (`C+a`, `C+F7`); il riepilogo usa i nomi completi. **Clic** su una voce = evento del tasto passato a `FM.keys`, il focus resta al pannello; Shift+X non è cliccabile.
 
 **Riepilogo dei tasti (Ctrl+F2, v1.12)**: finestra con **tutti** i tasti (sezioni Navigation, Search and selection, Files, View, Program); righe ≤ 76 celle, altezza limitata allo schermo con scorrimento; si chiude con Esc, Invio, F2, `q`. Un test verifica che ogni voce della barra vi compaia.
 
@@ -211,7 +213,8 @@ Le operazioni agiscono sui selezionati, altrimenti sull'elemento sotto il cursor
   - nomi doppi nella selezione (vista piatta).
 - **Copia su sé stessi (v1.15)**, non più blocco: per ogni elemento con origine = destinazione o cartella che finirebbe dentro sé stessa una domanda `<motivo> (i of n)` + percorso + `It cannot be copied onto itself.` (`moved` per F6) + `Skip it and go on with the others?`: **Skip** (predefinito) / Skip all / Cancel (Esc); se non resta nulla avviso `Copy: nothing to do, every item was skipped`. Poi la domanda sulle cartelle omonime.
 - **Cartelle omonime (v1.13)**: se per elementi che sono cartelle (`Lstat`) la destinazione esiste già come cartella (`sameNameFolders`), **una sola domanda** prima di iniziare (`askMerge`): `A folder with the same name already exists in` / `N folders with the same name already exist in` + destinazione + nomi (max 8, `… and N more`) + `Merge the contents? Files that exist in both are asked about one by one.` + `Cancel stops the whole operation.`; **Merge** (predefinito) / **Cancel**; Cancel o Esc annullano l'intera operazione. Vale per F5 e F6 e per l'estrazione (seguito `You will then be asked about existing files.`), dove dopo Merge resta la domanda Overwrite / Skip existing / Cancel. Estrazione completa: contano la destinazione stessa (se diversa dall'altro pannello e non vuota) e le cartelle di primo livello dell'archivio (`archiveTopFolders`); selezione nell'archivio: le cartelle selezionate.
-- **File già presenti (v1.12)**: dopo `Counting files…`, fase `Checking the destination…` (`findConflicts`): ogni **file** già esistente, anche dentro le cartelle omonime (che vengono unite). Una domanda per file con dimensione e data delle due copie (`(newer)` sulla più recente di oltre 2 s): **Skip** (predefinito), Skip all, Overwrite, Overwrite all, Cancel/Esc. Tutte le domande arrivano **prima** della copia (`askSync` dal lavoro in background). I file saltati (`opCtx.skip`) restano dove sono; gli altri procedono. Negli spostamenti `removeExcept` lascia nella sorgente solo i file saltati. L'estrazione dagli archivi mantiene la domanda unica Overwrite / Skip existing / Cancel.
+- **Preparazione in un solo percorso (v1.17, `scan.go`)**: fase `Reading the folders…`: ogni cartella sorgente letta una volta; se la cartella esiste nella destinazione, letta una volta e confrontata per nome in memoria (minuscole su Windows); informazioni da `DirEntry.Info()` (su Windows nessuna stat per file); somma, dimensioni per coppia, conflitti; il motore (`copyPlan`/`movePlan`, `copier.addNode`) riusa l'albero e crea le cartelle nuove con `Mkdir`; spostamento verso un nome libero sulla stessa unità (`sameVolume`) non letto.
+- **File già presenti (v1.12)**: trovati da `scan` (prima `findConflicts`, ora suo involucro): ogni **file** già esistente, anche dentro le cartelle omonime (che vengono unite). Una domanda per file con dimensione e data delle due copie (`(newer)` sulla più recente di oltre 2 s): **Skip** (predefinito), Skip all, Overwrite, Overwrite all, Cancel/Esc. Tutte le domande arrivano **prima** della copia (`askSync` dal lavoro in background). I file saltati (`opCtx.skip`) restano dove sono; gli altri procedono. Negli spostamenti `removeExcept` lascia nella sorgente solo i file saltati. L'estrazione dagli archivi mantiene la domanda unica Overwrite / Skip existing / Cancel.
 - **Motore di copia**:
   - un unico motore per tutta la selezione, 4 file in parallelo, un solo file ≥ 64 MB alla volta;
   - su Windows `CopyFileExW` con callback di avanzamento e annullamento (`PROGRESS_CANCEL`), `COPY_FILE_NO_BUFFERING` per file ≥ 256 MB, percorsi `\\?\`;
@@ -329,6 +332,13 @@ La freccia indica il pannello che cambia; nella direzione opposta non succede nu
 - Clic destro su una riga: `flipMark` (no `..`, unità, share), cursore sulla riga, focus al pannello.
 - Ctrl+K propone l'ultimo prefisso della sessione (`FM.lastPrefix`, non salvato).
 
+
+##### 5.19 Prestazioni (v1.17)
+- Misura delle cartelle selezionate: al massimo 3 insieme (`sizeSlots`), posto liberato prima di avvisare l'interfaccia, un solo ridisegno per gruppo di risultati (`renderSoon`).
+- `entry.lname` (minuscolo) e `entry.fam` (famiglia) calcolati una volta per voce; `entryLess` con puntatori; stesso ordine di prima.
+- `panelTotals`: totali di bordi e barra di stato calcolati una volta dopo ogni `render` (o se cambia il numero di voci/marcature), non a ogni fotogramma.
+- Benchmark (`bench_test.go`, Linux): preparazione di F5 su 10 000 file con metà presenti 76,6 → 21,3 ms e 30 106 → 15 105 stat; ordinamento di 200 000 nomi 545 → 148 ms; fotogramma con 200 000 voci 3,08 → 1,05 ms. Resta: `render` ricostruisce tutte le righe (≈ 250 ms con 200 000 voci).
+
 ### 6. Codice
 
 | File | Contenuto |
@@ -354,6 +364,8 @@ La freccia indica il pannello che cambia; nella direzione opposta non succede nu
 | prefix.go | prefisso ai nomi (v1.14) |
 | scrollbar.go | barra di scorrimento e Shift+movimento (v1.15) |
 | clipboard.go | appunti di gofm e clic destro (v1.16) |
+| scan.go | preparazione di copia/spostamento in un solo percorso (v1.17) |
+| bench_test.go | benchmark (v1.17) |
 | watch.go | aggiornamento automatico |
 | sys_windows.go | Win32: unità, attributi, ShellExecute, Cestino, OEM CP, NetShareEnum, CopyFileExW, spazio su disco |
 | sys_other.go | equivalenti per Linux/macOS |
@@ -363,6 +375,7 @@ La freccia indica il pannello che cambia; nella direzione opposta non succede nu
 | scripts/make-small-icons.py | icone a 32 e 48 px disegnate a pixel (Pillow) |
 | v111_test.go | compilatore fissato, risorse Windows |
 | v112_test.go | schemi, unità, ordinamento, tasti, barra e clic, editor, conflitti, cancellazione definitiva |
+| v117_test.go | scan, copia/spostamento con l'albero, stesso ordinamento, cache delle voci, totali, misura limitata, barra abbreviata |
 | v116_test.go | applicazione in esecuzione su schermo simulato (`runUI`, `waitUI`): uscita, appunti, incolla nell'albero, Shift+Canc, ultimo prefisso, clic destro |
 | v115_test.go | barra (calcolo, schermo simulato, clic/trascinamento, albero), Shift+movimento, copia su sé stessi |
 | v114_test.go | albero (apertura, chiusura, nascosti, rifiuti, F5/F6/F12, albero che segue, uscita, ritardo), prefisso (anteprima, nomi saltati, vista piatta, caratteri non digitabili) |
@@ -409,6 +422,7 @@ La freccia indica il pannello che cambia; nella direzione opposta non succede nu
 - icona e proprietà del file in Esplora risorse; effetto dei metadati su Defender (prima verifica con la Release 1.11);
 - v1.12: tipi di unità e bus USB, cancellazione su unità di rete, F4 con Notepad, clic sulla barra, decodifica di Alt+F7, Ctrl+F7, Ctrl+F2, Ctrl+F9 e Ctrl+A nei terminali Windows (nella console classica Ctrl+A potrebbe essere intercettato dalla selezione del testo).
 
+- v1.17: guadagno della preparazione della copia su share Windows (atteso il maggiore); misura limitata su NAS.
 - v1.16: Ctrl+I (distinto da Tab), Ctrl+O, Ctrl+P, Ctrl+W, Shift+Canc e clic destro nei terminali Windows; nella console classica Ctrl+Tab arriva come Ctrl+I.
 - v1.15: mouse sulla barra (clic e trascinamento) e Shift+frecce/PgUp/PgDn/Home/End nei terminali Windows.
 - v1.14: Ctrl+T e Ctrl+K nei terminali Windows; albero su share lente (apertura dei rami sincrona).

@@ -172,7 +172,7 @@ func entryStyle(e entry, marked bool) (tcell.Color, tcell.AttrMask) {
 	case e.isDir:
 		return colFolder, tcell.AttrBold
 	}
-	if i := family(e.name); i >= 0 {
+	if i := e.family(); i >= 0 {
 		return fileTypes[i].color, tcell.AttrNone
 	}
 	return colText, tcell.AttrNone

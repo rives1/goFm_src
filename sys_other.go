@@ -95,3 +95,13 @@ func diskSpace(path string) (free, total uint64, err error) {
 	}
 	return st.Bavail * uint64(st.Bsize), st.Blocks * uint64(st.Bsize), nil
 }
+
+// sameVolume reports whether a and b are on the same file system, where a rename is
+// instant (v1.17).
+func sameVolume(a, b string) bool {
+	var sa, sb syscall.Stat_t
+	if syscall.Stat(a, &sa) != nil || syscall.Stat(b, &sb) != nil {
+		return false
+	}
+	return sa.Dev == sb.Dev
+}

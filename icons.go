@@ -96,7 +96,7 @@ func entryKind(e entry) iconKind {
 	case e.isDir:
 		return kindFolder
 	}
-	if i := family(e.name); i >= 0 {
+	if i := e.family(); i >= 0 {
 		return fileTypes[i].kind
 	}
 	return kindFile
@@ -118,7 +118,7 @@ func iconColor(e entry) tcell.Color {
 	case e.isDir:
 		return colFolder
 	}
-	if i := family(e.name); i >= 0 {
+	if i := e.family(); i >= 0 {
 		return fileTypes[i].color
 	}
 	return colText

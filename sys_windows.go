@@ -380,3 +380,10 @@ const defaultEditor = "notepad.exe"
 func detach(cmd *exec.Cmd) {
 	cmd.SysProcAttr = &syscall.SysProcAttr{CreationFlags: 0x00000008}
 }
+
+// sameVolume reports whether a and b are on the same drive or share, where a rename
+// is instant (v1.17). A wrong guess only costs time: a failed rename falls back to
+// copying.
+func sameVolume(a, b string) bool {
+	return strings.EqualFold(filepath.VolumeName(a), filepath.VolumeName(b))
+}

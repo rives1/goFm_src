@@ -152,7 +152,7 @@ func (fm *FM) prefixRename() {
 			if p.flat {
 				for i := range p.flatEntries {
 					if nw, ok := res.renamed[p.flatEntries[i].name]; ok {
-						p.flatEntries[i].name = nw
+						p.flatEntries[i].name, p.flatEntries[i].lname, p.flatEntries[i].fam = nw, "", 0
 					}
 				}
 			}

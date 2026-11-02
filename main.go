@@ -15,7 +15,7 @@ import (
 	"github.com/rivo/tview"
 )
 
-const version = "1.16"
+const version = "1.17"
 
 type FM struct {
 	app     *tview.Application
@@ -1180,17 +1180,13 @@ func (fm *FM) transfer(items []string, dest string, move bool, after func()) {
 		}
 		start := func() {
 			fm.runTask(verb+" "+describe(items), func(o *opCtx) {
-				o.setPhase("Counting files…")
-				var total int64
-				for i := range pairs {
-					pairs[i].size = o.treeSize(pairs[i].from)
-					total += pairs[i].size
-				}
-				o.total.Store(total)
-				// Files that already exist at the destination, also inside folders that
-				// will be merged: one question each (v1.12), until an "all" answer.
-				o.setPhase("Checking the destination…")
-				conflicts := o.findConflicts(pairs)
+				// One walk (v1.17): sizes, total and the files that already exist at the
+				// destination, also inside folders that will be merged; then one question
+				// per existing file (v1.12), until an "all" answer.
+				o.setPhase("Reading the folders…")
+				plan := o.scan(pairs, move)
+				o.total.Store(plan.total)
+				conflicts := plan.conflicts
 				if o.cancelled() {
 					return
 				}
@@ -1207,9 +1203,9 @@ func (fm *FM) transfer(items []string, dest string, move bool, after func()) {
 				// across the whole selection, big files one at a time. Skipped files stay
 				// where they are; the others go on.
 				if move {
-					o.moveAll(pairs)
+					o.movePlan(pairs, plan)
 				} else {
-					o.copyAll(pairs)
+					o.copyPlan(pairs, plan)
 				}
 			}, func(*opCtx) { after() })
 		}
@@ -1374,7 +1370,7 @@ func (fm *FM) rename() {
 		if p.flat {
 			for i := range p.flatEntries {
 				if p.flatEntries[i].name == e.name {
-					p.flatEntries[i].name = newRel
+					p.flatEntries[i].name, p.flatEntries[i].lname, p.flatEntries[i].fam = newRel, "", 0
 				}
 			}
 		}
