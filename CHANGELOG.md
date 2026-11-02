@@ -2,6 +2,14 @@
 
 All notable changes to gofm. Versions follow the order in which features were added.
 
+## 1.16 — 2026-11-02
+
+- **Copy, cut and paste**: Ctrl+O copies and Ctrl+I cuts the marked items (or the one under the cursor) to gofm's own clipboard; Ctrl+P pastes them into the folder of the active panel, with the same questions as F5/F6. Cut items are pasted once. (Ctrl+C/X/V cannot be used: the terminals keep Ctrl+V for pasting text.)
+- **Ctrl+W quits**; F10 no longer does anything; Alt+Q still quits.
+- **Ctrl+K** proposes the last prefix used in the session (not kept after quitting).
+- **Right click** marks or unmarks the item under the pointer and puts the cursor on it.
+- **Shift+Del** deletes without confirmation (Recycle Bin; permanently on network drives); the warning about folders with subfolders stays.
+
 ## 1.15 — 2026-10-30
 
 - **Scroll bar** on the right border of the panels and of the tree, only when the list is longer than the box; click or drag on it to jump to that point of the list.

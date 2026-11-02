@@ -31,6 +31,7 @@ var helpSections = []helpSection{
 		{"Alt+V", "drive list"},
 		{"Shift+letter", "go to that drive (last folder used there)"},
 		{"Mouse click", "select a row; key bar: run the key; scroll bar: jump"},
+		{"Right click", "mark or unmark the item"},
 	}},
 	{"Search and selection", [][2]string{
 		{"a–z 0–9 …", "quick search by name (lower-case letters)"},
@@ -47,6 +48,10 @@ var helpSections = []helpSection{
 		{"F4", "edit with the external editor (gofm.ini)"},
 		{"F5", "copy to the other panel (in an archive: extract)"},
 		{"F6", "move to the other panel"},
+		{"Ctrl+O", "copy the items to gofm's clipboard"},
+		{"Ctrl+I", "cut the items to gofm's clipboard"},
+		{"Ctrl+P", "paste them into this panel's folder"},
+		{"Shift+Del", "delete without confirmation (Recycle Bin)"},
 		{"F7", "new folder"},
 		{"Ctrl+K", "add a prefix to the names of the marked items"},
 		{"Del", "delete: Recycle Bin; permanent on network drives"},
@@ -66,7 +71,7 @@ var helpSections = []helpSection{
 	}},
 	{"Program", [][2]string{
 		{"Ctrl+F2", "this summary"},
-		{"F10 / Alt+Q", "quit"},
+		{"Ctrl+W / Alt+Q", "quit (F10 does nothing since 1.16)"},
 	}},
 }
 

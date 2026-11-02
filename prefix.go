@@ -1,7 +1,8 @@
 package main
 
 // Ctrl+K (v1.14): add a prefix to the names of the marked items (files and folders),
-// or of the item under the cursor. A dialog asks for the text and shows a preview of
+// or of the item under the cursor. The field proposes the last prefix used in the
+// session (v1.16; not saved at exit). A dialog asks for the text and shows a preview of
 // the new names; an empty text cancels. Characters that names cannot contain are
 // refused. An item whose new name already exists is skipped, and the skipped items
 // are listed at the end; the others are renamed. Afterwards nothing is marked. In the
@@ -135,7 +136,7 @@ func (fm *FM) prefixRename() {
 		cursor = e.name
 	}
 	title := "Add a prefix to " + describe(names)
-	fm.promptPreview(title, "Prefix: ", func(s string) string { return prefixPreview(names, s) }, func(prefix string) {
+	fm.promptPreview(title, "Prefix: ", fm.lastPrefix, func(s string) string { return prefixPreview(names, s) }, func(prefix string) {
 		if prefix == "" {
 			return // empty: nothing to do
 		}
@@ -143,6 +144,7 @@ func (fm *FM) prefixRename() {
 			fm.showMessage("Error", badPrefixMsg()+".")
 			return
 		}
+		fm.lastPrefix = prefix // proposed again by the next Ctrl+K (v1.16), not saved
 		var res prefixResult
 		fm.runTask("Adding \""+prefix+"\" to "+describe(names), func(o *opCtx) {
 			res = o.addPrefix(p.dir, names, prefix)
@@ -170,11 +172,11 @@ func (fm *FM) prefixRename() {
 
 // promptPreview is a text request with a live preview below the field: preview is
 // called at every change. Characters in badNameChars cannot be typed.
-func (fm *FM) promptPreview(title, label string, preview func(string) string, cb func(string)) {
+func (fm *FM) promptPreview(title, label, initial string, preview func(string) string, cb func(string)) {
 	var name string
-	input := tview.NewInputField().SetLabel(tview.Escape(label)).SetFieldWidth(0)
+	input := tview.NewInputField().SetLabel(tview.Escape(label)).SetFieldWidth(0).SetText(initial)
 	input.SetAcceptanceFunc(func(text string, last rune) bool { return !strings.ContainsRune(badNameChars(), last) })
-	view := tview.NewTextView().SetText(tview.Escape(preview("")))
+	view := tview.NewTextView().SetText(tview.Escape(preview(initial)))
 	view.SetTextColor(colDim)
 	input.SetChangedFunc(func(text string) { view.SetText(tview.Escape(preview(text))) })
 	form := tview.NewForm()

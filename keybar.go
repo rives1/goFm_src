@@ -25,8 +25,8 @@ func altKey(r rune) func() *tcell.EventKey {
 	return func() *tcell.EventKey { return tcell.NewEventKey(tcell.KeyRune, r, tcell.ModAlt) }
 }
 
-// keybarItems in order of priority: operations first. F2, F3, F5, F7 and F10 are
-// never shown (user's choice, v1.12); they are in the key summary (Ctrl+F2).
+// keybarItems in order of priority: operations first. F2, F3, F5 and F7 are
+// never shown (F10 does nothing since 1.16) (user's choice, v1.12); they are in the key summary (Ctrl+F2).
 var keybarItems = []keyItem{
 	{"F4", "Edit", fkey(tcell.KeyF4, 0)},
 	{"F6", "Move", fkey(tcell.KeyF6, 0)},
@@ -34,6 +34,9 @@ var keybarItems = []keyItem{
 	{"F9", "Zip", fkey(tcell.KeyF9, 0)},
 	{"F12", "Compare", fkey(tcell.KeyF12, 0)},
 	{"Ctrl+A", "Select", fkey(tcell.KeyCtrlA, tcell.ModCtrl)},
+	{"Ctrl+O", "Copy", fkey(tcell.KeyCtrlO, tcell.ModCtrl)},
+	{"Ctrl+I", "Cut", fkey(tcell.KeyCtrlI, tcell.ModCtrl)},
+	{"Ctrl+P", "Paste", fkey(tcell.KeyCtrlP, tcell.ModCtrl)},
 	{"Ctrl+T", "Tree", fkey(tcell.KeyCtrlT, tcell.ModCtrl)},
 	{"Ctrl+K", "Prefix", fkey(tcell.KeyCtrlK, tcell.ModCtrl)},
 	{"Ctrl+B", "Flat", fkey(tcell.KeyCtrlB, tcell.ModCtrl)},

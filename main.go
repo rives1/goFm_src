@@ -15,7 +15,7 @@ import (
 	"github.com/rivo/tview"
 )
 
-const version = "1.15"
+const version = "1.16"
 
 type FM struct {
 	app     *tview.Application
@@ -40,6 +40,10 @@ type FM struct {
 	cfg settings // gofm.ini as last read (start, Alt+R)
 
 	tree *treeView // tree view (Ctrl+T) in place of the left panel; nil = two panels
+
+	quitting   bool       // Ctrl+W or Alt+Q pressed
+	clip       *clipboard // Ctrl+O / Ctrl+I, pasted with Ctrl+P (v1.16)
+	lastPrefix string     // last prefix of Ctrl+K in this session (v1.16)
 
 	saved     savedState // last state written to disk
 	restoring bool       // true while the panels are being set up: no state writes yet
@@ -305,6 +309,12 @@ type panelTable interface {
 	SetSelectedStyle(tcell.Style) *tview.Table
 }
 
+// quit is Ctrl+W and Alt+Q (F10 until 1.15).
+func (fm *FM) quit() {
+	fm.quitting = true
+	fm.app.Stop()
+}
+
 // viewOf is the table shown for a panel: the tree replaces the left panel (Ctrl+T).
 func (fm *FM) viewOf(p *Panel) panelTable {
 	if p == fm.left && fm.tree != nil {
@@ -418,8 +428,9 @@ func (fm *FM) keys(ev *tcell.EventKey) *tcell.EventKey {
 	}
 
 	// Ctrl+B: flat view; Ctrl+A: mark all, or invert the marks; Ctrl+T: tree view;
-	// Ctrl+K: add a prefix to the names (v1.14). Other Ctrl+letters are not used
-	// (drives moved to Shift+letter).
+	// Ctrl+K: add a prefix to the names (v1.14); Ctrl+O copy, Ctrl+I cut, Ctrl+P paste,
+	// Ctrl+W quit (v1.16). Other Ctrl+letters are not used (drives moved to
+	// Shift+letter).
 	if l, ok := ctrlLetter(ev); ok {
 		fm.resetQuickSearch()
 		switch l {
@@ -431,6 +442,14 @@ func (fm *FM) keys(ev *tcell.EventKey) *tcell.EventKey {
 			fm.toggleTree()
 		case 'K':
 			fm.prefixRename()
+		case 'O':
+			fm.clipboardPut(false)
+		case 'I':
+			fm.clipboardPut(true)
+		case 'P':
+			fm.paste()
+		case 'W':
+			fm.quit()
 		}
 		return nil
 	}
@@ -490,7 +509,7 @@ func (fm *FM) keys(ev *tcell.EventKey) *tcell.EventKey {
 		case 'i':
 			fm.toggleIcons()
 		case 'q':
-			fm.app.Stop()
+			fm.quit()
 		}
 		return nil
 	}
@@ -572,13 +591,11 @@ func (fm *FM) keys(ev *tcell.EventKey) *tcell.EventKey {
 	case tcell.KeyF7:
 		fm.mkdir()
 	case tcell.KeyDelete:
-		fm.trash()
+		fm.trash(ev.Modifiers()&tcell.ModShift != 0) // Shift+Del: no confirmation (v1.16)
 	case tcell.KeyF4:
 		fm.editFile()
 	case tcell.KeyF9:
 		fm.zip()
-	case tcell.KeyF10:
-		fm.app.Stop()
 	case tcell.KeyInsert:
 		p.toggleMark()
 	default:
@@ -1117,6 +1134,16 @@ func (fm *FM) copyOrMove(move bool) {
 		fm.showMessage(verb, noDestMsg)
 		return
 	}
+	fm.transfer(items, dest, move, func() { src.marked = map[string]bool{}; src.reload() })
+}
+
+// transfer copies or moves items (full paths) into the folder dest, with every check
+// and question of F5/F6; after runs when the work is done (v1.16: also used by Ctrl+P).
+func (fm *FM) transfer(items []string, dest string, move bool, after func()) {
+	verb := "Copy"
+	if move {
+		verb = "Move"
+	}
 	func(dest string) {
 		type pair = copyPair
 		var pairs []pair
@@ -1124,9 +1151,9 @@ func (fm *FM) copyOrMove(move bool) {
 			for _, it := range items {
 				pairs = append(pairs, pair{from: it, to: filepath.Join(dest, filepath.Base(it))})
 			}
-		} else { // the other panel's folder was removed meanwhile
+		} else { // the destination folder was removed meanwhile
 			fm.showMessage("Error", "Destination folder does not exist:\n"+dest)
-			fm.other().reload()
+			fm.refreshAll()
 			return
 		}
 		var targets []string
@@ -1184,7 +1211,7 @@ func (fm *FM) copyOrMove(move bool) {
 				} else {
 					o.copyAll(pairs)
 				}
-			}, func(*opCtx) { src.marked = map[string]bool{}; src.reload() })
+			}, func(*opCtx) { after() })
 		}
 		// Items copied onto themselves (v1.15): one question each, Skip, Skip all or
 		// Cancel. Then the folders with the same name at the destination (v1.13): merge
@@ -1380,7 +1407,7 @@ func (fm *FM) mkdir() {
 // v1.13: the button selected in the confirmations (Enter) is the delete button, or
 // Cancel, as set in gofm.ini (deleteDefault, networkDeleteDefault); networkDelete=off
 // disables Del on network drives.
-func (fm *FM) trash() {
+func (fm *FM) trash(noConfirm bool) {
 	if fm.readOnlyHere() {
 		return
 	}
@@ -1411,7 +1438,13 @@ func (fm *FM) trash() {
 	text, buttons := deleteQuestion(items, network)
 	yes, deepYes := buttons[0], deepButton(network)
 	def := deleteDefaultIndex(fm.cfg, network)
-	fm.confirmDefault(text, buttons, def, func(choice string) {
+	// Shift+Del (v1.16): no first confirmation, on network drives too; the warning
+	// about folders with subfolders stays.
+	confirm := fm.confirmDefault
+	if noConfirm {
+		confirm = func(_ string, _ []string, _ int, cb func(string)) { cb(yes) }
+	}
+	confirm(text, buttons, def, func(choice string) {
 		if choice != yes {
 			return
 		}

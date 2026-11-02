@@ -517,6 +517,8 @@ func (fm *FM) treeKeys(ev *tcell.EventKey) *tcell.EventKey {
 	if l, ok := ctrlLetter(ev); ok {
 		if l == 'T' {
 			fm.toggleTree()
+		} else if l == 'W' {
+			fm.quit()
 		} else {
 			fm.notice = treeOnlyNotice
 		}
@@ -547,7 +549,7 @@ func (fm *FM) treeKeys(ev *tcell.EventKey) *tcell.EventKey {
 		case 'i':
 			fm.toggleIcons()
 		case 'q':
-			fm.app.Stop()
+			fm.quit()
 		default:
 			fm.notice = treeOnlyNotice
 		}
@@ -571,8 +573,6 @@ func (fm *FM) treeKeys(ev *tcell.EventKey) *tcell.EventKey {
 	case tcell.KeyEnter, tcell.KeyTab, tcell.KeyBacktab:
 		t.flush()
 		fm.setActive(fm.right, true)
-	case tcell.KeyF10:
-		fm.app.Stop()
 	case tcell.KeyEscape:
 	default:
 		fm.notice = treeOnlyNotice

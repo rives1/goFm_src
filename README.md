@@ -18,7 +18,7 @@ Get **`gofm-<version>-windows.zip`** from the [latest release](https://github.co
 To check a download, compare its hash with the one on the release page (PowerShell):
 
 ```
-Get-FileHash .\gofm-1.15-windows.zip     # the zip: see the .sha256 file
+Get-FileHash .\gofm-1.16-windows.zip     # the zip: see the .sha256 file
 Get-FileHash .\gofm.exe                  # the program: see the release notes
 ```
 
@@ -99,9 +99,13 @@ uses a function key, **Alt+letter**, **Ctrl+letter**, or **Shift+letter** (drive
 | F6 | move to the other panel's folder, **at once** |
 | F7 | new folder (accepts `a\b\c`) |
 | Ctrl+K | **add a prefix** to the names of the marked files and folders, or of the item under the cursor (see *Adding a prefix*) |
+| Ctrl+O / Ctrl+I | **copy** / **cut** the marked items (or the one under the cursor) to gofm's clipboard |
+| Ctrl+P | **paste** them into the folder of the active panel (see *Copy, cut and paste*) |
 | Del | delete: to the **Recycle Bin** on local drives, **permanently** on network drives (see *Deleting*) |
+| Shift+Del | delete **without confirmation** (still a warning for folders with subfolders) |
 | F9 | compress to ZIP |
-| F10 / Alt+Q | quit |
+| Ctrl+W / Alt+Q | quit (F10 does nothing since 1.16) |
+| Right click | mark or unmark the item under the pointer |
 | F12 | **compare** the two panels by name, size and date: marks, on each side, the files missing on the other side and the **newer** copy of files on both sides (see *Comparing folders*) |
 | Alt+F7 | search subfolders by name and/or content |
 | Ctrl+F7 | filter the panel (`text` or `*.pdf`) |
@@ -117,7 +121,7 @@ uses a function key, **Alt+letter**, **Ctrl+letter**, or **Shift+letter** (drive
 | Ctrl+F9 | next colour scheme: **navy** (default) → **dark** → **light** (remembered) |
 | Ctrl+F2 | summary of all the keys |
 
-F1 and F8 do nothing. The **key bar** at the bottom shows as many shortcuts as fit the window, operations first (F2, F3, F5, F7 and F10 are never shown there); **click** a shortcut in the bar to run it.
+F1, F8 and F10 do nothing. The **key bar** at the bottom shows as many shortcuts as fit the window, operations first (F2, F3, F5 and F7 are never shown there); **click** a shortcut in the bar to run it.
 
 Operations act on marked items; if nothing is marked, on the item under the cursor.
 
@@ -169,9 +173,15 @@ Ctrl+T replaces the left panel with the **folder tree** of the current drive, op
 - Folders created or deleted in the right panel appear in the tree when that panel is re-read.
 - Ctrl+T is not available from the drive list, a share list, an archive or the flat view. The tree view is not remembered at exit (the left panel reopens on the folder of the tree).
 
+## Copy, cut and paste (Ctrl+O, Ctrl+I, Ctrl+P)
+
+Besides F5/F6 (always towards the other panel), files and folders can go through **gofm's own clipboard**: **Ctrl+O** copies and **Ctrl+I** cuts the marked items (or the one under the cursor); the status bar confirms it. Open the destination folder in either panel and press **Ctrl+P**: the items are copied (or moved) there, with the same questions as F5/F6 — items onto themselves, folders with the same name, existing files. Copied items can be pasted again elsewhere; cut items are pasted once. Items deleted in the meantime are left out. Ctrl+P also works in the right panel of the tree view.
+
+The clipboard is gofm's own, not Windows' one, and is lost when gofm is closed. Ctrl+C, Ctrl+X and Ctrl+V are not used because Windows Terminal and the classic console keep Ctrl+V for pasting text: it would never reach gofm.
+
 ## Adding a prefix (Ctrl+K)
 
-Ctrl+K asks for a text and puts it **before the names** of the marked files and folders (or of the item under the cursor when nothing is marked), e.g. `2026_` turns `report.pdf` into `2026_report.pdf`. The dialog shows a **preview** of the first new names. An empty text cancels; characters that names cannot contain (`\ / : * ? " < > |`) cannot be typed. An item whose new name **already exists** is not renamed: the others are, and a message lists the skipped ones. Afterwards nothing is marked. In the flat view each item stays in its own subfolder.
+Ctrl+K asks for a text and puts it **before the names** of the marked files and folders (or of the item under the cursor when nothing is marked), e.g. `2026_` turns `report.pdf` into `2026_report.pdf`. The dialog shows a **preview** of the first new names. The field proposes the **last prefix used** since gofm was started (it is not kept after quitting). An empty text cancels; characters that names cannot contain (`\ / : * ? " < > |`) cannot be typed. An item whose new name **already exists** is not renamed: the others are, and a message lists the skipped ones. Afterwards nothing is marked. In the flat view each item stays in its own subfolder.
 
 ## Flat view (Ctrl+B)
 
@@ -265,7 +275,7 @@ Both panels refresh by themselves when files are added, removed or changed, usin
 
 - **Conflicts** when copying, moving or extracting: if folders with the same name already exist at the destination, gofm asks first *Merge* or *Cancel* (which stops the whole operation). Then, when copying or moving, one question per existing file (see *Copy, move and selection*); when **extracting**, a single question covers all the files: *Overwrite*, *Skip existing* or *Cancel*.
 - **Moving between drives** = copy + delete the source, and the source is deleted **only if the copy fully succeeded**.
-- **Deleting (Del)**: on local drives the items go to the **Recycle Bin** (Windows API; if an item cannot be recycled, e.g. a file too large, Windows shows its own warning). On **network drives** — `\\server\share` paths and mapped drives — there is no Recycle Bin, so gofm says so and **deletes permanently** after a confirmation. In both cases, if the items include **folders that contain subfolders**, a second warning lists them. The button selected in these confirmations — the one **Enter** presses — is the delete button (since 1.13; *Cancel* before); `deleteDefault` and `networkDeleteDefault` in `gofm.ini` can select *Cancel* instead, and `networkDelete = off` turns Del off on network drives. Read-only files are deleted too.
+- **Deleting (Del)**: on local drives the items go to the **Recycle Bin** (Windows API; if an item cannot be recycled, e.g. a file too large, Windows shows its own warning). On **network drives** — `\\server\share` paths and mapped drives — there is no Recycle Bin, so gofm says so and **deletes permanently** after a confirmation. In both cases, if the items include **folders that contain subfolders**, a second warning lists them. **Shift+Del** skips the first confirmation (Recycle Bin on local drives, permanent deletion on network drives) but keeps the warning about folders with subfolders. The button selected in these confirmations — the one **Enter** presses — is the delete button (since 1.13; *Cancel* before); `deleteDefault` and `networkDeleteDefault` in `gofm.ini` can select *Cancel* instead, and `networkDelete = off` turns Del off on network drives. Read-only files are deleted too.
 - **Editing (F4)**: Notepad by default. To use another editor set `editor` in `gofm.ini` (or the `GOFM_EDITOR` environment variable, which wins) to its path, optionally with arguments, e.g. `C:\Program Files\Notepad++\notepad++.exe` or `"C:\Program Files\Microsoft VS Code\Code.exe" --reuse-window`. gofm does not wait for the editor and starts it detached from its console, so use a windowed editor (console editors such as vim are not supported). Saved changes appear by themselves.
 - ZIP names are written as UTF-8 (Explorer-compatible); old archives with OEM code-page names (e.g. CP850) are decoded.
 - Symbolic links and junctions are not followed (avoids endless loops); in archives they are skipped and reported.
@@ -273,7 +283,8 @@ Both panels refresh by themselves when files are added, removed or changed, usin
 
 ## Known limits
 
-- Ctrl+K: Windows Terminal and the classic console send it as a key of its own; a few other terminals may use it themselves.
+- Ctrl+K, Ctrl+O, Ctrl+P: Windows Terminal and the classic console send them as keys of their own; a few other terminals may use them themselves.
+- Ctrl+I: on Windows gofm tells it apart from Tab, but in the classic console **Ctrl+Tab** arrives as Ctrl+I (it only fills the clipboard, nothing is moved). Outside Windows Ctrl+I is Tab.
 - Password-protected ZIP/7z archives are not supported (a clear error is shown).
 - No creation of 7z archives; no RAR or other formats.
 - Content search is a plain text match: it does not find text in UTF-16 files, inside .docx/.pdf (they are compressed), or accented letters in a different case.

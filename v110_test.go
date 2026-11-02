@@ -115,7 +115,7 @@ func TestHelpListsAllKeys(t *testing.T) {
 			t.Errorf("%s missing from the summary", k)
 		}
 	}
-	for _, want := range []string{"F2", "F3", "F5", "F7", "F10 / Alt+Q", "Ctrl+→", "Ctrl+←", "Alt+L", "Alt+E", "Alt+R", "Ctrl+F2", "Ctrl+F9", "Alt+D"} {
+	for _, want := range []string{"F2", "F3", "F5", "F7", "Ctrl+W / Alt+Q" /* F10 until 1.15 */, "Ctrl+→", "Ctrl+←", "Alt+L", "Alt+E", "Alt+R", "Ctrl+F2", "Ctrl+F9", "Alt+D"} {
 		if !strings.Contains(text, "]"+want+"[") {
 			t.Errorf("%s missing from the summary", want)
 		}

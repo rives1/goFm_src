@@ -1,23 +1,23 @@
-# gofm — contesto per proseguire in una nuova chat (versione 1.15)
+# gofm — contesto per proseguire in una nuova chat (versione 1.16)
 
-> Da allegare all'inizio di una nuova chat. Contiene: stato del progetto, cose in sospeso, regole di lavoro, note tecniche sull'ambiente di sviluppo e, in fondo, le **specifiche compatte complete della 1.15**. Il dettaglio di ogni scelta, con motivazioni e storico, è in `docs/gofm-documentazione.md` nel repository.
+> Da allegare all'inizio di una nuova chat. Contiene: stato del progetto, cose in sospeso, regole di lavoro, note tecniche sull'ambiente di sviluppo e, in fondo, le **specifiche compatte complete della 1.16**. Il dettaglio di ogni scelta, con motivazioni e storico, è in `docs/gofm-documentazione.md` nel repository.
 
 ## A. Dove sono le cose
 
 - **Repository GitHub**: <https://github.com/rives1/goFm_src> (ramo `main`).
 - **Copia locale** (PC dell'utente): `C:\Users\ammin\Documents\Claude CLI\gofm-repo\goFm_src`.
 - **Cartella dei pacchetti**: `C:\Users\ammin\Documents\Claude CLI\gofm-repo\`, con `gofm-<versione>-windows.zip`, `.sha256`, `gofm-<versione>-repo.zip`, `gofm-<versione>-specifiche-compatte.md`, `gofm-<versione>-contesto-chat.md` e `microsoft-false-positive-submission.md`. Nel repository: `docs/contesto-chat.md`.
-- **Stato git al 30/10/2026**:
-  - 1.14 inviata dall'utente (`origin/main` = `4651871`);
-  - commit `versione 1.15` con tag annotato `v1.15` (questo file è nel commit stesso).
-- **SHA-256 degli eseguibili**: nelle note della Release `v1.15` su GitHub e nel file `gofm-1.15-contesto-chat.md` della cartella dei pacchetti (qui non possono stare: l'eseguibile incorpora il commit che contiene questo file).
+- **Stato git al 02/11/2026**:
+  - 1.15 inviata dall'utente (`origin/main` = `f3864d1`);
+  - commit `versione 1.16` con tag annotato `v1.16` (questo file è nel commit stesso).
+- **SHA-256 degli eseguibili**: nelle note della Release `v1.16` su GitHub e nel file `gofm-1.16-contesto-chat.md` della cartella dei pacchetti (qui non possono stare: l'eseguibile incorpora il commit che contiene questo file).
 
 ## B. In sospeso
 
-1. **Push** della 1.15 e controllo della Release.
-2. **Prove su Windows reale** della 1.15: clic e trascinamento sulla barra di scorrimento in Windows Terminal e nella console classica; Shift+↑/↓/PgUp/PgDn/Home/End nei due terminali; copia con i due pannelli sulla stessa cartella.
-3. **Prove della 1.14** ancora da fare: Ctrl+T e Ctrl+K nei terminali Windows; albero su unità di rete lente.
-4. **Scelte di Claude da confermare**: (1.15) Shift+PgUp/PgDn/Home/End includono la riga d'arrivo solo se è la prima o l'ultima; nell'albero Shift+frecce sono movimenti normali. (1.14) Ctrl+T rifiutato anche dall'elenco share; albero non ricordato; nessuna ricerca digitando nell'albero. (1.13) `gofm.ini` letto anche in una cartella non scrivibile; `networkDelete` + `networkDeleteDefault`; *Merge* predefinito.
+1. **Push** della 1.16 e controllo della Release.
+2. **Prove su Windows reale** della 1.16: Ctrl+I (distinto da Tab), Ctrl+O, Ctrl+P, Ctrl+W, Shift+Canc nei due terminali; clic destro.
+3. **Prove delle versioni precedenti** ancora da fare: 1.15 clic e trascinamento sulla barra, Shift+frecce; 1.14 Ctrl+T e Ctrl+K, albero su unità di rete lente.
+4. **Scelte di Claude da confermare**: (1.16) dopo Ctrl+O/Ctrl+I le marcature restano; la barra dei tasti mostra Ctrl+O/I/P subito dopo Ctrl+A. (1.15) Shift+PgUp/PgDn/Home/End includono la riga d'arrivo solo se è la prima o l'ultima; nell'albero Shift+frecce sono movimenti normali. (1.14) Ctrl+T rifiutato anche dall'elenco share; albero non ricordato; nessuna ricerca digitando nell'albero. (1.13) `gofm.ini` letto anche in una cartella non scrivibile; `networkDelete` + `networkDeleteDefault`; *Merge* predefinito.
 5. **Defender**: segnalazione a Microsoft (`microsoft-false-positive-submission.md`); soluzione stabile = firma del codice (serve un account dell'utente).
 6. **Prove su Windows della 1.12** ancora da fare (tipi di unità, Canc in rete, F4, clic sulla barra dei tasti, decodifica di Alt+F7, Ctrl+F7, Ctrl+F2, Ctrl+F9, Ctrl+A).
 7. **Domanda aperta** sull'alternativa a *Cascadia Mono NF* (va chiesto il motivo).
@@ -51,6 +51,7 @@
 | 1.9 | icone per tipo di file (Nerd Font / simboli, Alt+I) |
 | 1.10 | correzione del focus alla chiusura delle finestre; seconda conferma per cartelle con sottocartelle; riepilogo dei tasti; F12 per nome+dimensione+data; Release GitHub con pacchetto |
 | 1.11 | Go 1.27.3 fissato; metadati Windows (versione, manifest, icona); build riproducibile; nota sui falsi positivi degli antivirus |
+| 1.16 | appunti di gofm (Ctrl+O copia, Ctrl+I taglia, Ctrl+P incolla); Ctrl+W esce (F10 nulla); ultimo prefisso di Ctrl+K; clic destro marca; Shift+Canc senza conferma |
 | 1.15 | barra di scorrimento cliccabile e trascinabile; copia su sé stessi saltabile (Skip, Skip all, Cancel); selezione con Shift+frecce/PgUp/PgDn/Home/End; contesto anche in `docs/contesto-chat.md` |
 | 1.14 | vista ad albero (Ctrl+T) con pannello destro che segue dopo 150 ms; prefisso ai nomi (Ctrl+K) con anteprima e nomi esistenti saltati |
 | 1.13 | programma portatile (`gofm.ini` e `state.json` accanto all'exe, nulla salvato se non scrivibile); `gofm.ini` commentato riletto con Alt+R; domanda Merge/Cancel per le cartelle omonime in copia, spostamento ed estrazione; Invio = cancella nelle conferme di Canc (impostabile); icona a 16/32/48/256 px |
@@ -58,9 +59,9 @@
 
 ---
 
-## Specifiche compatte 1.15
+## Specifiche compatte 1.16
 
-Riepilogo per riprendere il lavoro in una nuova chat. Il codice completo è nel repository <https://github.com/rives1/goFm_src> (copia locale: `C:\Users\ammin\Documents\Claude CLI\gofm-repo\goFm_src`) e in `gofm-1.15-repo.zip`; la documentazione estesa (con motivazioni, storico e prompt di rigenerazione) è in `docs/gofm-documentazione.md`.
+Riepilogo per riprendere il lavoro in una nuova chat. Il codice completo è nel repository <https://github.com/rives1/goFm_src> (copia locale: `C:\Users\ammin\Documents\Claude CLI\gofm-repo\goFm_src`) e in `gofm-1.16-repo.zip`; la documentazione estesa (con motivazioni, storico e prompt di rigenerazione) è in `docs/gofm-documentazione.md`.
 
 ### 0. Regole di lavoro
 
@@ -79,7 +80,7 @@ Riepilogo per riprendere il lavoro in una nuova chat. Il codice completo è nel 
 
 File manager a **doppio pannello** per il terminale di Windows (Windows Terminal consigliato, funziona anche nella console classica), stile Norton/Midnight/Total Commander. **Go** (minimo 1.24; release compilate con **Go 1.27.3**, fissato in `go.mod` con `toolchain go1.27.3` e nei workflow), un solo eseguibile senza dipendenze: `gofm.exe` (x64, circa 7 MB) e `gofm-arm64.exe`. Librerie: tview v0.42, tcell v2.13.10, uniseg, bodgit/sevenzip v1.6 (7z in sola lettura), fsnotify v1.8, x/sys, x/text. Compila e gira anche su Linux e macOS, per sviluppo e test.
 
-Avvio: `gofm [left_folder] [right_folder]`; `-h`, `--help` o `/?` stampa `gofm 1.15 — usage: …`. Senza argomenti riapre le ultime cartelle (§5.13).
+Avvio: `gofm [left_folder] [right_folder]`; `-h`, `--help` o `/?` stampa `gofm 1.16 — usage: …`. Senza argomenti riapre le ultime cartelle (§5.13).
 
 ### 2. Interfaccia
 
@@ -138,7 +139,7 @@ I test verificano che ogni famiglia disti almeno 120 dal giallo e almeno 60 dall
 - Durante la ricerca digitando compare il badge ` Search: … ` (e `no match` in rosso).
 - Un avviso, per esempio dopo F12, Ctrl+B, Alt+I, Ctrl+F9 o F4, sostituisce la riga fino al tasto successivo.
 
-**Barra dei tasti** (v1.12, `keybar.go`): voci per priorità, **quante ne entrano** nella larghezza (alla prima che non entra si ferma): F4 Edit · F6 Move · Del Delete · F9 Zip · F12 Compare · Ctrl+A Select · Ctrl+T Tree · Ctrl+K Prefix · Ctrl+B Flat · Alt+F7 Find · Ctrl+F7 Filter · Alt+U Extract · Alt+V Drives · Ctrl+F2 Keys · Alt+O Sort · Alt+D Reverse · Alt+H Hidden · Ctrl+F9 Colours · Alt+I Icons · Shift+X Drive X: · Alt+L Go to. A 80 colonne 8 voci, a 120 11, tutte da 215. **Mai** F2, F3, F5, F7, F10. **Clic** su una voce = evento del tasto passato a `FM.keys`, il focus resta al pannello; Shift+X non è cliccabile.
+**Barra dei tasti** (v1.12, `keybar.go`): voci per priorità, **quante ne entrano** nella larghezza (alla prima che non entra si ferma): F4 Edit · F6 Move · Del Delete · F9 Zip · F12 Compare · Ctrl+A Select · Ctrl+O Copy · Ctrl+I Cut · Ctrl+P Paste · Ctrl+T Tree · Ctrl+K Prefix · Ctrl+B Flat · Alt+F7 Find · Ctrl+F7 Filter · Alt+U Extract · Alt+V Drives · Ctrl+F2 Keys · Alt+O Sort · Alt+D Reverse · Alt+H Hidden · Ctrl+F9 Colours · Alt+I Icons · Shift+X Drive X: · Alt+L Go to. A 80 colonne 8 voci, a 120 11, tutte da 215. **Mai** F2, F3, F5, F7 (F10 non fa nulla dalla v1.16). **Clic** su una voce = evento del tasto passato a `FM.keys`, il focus resta al pannello; Shift+X non è cliccabile.
 
 **Riepilogo dei tasti (Ctrl+F2, v1.12)**: finestra con **tutti** i tasti (sezioni Navigation, Search and selection, Files, View, Program); righe ≤ 76 celle, altezza limitata allo schermo con scorrimento; si chiude con Esc, Invio, F2, `q`. Un test verifica che ogni voce della barra vi compaia.
 
@@ -179,7 +180,11 @@ I test verificano che ogni famiglia disti almeno 120 dal giallo e almeno 60 dall
 | **Shift+PgUp/PgDn/Home/End** | inverte le righe attraversate, esclusa quella d'arrivo salvo prima/ultima (v1.15) |
 | Spazio / Ins | seleziona o deseleziona e scende (Spazio durante la ricerca va nel testo) |
 | Esc | termina la ricerca, poi toglie il filtro, poi le selezioni |
-| F2 / F3 / F4 / F5 / F6 / F7 / Canc / F9 / F10 | rinomina / anteprima / **editor** (v1.12) / copia / sposta / nuova cartella / cancella / zip / esci |
+| F2 / F3 / F4 / F5 / F6 / F7 / Canc / F9 | rinomina / anteprima / **editor** (v1.12) / copia / sposta / nuova cartella / cancella / zip |
+| **Shift+Canc** | cancella senza la prima conferma, anche in rete; resta l'avviso per le sottocartelle (v1.16) |
+| **Ctrl+O** / **Ctrl+I** / **Ctrl+P** | copia / taglia negli appunti di gofm / incolla nella cartella del pannello attivo (v1.16, §5.18) |
+| **Ctrl+W** / Alt+Q | esci (v1.16; F10 non fa più nulla) |
+| Clic destro | marca/smarca l'elemento sotto il puntatore e vi porta il cursore (v1.16) |
 | F12 | confronto delle cartelle |
 | **Alt+F7** / **Ctrl+F7** | cerca / filtro (v1.12; erano Alt+S / Alt+F) |
 | Alt+U / Alt+L / Alt+V | estrai / vai a percorso / elenco unità |
@@ -302,7 +307,7 @@ La freccia indica il pannello che cambia; nella direzione opposta non succede nu
 - Rifiutata (finestra `Tree`) da archivio, vista piatta, elenco unità ed elenco share.
 - L'albero dell'unità (`treeRoot`: `C:\`, `\\srv\share\`, `/`) prende il posto del pannello sinistro, aperto fino alla cartella del pannello attivo; il pannello destro mostra la cartella sotto il cursore **150 ms** dopo che il cursore si ferma (`treeDelay`, timer con contatore di generazione; errore solo nella barra di stato).
 - Righe: rientro di 2 spazi per livello, marcatore `U+F054`/`U+F078` (con Alt+I `+`/`-`; nessuno se aperta e senza sottocartelle), icona cartella, nome; figli letti alla prima apertura, solo cartelle, nascoste con Alt+H (flag del pannello sinistro); titolo ` Tree  <radice> `.
-- Tasti sull'albero: frecce/PgUp/PgDn/Home/End; → apre o va alla prima sottocartella; ← chiude o va al padre; Backspace padre; Invio/Tab al pannello destro (subito); Shift+lettera altra unità; Alt+H, Alt+R (rilettura), Alt+I, Ctrl+F9, Ctrl+F2, F10, Alt+Q; gli altri tasti solo l'avviso `Tree: Tab or Enter moves to the files on the right · Ctrl+T back to two panels`.
+- Tasti sull'albero: frecce/PgUp/PgDn/Home/End; → apre o va alla prima sottocartella; ← chiude o va al padre; Backspace padre; Invio/Tab al pannello destro (subito); Shift+lettera altra unità; Alt+H, Alt+R (rilettura), Alt+I, Ctrl+F9, Ctrl+F2, Ctrl+W, Alt+Q; gli altri tasti solo l'avviso `Tree: Tab or Enter moves to the files on the right · Ctrl+T back to two panels`.
 - A destra tutto normale salvo F5, F6, F12 ed estrazione della selezione: `This needs the two panels:\nleave the tree view with Ctrl+T first.`. L'albero segue il pannello destro (cambio di cartella → `reveal`; rilettura → ramo riletto); Alt+E/Ctrl+← rivelano la sua cartella.
 - Ctrl+T di nuovo: due pannelli, **entrambi sulla cartella evidenziata**. Modalità non salvata; `state.json` registra a sinistra la cartella dell'albero.
 
@@ -315,6 +320,14 @@ La freccia indica il pannello che cambia; nella direzione opposta non succede nu
 ##### 5.17 Barra di scorrimento (v1.15, `scrollbar.go`)
 - Sul bordo destro di pannelli e albero, solo se l'elenco non entra: `█` nel colore del bordo, lunghezza `max(1, round(h²/n))`, inizio `round(offset·(h−lung.)/(n−h))`.
 - Tasto sinistro premuto sul bordo destro → trascinamento; il cursore va alla riga `round(y·(n−1)/(h−1))`; si aggiorna muovendo con il tasto premuto; il pannello prende il focus.
+
+
+##### 5.18 Appunti, uscita, clic destro, ultimo prefisso (v1.16, `clipboard.go`)
+- Ctrl+O / Ctrl+I: percorsi di `targets()` in `FM.clip` (flag taglio), avviso `<descr> copied — Ctrl+P pastes them into the folder of the active panel` / `<descr> cut — Ctrl+P moves them …`; marcature conservate.
+- Ctrl+P: vuoto → `Nothing to paste: copy with Ctrl+O or cut with Ctrl+I first`; elementi spariti tolti (nessuno → `The copied items no longer exist.`); poi `FM.transfer(elementi, cartella del pannello attivo, taglio, dopo)` = la funzione di F5/F6 con tutte le domande; dopo un taglio appunti vuoti. Funziona anche nel pannello destro dell'albero. Appunti interni, persi all'uscita. Ctrl+C/X/V non usati: Ctrl+V è dei terminali (su Windows tcell non segnala l'incolla).
+- Ctrl+W e Alt+Q chiudono (`FM.quit`); F10 nulla.
+- Clic destro su una riga: `flipMark` (no `..`, unità, share), cursore sulla riga, focus al pannello.
+- Ctrl+K propone l'ultimo prefisso della sessione (`FM.lastPrefix`, non salvato).
 
 ### 6. Codice
 
@@ -340,6 +353,7 @@ La freccia indica il pannello che cambia; nella direzione opposta non succede nu
 | tree.go | vista ad albero (v1.14) |
 | prefix.go | prefisso ai nomi (v1.14) |
 | scrollbar.go | barra di scorrimento e Shift+movimento (v1.15) |
+| clipboard.go | appunti di gofm e clic destro (v1.16) |
 | watch.go | aggiornamento automatico |
 | sys_windows.go | Win32: unità, attributi, ShellExecute, Cestino, OEM CP, NetShareEnum, CopyFileExW, spazio su disco |
 | sys_other.go | equivalenti per Linux/macOS |
@@ -349,6 +363,7 @@ La freccia indica il pannello che cambia; nella direzione opposta non succede nu
 | scripts/make-small-icons.py | icone a 32 e 48 px disegnate a pixel (Pillow) |
 | v111_test.go | compilatore fissato, risorse Windows |
 | v112_test.go | schemi, unità, ordinamento, tasti, barra e clic, editor, conflitti, cancellazione definitiva |
+| v116_test.go | applicazione in esecuzione su schermo simulato (`runUI`, `waitUI`): uscita, appunti, incolla nell'albero, Shift+Canc, ultimo prefisso, clic destro |
 | v115_test.go | barra (calcolo, schermo simulato, clic/trascinamento, albero), Shift+movimento, copia su sé stessi |
 | v114_test.go | albero (apertura, chiusura, nascosti, rifiuti, F5/F6/F12, albero che segue, uscita, ritardo), prefisso (anteprima, nomi saltati, vista piatta, caratteri non digitabili) |
 | v113_test.go | `gofm.ini`, file accanto all'eseguibile, sola lettura, pulsanti di Canc, Merge/Cancel, icone 16/32/48/256 (`TestMain` imposta `GOFM_CONFIG` temporaneo) |
@@ -394,6 +409,7 @@ La freccia indica il pannello che cambia; nella direzione opposta non succede nu
 - icona e proprietà del file in Esplora risorse; effetto dei metadati su Defender (prima verifica con la Release 1.11);
 - v1.12: tipi di unità e bus USB, cancellazione su unità di rete, F4 con Notepad, clic sulla barra, decodifica di Alt+F7, Ctrl+F7, Ctrl+F2, Ctrl+F9 e Ctrl+A nei terminali Windows (nella console classica Ctrl+A potrebbe essere intercettato dalla selezione del testo).
 
+- v1.16: Ctrl+I (distinto da Tab), Ctrl+O, Ctrl+P, Ctrl+W, Shift+Canc e clic destro nei terminali Windows; nella console classica Ctrl+Tab arriva come Ctrl+I.
 - v1.15: mouse sulla barra (clic e trascinamento) e Shift+frecce/PgUp/PgDn/Home/End nei terminali Windows.
 - v1.14: Ctrl+T e Ctrl+K nei terminali Windows; albero su share lente (apertura dei rami sincrona).
 - v1.13: cartella in sola lettura reale (`C:\Program Files`), avvio da collegamento o PATH, `gofm.ini` salvato da Notepad, icone a 32/48 px in Esplora risorse (cache delle icone).
