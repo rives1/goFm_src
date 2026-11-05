@@ -15,7 +15,7 @@ import (
 	"github.com/rivo/tview"
 )
 
-const version = "1.18"
+const version = "1.19"
 
 type FM struct {
 	app     *tview.Application
@@ -35,7 +35,12 @@ type FM struct {
 	basicIcons bool // Alt+I: basic symbols instead of Nerd Font icons
 
 	root, panelsBox *tview.Flex // kept to recolour them (Ctrl+F9)
-	keybar          *keyBar
+
+	queue opQueue    // v1.19: copies, moves and pastes run one after the other
+	qpane *queuePane // the pane of the queue, shown while there are jobs
+	// backToPane: the first open dialog was opened with the focus in the pane
+	backToPane bool
+	keybar     *keyBar
 
 	cfg settings // gofm.ini as last read (start, Alt+R)
 
@@ -260,6 +265,9 @@ func (fm *FM) recolor() {
 	if fm.keybar != nil {
 		fm.keybar.SetBackgroundColor(colBarBg)
 	}
+	if fm.qpane != nil {
+		fm.qpane.recolor()
+	}
 	for _, p := range []*Panel{fm.left, fm.right} {
 		p.table.SetBackgroundColor(colBackground)
 		p.table.SetTitleColor(colTitle)
@@ -311,6 +319,9 @@ type panelTable interface {
 
 // quit is Ctrl+W and Alt+Q (F10 until 1.15).
 func (fm *FM) quit() {
+	if fm.quitQueue() { // v1.19: operations running or queued: ask first
+		return
+	}
 	fm.quitting = true
 	fm.app.Stop()
 }
@@ -412,6 +423,14 @@ func (fm *FM) keys(ev *tcell.EventKey) *tcell.EventKey {
 	if fm.notice != "" {
 		fm.notice = "" // shown until the next key
 		fm.updateStatus()
+	}
+	if fm.queueHasFocus() && !paneGlobalKey(ev) { // v1.19: the pane of the queue (F8)
+		return fm.queueKeys(ev)
+	}
+	if ev.Key() == tcell.KeyF8 && ev.Modifiers()&(tcell.ModCtrl|tcell.ModAlt) == 0 {
+		fm.resetQuickSearch()
+		fm.focusQueue()
+		return nil
 	}
 	if fm.tree != nil && p == fm.left {
 		return fm.treeKeys(ev) // the tree has the focus (Ctrl+T)
@@ -794,6 +813,9 @@ func (fm *FM) openModal(prim tview.Primitive, w, h int, focus tview.Primitive) s
 				AddItem(nil, 0, 1, false), w, 0, true).
 			AddItem(nil, 0, 1, false)
 	}
+	if len(fm.modals) == 0 {
+		fm.backToPane = fm.queueHasFocus() // v1.19: closing the dialog goes back there
+	}
 	fm.pages.AddPage(name, item, true, true)
 	fm.modals = append(fm.modals, name)
 	if focus == nil {
@@ -825,6 +847,10 @@ func (fm *FM) closeModal(name string) {
 		if active != nil {
 			fm.setActive(active, true)
 		}
+		if fm.backToPane && len(fm.queue.jobs) > 0 {
+			fm.focusQueue()
+		}
+		fm.backToPane = false
 	} else {
 		fm.app.SetFocus(fm.focus[fm.modals[len(fm.modals)-1]])
 	}
@@ -892,18 +918,6 @@ func (fm *FM) promptEx(title, label, initial string, allowEmpty bool, cb func(st
 // runTask runs fn in the background in a progress dialog with a Cancel button.
 // When fn sets o.total, the dialog shows a progress bar, speed and time left.
 func (fm *FM) runTask(title string, fn func(o *opCtx), done func(o *opCtx)) {
-	fm.runTaskEx(title, false, fn, done)
-}
-
-// Labels of the pause button (v1.18).
-const (
-	pauseLabel  = "Pause"
-	resumeLabel = "Resume"
-)
-
-// runTaskEx is runTask; pausable adds a Pause button (copies and moves, v1.18) that
-// becomes Resume while the operation is paused. Esc still cancels.
-func (fm *FM) runTaskEx(title string, pausable bool, fn func(o *opCtx), done func(o *opCtx)) {
 	o := &opCtx{}
 	var name string
 	text := tview.NewTextView().SetDynamicColors(false)
@@ -911,22 +925,6 @@ func (fm *FM) runTaskEx(title string, pausable bool, fn func(o *opCtx), done fun
 	cancel := func() {
 		o.cancel.Store(true)
 		text.SetText(title + "\n\nCancelling…")
-	}
-	if pausable {
-		form.AddButton(pauseLabel, nil)
-		pause := form.GetButton(0)
-		pause.SetSelectedFunc(func() {
-			if o.cancelled() {
-				return
-			}
-			paused := !o.paused.Load()
-			o.paused.Store(paused)
-			if paused {
-				pause.SetLabel(resumeLabel)
-			} else {
-				pause.SetLabel(pauseLabel)
-			}
-		})
 	}
 	form.AddButton("Cancel", cancel).SetCancelFunc(cancel)
 	box := tview.NewFlex().SetDirection(tview.FlexRow).
@@ -1179,16 +1177,32 @@ func (fm *FM) copyOrMove(move bool) {
 		fm.showMessage(verb, noDestMsg)
 		return
 	}
-	fm.transfer(items, dest, move, func() { src.marked = map[string]bool{}; src.reload() })
+	// v1.19: the marks go at once (the job has its list of items), so new marks made
+	// while the job waits or runs are not wiped when it ends.
+	src.marked = map[string]bool{}
+	src.resetSizes()
+	src.render()
+	fm.transfer(items, dest, move, func() { src.reload() })
 }
 
 // transfer copies or moves items (full paths) into the folder dest, with every check
 // and question of F5/F6; after runs when the work is done (v1.16: also used by Ctrl+P).
-func (fm *FM) transfer(items []string, dest string, move bool, after func()) {
+// v1.19: the operation goes into the queue; its checks and questions start when its
+// turn comes (transferJob), because the jobs before it may change the folders.
+func (fm *FM) transfer(items []string, dest string, move bool, after func()) *job {
 	verb := "Copy"
 	if move {
 		verb = "Move"
 	}
+	return fm.enqueue(verb+" "+describe(items)+" → "+dest, func(j *job) {
+		fm.transferJob(j, items, dest, verb, move, after)
+	})
+}
+
+// transferJob is transfer when the job's turn has come. Every way it can end — an
+// error, Cancel at a question, nothing left to do, or the work done — finishes the
+// job, so the next one starts.
+func (fm *FM) transferJob(j *job, items []string, dest, verb string, move bool, after func()) {
 	func(dest string) {
 		type pair = copyPair
 		var pairs []pair
@@ -1199,6 +1213,7 @@ func (fm *FM) transfer(items []string, dest string, move bool, after func()) {
 		} else { // the destination folder was removed meanwhile
 			fm.showMessage("Error", "Destination folder does not exist:\n"+dest)
 			fm.refreshAll()
+			j.finish()
 			return
 		}
 		var targets []string
@@ -1216,18 +1231,20 @@ func (fm *FM) transfer(items []string, dest string, move bool, after func()) {
 				})
 				fm.app.QueueUpdateDraw(func() {
 					if ok {
-						fm.transferPairs(kept, items, dest, verb, move, after)
+						fm.transferPairs(j, kept, items, dest, verb, move, after)
+					} else {
+						j.finish()
 					}
 				})
 			}()
 			return
 		}
-		fm.transferPairs(pairs, items, dest, verb, move, after)
+		fm.transferPairs(j, pairs, items, dest, verb, move, after)
 	}(dest)
 }
 
 // transferPairs goes on with transfer once every destination name is unique.
-func (fm *FM) transferPairs(pairs []copyPair, items []string, dest, verb string, move bool, after func()) {
+func (fm *FM) transferPairs(j *job, pairs []copyPair, items []string, dest, verb string, move bool, after func()) {
 	items = items[:0:0] // the title describes what is really copied (duplicates left out)
 	for _, pr := range pairs {
 		items = append(items, pr.from)
@@ -1240,12 +1257,13 @@ func (fm *FM) transferPairs(pairs []copyPair, items []string, dest, verb string,
 			sfi, _ := os.Lstat(pr.from)
 			if sfi != nil && sfi.IsDir() != fi.IsDir() {
 				fm.showMessage("Error", "An item of a different type with the same name already exists:\n"+pr.to)
+				j.finish()
 				return
 			}
 		}
 	}
 	start := func() {
-		fm.runTaskEx(verb+" "+describe(items), true, func(o *opCtx) {
+		j.run(verb+" "+describe(items)+" → "+dest, func(o *opCtx) {
 			// One walk (v1.17): sizes, total and the files that already exist at the
 			// destination, also inside folders that will be merged; then one question
 			// per existing file (v1.12), until an "all" answer.
@@ -1255,6 +1273,9 @@ func (fm *FM) transferPairs(pairs []copyPair, items []string, dest, verb string,
 			conflicts := plan.conflicts
 			if o.cancelled() {
 				return
+			}
+			if len(conflicts) > 0 {
+				o.setPhase("Waiting for your answer…") // shown in the pane (v1.19)
 			}
 			skip, ok := resolveConflicts(conflicts, func(i int) string {
 				return fm.askSync(conflictText(conflicts[i], i, len(conflicts), dest), conflictButtons)
@@ -1279,10 +1300,11 @@ func (fm *FM) transferPairs(pairs []copyPair, items []string, dest, verb string,
 	// Cancel. Then the folders with the same name at the destination (v1.13): merge
 	// them, or cancel the whole operation; after Merge, existing files are asked
 	// one by one.
-	fm.askSelfCopies(pairs, verb, func(kept []copyPair) {
+	fm.askSelfCopiesOr(pairs, verb, func(kept []copyPair) {
 		if len(kept) == 0 {
 			fm.notice = verb + ": nothing to do, every item was skipped"
 			fm.updateStatus()
+			j.finish()
 			return
 		}
 		pairs = kept
@@ -1290,8 +1312,8 @@ func (fm *FM) transferPairs(pairs []copyPair, items []string, dest, verb string,
 		for _, pr := range pairs {
 			srcDirs, dstDirs = append(srcDirs, pr.from), append(dstDirs, pr.to)
 		}
-		fm.askMerge(sameNameFolders(srcDirs, dstDirs), dest, "Files that exist in both are asked about one by one.", start)
-	})
+		fm.askMergeOr(sameNameFolders(srcDirs, dstDirs), dest, "Files that exist in both are asked about one by one.", start, j.finish)
+	}, j.finish)
 }
 
 // selfCopyReason says why an item cannot be copied or moved where asked: it would land
@@ -1324,6 +1346,11 @@ func selfCopyText(pr copyPair, verb string, i, n int) string {
 // default), Skip all, Cancel/Esc — and then calls done with the items to copy.
 // Nothing is asked when there are none.
 func (fm *FM) askSelfCopies(pairs []copyPair, verb string, done func(kept []copyPair)) {
+	fm.askSelfCopiesOr(pairs, verb, done, nil)
+}
+
+// askSelfCopiesOr is askSelfCopies; cancelled (if not nil) runs on Cancel or Esc.
+func (fm *FM) askSelfCopiesOr(pairs []copyPair, verb string, done func(kept []copyPair), cancelled func()) {
 	var kept, self []copyPair
 	for _, pr := range pairs {
 		if selfCopyReason(pr) != "" {
@@ -1344,8 +1371,11 @@ func (fm *FM) askSelfCopies(pairs []copyPair, verb string, done func(kept []copy
 				ask(i + 1)
 			case selfSkipAll:
 				done(kept)
+			default: // Cancel or Esc: nothing is copied
+				if cancelled != nil {
+					cancelled()
+				}
 			}
-			// Cancel or Esc: nothing happens
 		})
 	}
 	ask(0)
@@ -1388,6 +1418,11 @@ func mergeText(folders []string, dest, then string) string {
 // askMerge runs start at once when no folder exists already, otherwise after Merge;
 // Cancel or Esc abort the operation.
 func (fm *FM) askMerge(folders []string, dest, then string, start func()) {
+	fm.askMergeOr(folders, dest, then, start, nil)
+}
+
+// askMergeOr is askMerge; cancelled (if not nil) runs on Cancel or Esc.
+func (fm *FM) askMergeOr(folders []string, dest, then string, start, cancelled func()) {
 	if len(folders) == 0 {
 		start()
 		return
@@ -1395,6 +1430,8 @@ func (fm *FM) askMerge(folders []string, dest, then string, start func()) {
 	fm.confirm(mergeText(folders, dest, then), []string{"Merge", "Cancel"}, func(choice string) {
 		if choice == "Merge" {
 			start()
+		} else if cancelled != nil {
+			cancelled()
 		}
 	})
 }

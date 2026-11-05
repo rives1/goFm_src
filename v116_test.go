@@ -33,6 +33,11 @@ func runUI(t *testing.T, fm *FM) func(func()) {
 		}
 	}
 	t.Cleanup(func() {
+		select {
+		case <-stopped:
+			return // already stopped by the program (quit): Stop again would race with Run
+		default:
+		}
 		fm.app.Stop()
 		select {
 		case <-stopped:
@@ -119,7 +124,7 @@ func TestClipboard(t *testing.T) {
 		fm.keys(ctrlKey('P'))
 	})
 	waitUI(t, ui, "copy pasted", func() bool {
-		return exists(filepath.Join(dst, "a.txt")) && exists(filepath.Join(dst, "dir", "c.txt")) && len(fm.modals) == 0
+		return exists(filepath.Join(dst, "a.txt")) && exists(filepath.Join(dst, "dir", "c.txt")) && len(fm.modals) == 0 && len(fm.queue.jobs) == 0
 	})
 	ui(func() {
 		if fm.clip == nil || !exists(filepath.Join(src, "a.txt")) {
@@ -180,7 +185,9 @@ func TestPasteInTree(t *testing.T) {
 		fm.keys(key(tcell.KeyTab, 0, 0))
 		fm.keys(ctrlKey('P'))
 	})
-	waitUI(t, ui, "pasted with the tree", func() bool { return exists(filepath.Join(dst, "a.txt")) && len(fm.modals) == 0 })
+	waitUI(t, ui, "pasted with the tree", func() bool {
+		return exists(filepath.Join(dst, "a.txt")) && len(fm.modals) == 0 && len(fm.queue.jobs) == 0
+	})
 }
 
 // Shift+Del: no confirmation, also on network drives; the warning for folders with

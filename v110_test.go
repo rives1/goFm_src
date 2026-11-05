@@ -120,7 +120,7 @@ func TestHelpListsAllKeys(t *testing.T) {
 			t.Errorf("%s missing from the summary", want)
 		}
 	}
-	for _, gone := range []string{"Alt+F1", "Alt+S", "Alt+F[", "]*[", "Alt+A", "F8"} {
+	for _, gone := range []string{"Alt+F1", "Alt+S", "Alt+F[", "]*[", "Alt+A"} { // F8 is the queue pane since v1.19
 		if strings.Contains(text, gone) {
 			t.Errorf("%q is no longer a shortcut", gone)
 		}

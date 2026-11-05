@@ -319,7 +319,7 @@ func TestFlatDuplicatesCopy(t *testing.T) {
 			}
 		})
 		if answer == "cancel" {
-			waitUI(t, ui, "cancelled", func() bool { return len(fm.modals) == 0 })
+			waitUI(t, ui, "cancelled", func() bool { return len(fm.modals) == 0 && len(fm.queue.jobs) == 0 })
 			time.Sleep(100 * time.Millisecond)
 			if des, _ := os.ReadDir(dst); len(des) != 0 {
 				t.Errorf("cancel: copied %v", des)
@@ -327,7 +327,8 @@ func TestFlatDuplicatesCopy(t *testing.T) {
 			continue
 		}
 		waitUI(t, ui, "copied "+answer, func() bool {
-			return exists(filepath.Join(dst, "x.txt")) && exists(filepath.Join(dst, "y.txt")) && len(fm.modals) == 0
+			// since v1.19 the copy runs in the queue: wait for it to end, not for a dialog
+			return exists(filepath.Join(dst, "x.txt")) && exists(filepath.Join(dst, "y.txt")) && len(fm.modals) == 0 && len(fm.queue.jobs) == 0
 		})
 		want := map[string]string{"skip": "from a", "overwrite": "from b"}[answer]
 		if got := readFile(t, filepath.Join(dst, "x.txt")); got != want {
@@ -459,66 +460,6 @@ func TestPauseText(t *testing.T) {
 	o.phase.Store("Reading the folders…")
 	if txt := progressText("Copy", o, m, 66, t0); !strings.Contains(txt, "PAUSED") {
 		t.Fatalf("paused in a phase: %q", txt)
-	}
-}
-
-// The progress dialog of a copy has Pause, which becomes Resume; other tasks do not.
-func TestPauseButton(t *testing.T) {
-	src, dst := t.TempDir(), t.TempDir()
-	for i := 0; i < 20; i++ {
-		writeFile(t, filepath.Join(src, string(rune('a'+i))+".txt"), "x", time.Now())
-	}
-	slow := copyOneFile
-	copyOneFile = func(o *opCtx, s, d string, fi os.FileInfo) error {
-		time.Sleep(40 * time.Millisecond)
-		return slow(o, s, d, fi)
-	}
-	defer func() { copyOneFile = slow }()
-	fm := newTestFM(t)
-	ui := runUI(t, fm)
-	ui(func() {
-		fm.left.chdir(src, "")
-		fm.right.chdir(dst, "")
-		fm.setActive(fm.left, true)
-		fm.keys(ctrlKey('A'))
-		fm.keys(key(tcell.KeyF5, 0, 0))
-	})
-	var form *tview.Form
-	waitUI(t, ui, "progress dialog", func() bool {
-		if len(fm.modals) != 1 {
-			return false
-		}
-		f, ok := fm.focus[fm.modals[0]].(*tview.Form)
-		form = f
-		return ok
-	})
-	ui(func() {
-		if form.GetButtonCount() != 2 || form.GetButton(0).GetLabel() != pauseLabel || form.GetButton(1).GetLabel() != "Cancel" {
-			t.Fatalf("buttons %d %q", form.GetButtonCount(), form.GetButton(0).GetLabel())
-		}
-		pressEnter(fm) // Pause has the focus
-		if form.GetButton(0).GetLabel() != resumeLabel {
-			t.Fatal("Pause did not become Resume")
-		}
-	})
-	countDst := func() int { des, _ := os.ReadDir(dst); return len(des) }
-	time.Sleep(150 * time.Millisecond)
-	before := countDst()
-	time.Sleep(400 * time.Millisecond)
-	if after := countDst(); after != before || after == 20 {
-		t.Fatalf("copying during the pause: %d → %d", before, after)
-	}
-	ui(func() { pressEnter(fm) }) // Resume
-	waitUI(t, ui, "copy finished", func() bool { return countDst() == 20 && len(fm.modals) == 0 })
-	// a task without Pause (a delete) keeps the single Cancel button
-	var only int
-	ui(func() {
-		fm.runTask("Test", func(o *opCtx) { time.Sleep(300 * time.Millisecond) }, nil)
-		f := fm.focus[fm.modals[0]].(*tview.Form)
-		only = f.GetButtonCount()
-	})
-	if only != 1 {
-		t.Errorf("non-pausable task: %d buttons", only)
 	}
 }
 

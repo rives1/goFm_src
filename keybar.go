@@ -35,6 +35,7 @@ var keybarItems = []keyItem{
 	{"Del", "Delete", fkey(tcell.KeyDelete, 0)},
 	{"F9", "Zip", fkey(tcell.KeyF9, 0)},
 	{"F12", "Compare", fkey(tcell.KeyF12, 0)},
+	{"F8", "Queue", fkey(tcell.KeyF8, 0)},
 	{"Ctrl+A", "Select", fkey(tcell.KeyCtrlA, tcell.ModCtrl)},
 	{"Ctrl+O", "Copy", fkey(tcell.KeyCtrlO, tcell.ModCtrl)},
 	{"Ctrl+I", "Cut", fkey(tcell.KeyCtrlI, tcell.ModCtrl)},

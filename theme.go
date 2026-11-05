@@ -47,7 +47,7 @@ var schemes = []scheme{
 		cursorBg: rgb(0x2AB3C8), cursorFg: rgb(0x06122E), cursorOffBg: rgb(0x2B3F6E), cursorOffFg: rgb(0xFFFFFF),
 		contrastBg: rgb(0x1E3A78), barBg: rgb(0x06122E), keyFg: rgb(0x06122E), keyBg: rgb(0x2AB3C8),
 		noticeFg: rgb(0x06122E), noticeBg: rgb(0x56D4DD), label: rgb(0x8FD3FF), err: rgb(0xFF7B72),
-		families: [7]tcell.Color{rgb(0xFF79C6), rgb(0x5AF78E), rgb(0xC792EA), rgb(0x79C0FF), rgb(0xFF6B6B), rgb(0x4EE6C8), rgb(0x9AA3B5)},
+		families: [7]tcell.Color{rgb(0xFF79C6), rgb(0xFF6B6B), rgb(0xC792EA), rgb(0x79C0FF), rgb(0x5AF78E), rgb(0x4EE6C8), rgb(0x9AA3B5)},
 	},
 	{
 		name: "dark", background: rgb(0x1E1E1E),
@@ -56,7 +56,7 @@ var schemes = []scheme{
 		cursorBg: rgb(0x5FA8E8), cursorFg: rgb(0x111111), cursorOffBg: rgb(0x3C3C3C), cursorOffFg: rgb(0xFFFFFF),
 		contrastBg: rgb(0x333333), barBg: rgb(0x121212), keyFg: rgb(0x111111), keyBg: rgb(0x5FA8E8),
 		noticeFg: rgb(0x111111), noticeBg: rgb(0x7FD1C7), label: rgb(0x9CDCFE), err: rgb(0xF48771),
-		families: [7]tcell.Color{rgb(0xFF79C6), rgb(0x5AF78E), rgb(0xC792EA), rgb(0x79C0FF), rgb(0xFF6B6B), rgb(0x4EE6C8), rgb(0x9AA3B5)},
+		families: [7]tcell.Color{rgb(0xFF79C6), rgb(0xFF6B6B), rgb(0xC792EA), rgb(0x79C0FF), rgb(0x5AF78E), rgb(0x4EE6C8), rgb(0x9AA3B5)},
 	},
 	{
 		name: "light", background: rgb(0xF6F8FA),
@@ -65,7 +65,7 @@ var schemes = []scheme{
 		cursorBg: rgb(0x0969DA), cursorFg: rgb(0xFFFFFF), cursorOffBg: rgb(0xD8DEE4), cursorOffFg: rgb(0x1F2328),
 		contrastBg: rgb(0xE6EAEF), barBg: rgb(0xE6EAEF), keyFg: rgb(0xFFFFFF), keyBg: rgb(0x0969DA),
 		noticeFg: rgb(0xFFFFFF), noticeBg: rgb(0x0969DA), label: rgb(0x0550AE), err: rgb(0xB42318),
-		families: [7]tcell.Color{rgb(0xBF3989), rgb(0x1A7F37), rgb(0x8250DF), rgb(0x0550AE), rgb(0xD80838), rgb(0x0E7C86), rgb(0x57606A)},
+		families: [7]tcell.Color{rgb(0xBF3989), rgb(0xD80838), rgb(0x8250DF), rgb(0x0550AE), rgb(0x1A7F37), rgb(0x0E7C86), rgb(0x57606A)},
 	},
 }
 

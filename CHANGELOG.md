@@ -2,6 +2,16 @@
 
 All notable changes to gofm. Versions follow the order in which features were added.
 
+## 1.19 — 2026-11-05
+
+- **Operations pane and queue**: copies, moves and pastes (F5, F6, Ctrl+P) no longer open a progress window. They run in a pane at the bottom of the window, under the two panels (which get shorter), so you can keep browsing and start other operations meanwhile. A new copy, move or paste waits in a **queue** and starts when the previous one ends, one at a time; its questions (conflicts, folders to merge, items copied onto themselves) are asked when its turn comes. The pane shows the running operation (bar, bytes, speed, time left, current file) and up to 3 waiting ones; it closes by itself when the queue is empty.
+- **F8** moves the focus to the pane (F8 or Esc goes back to the panels): **Pause**/*Resume* and **Cancel** act on the running operation, **Remove** takes the selected waiting one out of the queue; ↑↓ choose in the list, Tab moves to the buttons. The mouse works on the buttons too. Ctrl+F2 and quitting still work from the pane.
+- **Quitting** with operations running or queued asks first (*Cancel* is the default); *Quit* cancels the running one and drops the queue.
+- Marks are cleared as soon as an operation is queued, so you can mark the next items at once; Ctrl+P after a cut empties the clipboard at once.
+- **Colours**: audio/video files are now **green** and programs **red** (the two colours were swapped).
+- The key summary (Ctrl+F2) shows the **version** of gofm in its title and first line.
+- **No ARM build any more**: the package contains only `gofm.exe` (x64). Windows 11 on ARM runs it through its x64 emulation; the install script says so on an ARM PC.
+
 ## 1.18 — 2026-11-02
 
 - **Cursor on the first item**: entering a folder, a drive or an archive, closing the flat view or the tree view puts the cursor on the first item instead of `..` (an empty folder keeps it on `..`). Going up with ← or Backspace still puts it on the folder you came from.

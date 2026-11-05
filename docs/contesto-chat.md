@@ -1,25 +1,26 @@
-# gofm — contesto per proseguire in una nuova chat (versione 1.18)
+# gofm — contesto per proseguire in una nuova chat (versione 1.19)
 
-> Da allegare all'inizio di una nuova chat. Contiene: stato del progetto, cose in sospeso, regole di lavoro, note tecniche sull'ambiente di sviluppo e, in fondo, le **specifiche compatte complete della 1.18**. Il dettaglio di ogni scelta, con motivazioni e storico, è in `docs/gofm-documentazione.md` nel repository.
+> Da allegare all'inizio di una nuova chat. Contiene: stato del progetto, cose in sospeso, regole di lavoro, note tecniche sull'ambiente di sviluppo e, in fondo, le **specifiche compatte complete della 1.19**. Il dettaglio di ogni scelta, con motivazioni e storico, è in `docs/gofm-documentazione.md` nel repository.
 
 ## A. Dove sono le cose
 
 - **Repository GitHub**: <https://github.com/rives1/goFm_src> (ramo `main`).
 - **Copia locale** (PC dell'utente): `C:\Users\ammin\Documents\Claude CLI\gofm-repo\goFm_src`.
 - **Cartella dei pacchetti**: `C:\Users\ammin\Documents\Claude CLI\gofm-repo\`, con `gofm-<versione>-windows.zip`, `.sha256`, `gofm-<versione>-repo.zip`, `gofm-<versione>-specifiche-compatte.md`, `gofm-<versione>-contesto-chat.md` e `microsoft-false-positive-submission.md`. Nel repository: `docs/contesto-chat.md`.
-- **Stato git al 02/11/2026**:
-  - 1.17 inviata dall'utente e pubblicata (Release `v1.17`);
-  - commit `versione 1.18` con tag annotato `v1.18` (questo file è nel commit stesso).
-- **SHA-256 degli eseguibili**: nelle note della Release `v1.18` su GitHub e nel file `gofm-1.18-contesto-chat.md` della cartella dei pacchetti (qui non possono stare: l'eseguibile incorpora il commit che contiene questo file).
+- **Stato git al 05/11/2026**:
+  - 1.18 inviata dall'utente e pubblicata (Release `v1.18`);
+  - commit `versione 1.19` con tag annotato `v1.19` (questo file è nel commit stesso).
+- **SHA-256 dell'eseguibile**: nelle note della Release `v1.19` su GitHub e nel file `gofm-1.19-contesto-chat.md` della cartella dei pacchetti (qui non può stare: l'eseguibile incorpora il commit che contiene questo file).
 
 ## B. In sospeso
 
-1. **Push** della 1.18 e controllo della Release.
-2. **Prove su Windows reale** della 1.18: doppio clic in Windows Terminal e nella console classica; Pause/Resume durante una copia grande verso una share (con `CopyFileExW` e, tra cartelle dello stesso server, con la copia lato server: lì la pausa può scattare solo a fine file); Ctrl+R con cambio di sole maiuscole su NTFS e su share; Ctrl+U; vista piatta con nomi doppi.
+1. **Push** della 1.19 e controllo della Release (il pacchetto ora contiene solo `gofm.exe`).
+2. **Prove su Windows reale** della 1.19: riquadro delle operazioni in Windows Terminal e nella console classica (navigare durante una copia grande, F8, Pause/Resume, Cancel, Remove, clic sui pulsanti), due o tre copie in coda verso una share, domande che arrivano alla partenza, Ctrl+W con una copia in corso; versione nel riepilogo; colori scambiati nei tre schemi; avviso dello script di installazione su un PC ARM.
+   Della 1.18: doppio clic in Windows Terminal e nella console classica; Pause/Resume durante una copia grande verso una share (con `CopyFileExW` e, tra cartelle dello stesso server, con la copia lato server: lì la pausa può scattare solo a fine file); Ctrl+R con cambio di sole maiuscole su NTFS e su share; Ctrl+U; vista piatta con nomi doppi.
    Della 1.17: F5/F6 verso una share con molti file già presenti (confronto dei tempi con la 1.16: è il guadagno atteso maggiore); Ctrl+A su molte cartelle di un NAS; barra dei tasti abbreviata.
 3. **Prove delle versioni precedenti** ancora da fare: 1.16 Ctrl+I/O/P/W, Shift+Canc, clic destro; 1.15 barra di scorrimento con il mouse, Shift+frecce; 1.14 Ctrl+T e Ctrl+K, albero su unità di rete lente.
 4. **Ottimizzazioni valutate e non ancora fatte** (valutazione del 02/11/2026): ricerca per contenuto in parallelo (punto 4), tabella "virtuale" che costruisce solo le righe visibili (punto 6: render ≈ 250 ms con 200 000 voci), archivi grandi (9), lettura asincrona dei rami dell'albero (10).
-5. **Scelte di Claude da confermare**: (1.18) chiudendo l'albero il pannello destro, se era già sulla stessa cartella, mantiene il suo cursore; con nomi doppi in vista piatta il "primo" è il primo nell'ordine dell'elenco; Ctrl+U rifiutato con l'albero aperto; Pause ha il focus (Invio mette in pausa, Esc annulla). (1.17) un file aggiunto nella sorgente dopo la preparazione della copia non viene copiato; 3 misure di cartelle in parallelo. (1.16) dopo Ctrl+O/Ctrl+I le marcature restano; Ctrl+O/I/P subito dopo Ctrl+A nella barra. (1.15) Shift+PgUp/PgDn/Home/End includono la riga d'arrivo solo se è la prima o l'ultima; nell'albero Shift+frecce sono movimenti normali. (1.14) Ctrl+T rifiutato anche dall'elenco share; albero non ricordato; nessuna ricerca digitando nell'albero. (1.13) `gofm.ini` letto anche in una cartella non scrivibile; `networkDelete` + `networkDeleteDefault`; *Merge* predefinito.
+5. **Scelte di Claude da confermare**: (1.19) estrazione con F5 in un archivio, ZIP e cancellazione restano fuori coda (finestra modale, possono girare insieme a una copia della coda); mentre una domanda è aperta non si mette in coda altro (la domanda è modale); Ctrl+F2, Ctrl+W e Alt+Q funzionano anche dal riquadro e una finestra aperta da lì gli rende il focus; il riquadro mostra al massimo 3 operazioni in attesa (le altre con ↑↓); F8 senza operazioni dà solo un avviso. (1.18) (1.18) chiudendo l'albero il pannello destro, se era già sulla stessa cartella, mantiene il suo cursore; con nomi doppi in vista piatta il "primo" è il primo nell'ordine dell'elenco; Ctrl+U rifiutato con l'albero aperto; Pause ha il focus (Invio mette in pausa, Esc annulla). (1.17) un file aggiunto nella sorgente dopo la preparazione della copia non viene copiato; 3 misure di cartelle in parallelo. (1.16) dopo Ctrl+O/Ctrl+I le marcature restano; Ctrl+O/I/P subito dopo Ctrl+A nella barra. (1.15) Shift+PgUp/PgDn/Home/End includono la riga d'arrivo solo se è la prima o l'ultima; nell'albero Shift+frecce sono movimenti normali. (1.14) Ctrl+T rifiutato anche dall'elenco share; albero non ricordato; nessuna ricerca digitando nell'albero. (1.13) `gofm.ini` letto anche in una cartella non scrivibile; `networkDelete` + `networkDeleteDefault`; *Merge* predefinito.
 6. **Defender**: segnalazione a Microsoft (`microsoft-false-positive-submission.md`); soluzione stabile = firma del codice (serve un account dell'utente).
 7. **Prove su Windows della 1.12** ancora da fare (tipi di unità, Canc in rete, F4, clic sulla barra dei tasti, decodifica di Alt+F7, Ctrl+F7, Ctrl+F2, Ctrl+F9, Ctrl+A).
 8. **Domanda aperta** sull'alternativa a *Cascadia Mono NF* (va chiesto il motivo).
@@ -53,6 +54,7 @@
 | 1.9 | icone per tipo di file (Nerd Font / simboli, Alt+I) |
 | 1.10 | correzione del focus alla chiusura delle finestre; seconda conferma per cartelle con sottocartelle; riepilogo dei tasti; F12 per nome+dimensione+data; Release GitHub con pacchetto |
 | 1.11 | Go 1.27.3 fissato; metadati Windows (versione, manifest, icona); build riproducibile; nota sui falsi positivi degli antivirus |
+| 1.19 | riquadro delle operazioni in basso con coda (copia, spostamento, incolla una alla volta, pannelli utilizzabili, domande alla partenza); F8 Pause/Cancel/Remove; conferma all'uscita; multimediali verdi e programmi rossi; versione nel riepilogo; niente ARM64 |
 | 1.18 | cursore sul primo elemento entrando e chiudendo vista piatta/albero; doppio clic = Invio; Ctrl+R iniziali maiuscole; nomi doppi in vista piatta con domanda Skip/Overwrite; Ctrl+U scambia i pannelli; Pause/Resume in copia, spostamento e incolla |
 | 1.17 | prestazioni: preparazione della copia in un solo percorso, misura delle cartelle 3 alla volta, ordinamento e totali senza ricalcoli; benchmark; barra dei tasti con `C+` |
 | 1.16 | appunti di gofm (Ctrl+O copia, Ctrl+I taglia, Ctrl+P incolla); Ctrl+W esce (F10 nulla); ultimo prefisso di Ctrl+K; clic destro marca; Shift+Canc senza conferma |
@@ -63,9 +65,9 @@
 
 ---
 
-## Specifiche compatte 1.18
+## Specifiche compatte 1.19
 
-Riepilogo per riprendere il lavoro in una nuova chat. Il codice completo è nel repository <https://github.com/rives1/goFm_src> (copia locale: `C:\Users\ammin\Documents\Claude CLI\gofm-repo\goFm_src`) e in `gofm-1.18-repo.zip`; la documentazione estesa (con motivazioni, storico e prompt di rigenerazione) è in `docs/gofm-documentazione.md`.
+Riepilogo per riprendere il lavoro in una nuova chat. Il codice completo è nel repository <https://github.com/rives1/goFm_src> (copia locale: `C:\Users\ammin\Documents\Claude CLI\gofm-repo\goFm_src`) e in `gofm-1.19-repo.zip`; la documentazione estesa (con motivazioni, storico e prompt di rigenerazione) è in `docs/gofm-documentazione.md`.
 
 ### 0. Regole di lavoro
 
@@ -82,9 +84,9 @@ Riepilogo per riprendere il lavoro in una nuova chat. Il codice completo è nel 
 
 ### 1. Prodotto
 
-File manager a **doppio pannello** per il terminale di Windows (Windows Terminal consigliato, funziona anche nella console classica), stile Norton/Midnight/Total Commander. **Go** (minimo 1.24; release compilate con **Go 1.27.3**, fissato in `go.mod` con `toolchain go1.27.3` e nei workflow), un solo eseguibile senza dipendenze: `gofm.exe` (x64, circa 7 MB) e `gofm-arm64.exe`. Librerie: tview v0.42, tcell v2.13.10, uniseg, bodgit/sevenzip v1.6 (7z in sola lettura), fsnotify v1.8, x/sys, x/text. Compila e gira anche su Linux e macOS, per sviluppo e test.
+File manager a **doppio pannello** per il terminale di Windows (Windows Terminal consigliato, funziona anche nella console classica), stile Norton/Midnight/Total Commander. **Go** (minimo 1.24; release compilate con **Go 1.27.3**, fissato in `go.mod` con `toolchain go1.27.3` e nei workflow), un solo eseguibile senza dipendenze: `gofm.exe` (x64, circa 7 MB; nessuna build ARM64 dalla v1.19). Librerie: tview v0.42, tcell v2.13.10, uniseg, bodgit/sevenzip v1.6 (7z in sola lettura), fsnotify v1.8, x/sys, x/text. Compila e gira anche su Linux e macOS, per sviluppo e test.
 
-Avvio: `gofm [left_folder] [right_folder]`; `-h`, `--help` o `/?` stampa `gofm 1.18 — usage: …`. Senza argomenti riapre le ultime cartelle (§5.13).
+Avvio: `gofm [left_folder] [right_folder]`; `-h`, `--help` o `/?` stampa `gofm 1.19 — usage: …`. Senza argomenti riapre le ultime cartelle (§5.13).
 
 ### 2. Interfaccia
 
@@ -121,10 +123,10 @@ Avvio: `gofm [left_folder] [right_folder]`; `-h`, `--help` o `/?` stampa `gofm 1
 | Tipo | Colore |
 |---|---|
 | Archivi | `#FF79C6` |
-| Programmi e script | `#5AF78E` |
+| Programmi e script | `#FF6B6B` (light `#D80838`; verde fino alla v1.18) |
 | Immagini | `#C792EA` |
 | Documenti | `#79C0FF` |
-| Audio e video | `#FF6B6B` |
+| Audio e video | `#5AF78E` (light `#1A7F37`; rosso fino alla v1.18) |
 | Codice, configurazione, log | `#4EE6C8` |
 | File di sistema e supporto | `#9AA3B5` |
 | Cartelle | bianco grassetto |
@@ -143,7 +145,7 @@ I test verificano che ogni famiglia disti almeno 120 dal giallo e almeno 60 dall
 - Durante la ricerca digitando compare il badge ` Search: … ` (e `no match` in rosso).
 - Un avviso, per esempio dopo F12, Ctrl+B, Alt+I, Ctrl+F9 o F4, sostituisce la riga fino al tasto successivo.
 
-**Barra dei tasti** (v1.12, `keybar.go`): voci per priorità, **quante ne entrano** nella larghezza (alla prima che non entra si ferma): F4 Edit · F6 Move · Del Delete · F9 Zip · F12 Compare · Ctrl+A Select · Ctrl+O Copy · Ctrl+I Cut · Ctrl+P Paste · Ctrl+T Tree · Ctrl+K Prefix · Ctrl+R Caps · Ctrl+U Swap · Ctrl+B Flat · Alt+F7 Find · Ctrl+F7 Filter · Alt+U Extract · Alt+V Drives · Ctrl+F2 Keys · Alt+O Sort · Alt+D Reverse · Alt+H Hidden · Ctrl+F9 Colours · Alt+I Icons · Shift+X Drive X: · Alt+L Go to. A 80 colonne 9 voci, a 120 14, a 200 21, tutte e 26 da 258 (v1.18). **Mai** F2, F3, F5, F7 (F10 non fa nulla dalla v1.16). Dalla v1.17 `Ctrl+` è scritto `C+` con la lettera minuscola (`C+a`, `C+F7`); il riepilogo usa i nomi completi. **Clic** su una voce = evento del tasto passato a `FM.keys`, il focus resta al pannello; Shift+X non è cliccabile.
+**Barra dei tasti** (v1.12, `keybar.go`): voci per priorità, **quante ne entrano** nella larghezza (alla prima che non entra si ferma): F4 Edit · F6 Move · Del Delete · F9 Zip · F12 Compare · F8 Queue (v1.19) · Ctrl+A Select · Ctrl+O Copy · Ctrl+I Cut · Ctrl+P Paste · Ctrl+T Tree · Ctrl+K Prefix · Ctrl+R Caps · Ctrl+U Swap · Ctrl+B Flat · Alt+F7 Find · Ctrl+F7 Filter · Alt+U Extract · Alt+V Drives · Ctrl+F2 Keys · Alt+O Sort · Alt+D Reverse · Alt+H Hidden · Ctrl+F9 Colours · Alt+I Icons · Shift+X Drive X: · Alt+L Go to. A 80 colonne 9 voci, a 120 14, a 200 21, tutte e 27 da 266 (v1.19). **Mai** F2, F3, F5, F7 (F10 non fa nulla dalla v1.16). Dalla v1.17 `Ctrl+` è scritto `C+` con la lettera minuscola (`C+a`, `C+F7`); il riepilogo usa i nomi completi. **Clic** su una voce = evento del tasto passato a `FM.keys`, il focus resta al pannello; Shift+X non è cliccabile.
 
 **Riepilogo dei tasti (Ctrl+F2, v1.12)**: finestra con **tutti** i tasti (sezioni Navigation, Search and selection, Files, View, Program); righe ≤ 76 celle, altezza limitata allo schermo con scorrimento; si chiude con Esc, Invio, F2, `q`. Un test verifica che ogni voce della barra vi compaia.
 
@@ -190,15 +192,16 @@ I test verificano che ogni famiglia disti almeno 120 dal giallo e almeno 60 dall
 | F2 / F3 / F4 / F5 / F6 / F7 / Canc / F9 | rinomina / anteprima / **editor** (v1.12) / copia / sposta / nuova cartella / cancella / zip |
 | **Shift+Canc** | cancella senza la prima conferma, anche in rete; resta l'avviso per le sottocartelle (v1.16) |
 | **Ctrl+O** / **Ctrl+I** / **Ctrl+P** | copia / taglia negli appunti di gofm / incolla nella cartella del pannello attivo (v1.16, §5.18) |
-| **Ctrl+W** / Alt+Q | esci (v1.16; F10 non fa più nulla) |
+| **Ctrl+W** / Alt+Q | esci (v1.16; F10 non fa più nulla); con operazioni in corso o in coda chiede conferma, Cancel predefinito (v1.19) |
 | Clic destro | marca/smarca l'elemento sotto il puntatore e vi porta il cursore (v1.16) |
 | F12 | confronto delle cartelle |
 | **Alt+F7** / **Ctrl+F7** | cerca / filtro (v1.12; erano Alt+S / Alt+F) |
 | Alt+U / Alt+L / Alt+V | estrai / vai a percorso / elenco unità |
 | Alt+E / Alt+O / **Alt+D** / Alt+H / Alt+R / Alt+I / Alt+Q | stesso luogo nell'altro pannello / tipo di ordinamento / **inverte il senso** (v1.12) / nascosti / aggiorna, rilegge `gofm.ini` (v1.13) e rimisura / icone Nerd Font ↔ simboli / esci |
-| **Ctrl+F2** | riepilogo di tutti i tasti (v1.12; era Alt+F1) |
+| **Ctrl+F2** | riepilogo di tutti i tasti (v1.12; era Alt+F1), con la versione nel titolo ` gofm <v> — Keys — Esc to close ` e nella prima riga (v1.19) |
 | **Ctrl+F9** | schema di colori successivo (v1.12) |
-| F1, F8 | nessuna funzione (F8 cancellava fino alla v1.11) |
+| **F8** | riquadro delle operazioni: focus, ↑↓ attese, Tab pulsanti Pause/Resume, Cancel, Remove; F8/Esc tornano ai pannelli (§5.21, v1.19; F8 cancellava fino alla v1.11) |
+| F1 | nessuna funzione |
 
 **Decodifica dei tasti**
 - Ctrl+lettera arriva in due forme, `KeyCtrlA…Z` oppure `Key('A'…'Z')` con `ModCtrl`; Ctrl+Alt va escluso perché è AltGr.
@@ -225,7 +228,7 @@ Le operazioni agiscono sui selezionati, altrimenti sull'elemento sotto il cursor
   - su Windows `CopyFileExW` con callback di avanzamento e annullamento (`PROGRESS_CANCEL`), `COPY_FILE_NO_BUFFERING` per file ≥ 256 MB, percorsi `\\?\`;
   - altrove copia con buffer da 1 MB.
 - Lo **spostamento** rinomina subito ciò che può (stessa unità) e copia il resto; l'origine viene eliminata solo per gli elementi copiati completamente.
-- Avanzamento: finestra ` Working ` con barra da 60 caratteri, percentuale, `X of Y · velocità/s · m:ss left` (velocità media sugli ultimi 5 s) e pulsante Cancel; per copia, spostamento e incolla anche **Pause/Resume** (v1.18, §5.20).
+- Avanzamento: finestra ` Working ` con barra da 60 caratteri, percentuale, `X of Y · velocità/s · m:ss left` (velocità media sugli ultimi 5 s) e pulsante Cancel. **Copia, spostamento e incolla** dalla v1.19 non la usano: girano nel **riquadro delle operazioni** in coda, con Pause/Resume, Cancel, Remove (§5.21).
 
 #### 5.2 Altre operazioni
 - **F2**: rinomina; non accetta `\ / . ..` né `: * ? " < > |`; in vista piatta il file resta nella sua sottocartella.
@@ -349,7 +352,15 @@ La freccia indica il pannello che cambia; nella direzione opposta non succede nu
 - **Ctrl+R** (`capitalize.go`): maiuscola la prima lettera del nome e quella dopo spazio, `_`, `-`; **resto invariato**, **estensione invariata** (cartelle: tutto il nome; `.profile` senza estensione). Selezionati o elemento sotto il cursore, file e cartelle. Nessun cambiamento → avviso. Conferma con anteprima `vecchio → nuovo` (max 6), **Rename** predefinito / Cancel. `renameEach`: nome esistente di un altro file → saltato; stesso file (`os.SameFile`, cambio di sole maiuscole) → rinominato; poi `afterRename` comune a Ctrl+K.
 - **Nomi doppi in vista piatta**: `resolveDuplicates` in una goroutine con `askSync`; il primo con un nome è "scelto", per ogni altro `Selected files with the same name (i of n):` + `Chosen:`/`This one:` (percorso relativo alla cartella comune, dimensione, data, `(newer)`); **Skip** (predefinito, tiene lo scelto) / Skip all / Overwrite (prende questo) / Overwrite all / Cancel-Esc (annulla tutto); i file scartati restano nella sorgente; poi `transferPairs` con le domande di sempre.
 - **Ctrl+U** (`swapPanels`): scambia i puntatori `fm.left`/`fm.right` e il layout (tutto lo stato viaggia con il pannello, anche le misure in background); evidenziazione sullo stesso lato; stato salvato; avviso `Panels swapped — Ctrl+U to swap them back`; rifiutato con l'albero.
-- **Pausa** (`runTaskEx(…, pausable)` per F5, F6, Ctrl+P): pulsanti **Pause** (focus) → **Resume**, e Cancel; `opCtx.paused` + `waitIfPaused` (passi di 100 ms, esce con Cancel) nei lavoratori prima di ogni file, nel Reader della copia, nella callback di `CopyFileExW`, prima delle rinomine e in `scanNode`; in pausa `PAUSED — press Resume to go on` e campioni della velocità azzerati. Con la copia lato server SMB la pausa può scattare solo a fine file.
+- **Pausa** (nella v1.18 `runTaskEx(…, pausable)`, tolto nella v1.19: ora nel riquadro, §5.21): pulsanti **Pause** → **Resume**, e Cancel; `opCtx.paused` + `waitIfPaused` (passi di 100 ms, esce con Cancel) nei lavoratori prima di ogni file, nel Reader della copia, nella callback di `CopyFileExW`, prima delle rinomine e in `scanNode`; in pausa `PAUSED — press Resume to go on` e campioni della velocità azzerati. Con la copia lato server SMB la pausa può scattare solo a fine file.
+
+##### 5.21 Novità della v1.19
+- **Coda (`queue.go`)**: F5, F6, Ctrl+P → `transfer` mette in coda un `job` (titolo `<Copy|Move> <describe> → <dest>`, stati `jobQueued` → `jobAsking` → `jobRunning`, `start`, `opCtx`, misuratore, `cancel`, canale `stopped`). Marcature e misure tolte subito; Ctrl+P dopo un taglio svuota subito gli appunti. Con altre operazioni prima: avviso `Queued: <titolo> (N before it) — F8 shows the operations`. **Una alla volta**, in ordine. Le **domande** partono quando arriva il turno (`startNext` → `start` sulla goroutine dell'interfaccia: `transferJob`, `askSelfCopiesOr`, `askMergeOr`, nomi doppi; file esistenti con `askSync` dalla goroutine del lavoro, fase `Waiting for your answer…`). Ogni uscita chiama `j.finish()` (idempotente: toglie il job, chiude `stopped`, avvia il successivo). Fine: `refreshAll`, callback, avviso `Done: <titolo>` / `Cancelled: <titolo>` o finestra degli errori.
+- **Riquadro (`queuePane`)** in `fm.root` tra pannelli (che si accorciano) e barra di stato, solo con operazioni; ticker 250 ms. Bordo ` Operations — F8 ` (+ ` (N waiting, ↑↓ to see them)`), doppio e colore attivo con il focus. Altezza `paneHeight(n) = 2+3+min(max(n,1),3)+1`. Righe: `▶ <titolo>` (+ ` — PAUSED`), barra + `X of Y · velocità · m:ss left` o `PAUSED — Resume to go on` o la fase, file corrente (durante i controlli `waiting for your answer (or checking the folders)…`); lista `N. <titolo>  queued` o `No other operations queued`; pulsanti **Pause**/**Resume**, **Cancel** (in corso), **Remove** (attesa selezionata).
+- **F8** (`focusQueue`): senza operazioni `F8: no operations are running or queued`; focus alla lista (con attese) o ai pulsanti. Nel riquadro `queueKeys`: F8/Esc → pannello attivo, Tab/Shift+Tab tra lista e pulsanti; Ctrl+F2, Ctrl+W, Alt+Q passano (`paneGlobalKey`); una finestra aperta dal riquadro gli rende il focus (`backToPane`).
+- **Uscita** (`quitQueue`): `An operation is running:\nquit anyway? It is cancelled.` / `N operations running or queued:\nquit anyway? The running one is cancelled.`, **Cancel** predefinito / Quit (scarta le attese, annulla la corrente, attende `stopped` max 5 s).
+- Fuori coda (finestra ` Working `): estrazione (anche F5 in archivio), ZIP, cancellazione, vista piatta, ricerca, rinomine. Nessun blocco sui file coinvolti (scelta dell'utente).
+- **Colori**: programmi e multimediali scambiati (multimediali verdi). **Versione** nel riepilogo. **Niente ARM64**: solo `gofm.exe` x64; `install-gofm.ps1` avvisa sui PC ARM (emulazione x64 di Windows 11).
 
 ### 6. Codice
 
@@ -375,6 +386,7 @@ La freccia indica il pannello che cambia; nella direzione opposta non succede nu
 | tree.go | vista ad albero (v1.14) |
 | prefix.go | prefisso ai nomi (v1.14); `afterRename` |
 | capitalize.go | iniziali maiuscole, Ctrl+R (v1.18) |
+| queue.go | coda di copia/spostamento/incolla, riquadro delle operazioni, F8, uscita con conferma (v1.19) |
 | scrollbar.go | barra di scorrimento e Shift+movimento (v1.15) |
 | clipboard.go | appunti di gofm e clic destro (v1.16) |
 | scan.go | preparazione di copia/spostamento in un solo percorso (v1.17) |
@@ -388,7 +400,8 @@ La freccia indica il pannello che cambia; nella direzione opposta non succede nu
 | scripts/make-small-icons.py | icone a 32 e 48 px disegnate a pixel (Pillow) |
 | v111_test.go | compilatore fissato, risorse Windows |
 | v112_test.go | schemi, unità, ordinamento, tasti, barra e clic, editor, conflitti, cancellazione definitiva |
-| v118_test.go | cursore sul primo elemento, doppio clic, Ctrl+R, nomi doppi, Ctrl+U, pausa |
+| v119_test.go | colori scambiati, versione nel riepilogo, niente ARM, coda in sequenza, domande alla partenza, riquadro (F8, Pause, Cancel, Remove), uscita con coda, tasti globali dal riquadro |
+| v118_test.go | cursore sul primo elemento, doppio clic, Ctrl+R, nomi doppi, Ctrl+U, pausa del motore |
 | v117_test.go | scan, copia/spostamento con l'albero, stesso ordinamento, cache delle voci, totali, misura limitata, barra abbreviata |
 | v116_test.go | applicazione in esecuzione su schermo simulato (`runUI`, `waitUI`): uscita, appunti, incolla nell'albero, Shift+Canc, ultimo prefisso, clic destro |
 | v115_test.go | barra (calcolo, schermo simulato, clic/trascinamento, albero), Shift+movimento, copia su sé stessi |
@@ -402,14 +415,14 @@ La freccia indica il pannello che cambia; nella direzione opposta non succede nu
 - Repository <https://github.com/rives1/goFm_src> (ramo `main`): `LICENSE`, `README.md`, `CHANGELOG.md`, `THIRD_PARTY_NOTICES.md`, `.gitignore`, `docs/`, `scripts/build-release.sh` e due workflow:
   - `.github/workflows/ci.yml`: sui rami e le pull request; verify, vet e test su Windows e Linux, race detector su Linux, pacchetto come artifact;
   - `.github/workflows/release.yml`: al push di un tag `v<versione>`; verifiche, `bash scripts/build-release.sh "$GITHUB_REF_NAME"` (si ferma se il tag non corrisponde a `main.go` o manca la sezione nel CHANGELOG), `gh release create` con `gofm-<v>-windows.zip` e `.sha256`.
-- Pacchetto: cartella `gofm-<v>/` con `gofm.exe`, `gofm-arm64.exe`, README, CHANGELOG, LICENSE, THIRD_PARTY_NOTICES, `windows-terminal/`.
+- Pacchetto: cartella `gofm-<v>/` con `gofm.exe` (x64; `gofm-arm64.exe` fino alla v1.18), README, CHANGELOG, LICENSE, THIRD_PARTY_NOTICES, `windows-terminal/`.
 - Il repository è nato su Windows (`core.filemode=false`): gli script si lanciano con `bash`.
 - **Compilatore (v1.11)**: Go 1.27.3 in `GO_VERSION` dei due workflow (con `GOTOOLCHAIN=local`) e nella riga `toolchain` di `go.mod`; lo script si ferma se `go env GOVERSION` è diverso; un test verifica che workflow e `go.mod` coincidano. Fino alla 1.10 `setup-go` leggeva la riga `go 1.24.0` e usava Go 1.24.0.
-- **Metadati Windows (v1.11)**: `go tool go-winres make --arch amd64,arm64 --product-version <v> --file-version <v>` da `winres/winres.json` (go-winres v0.3.3, 0BSD, registrato come `tool` in `go.mod`). Versione (ProductName gofm, CompanyName rives, FileDescription, LegalCopyright, OriginalFilename gofm.exe, Comments con il link), manifest `asInvoker` + `longPathAware`, icona originale a due pannelli (256, 48, 32 e 16 px; 32 e 48 dalla v1.13). I `.syso` sono generati dallo script e ignorati da git. Build deterministica (verificato).
-- **Note di rilascio**: compilatore, commit e SHA-256 dei due eseguibili. **Build riproducibile**: per la 1.10 verificato che la ricompilazione del commit dia gli stessi byte della Release; per la 1.13 due compilazioni dal tag danno gli stessi byte.
+- **Metadati Windows (v1.11)**: `go tool go-winres make --arch amd64 --product-version <v> --file-version <v>` da `winres/winres.json` (go-winres v0.3.3, 0BSD, registrato come `tool` in `go.mod`). Versione (ProductName gofm, CompanyName rives, FileDescription, LegalCopyright, OriginalFilename gofm.exe, Comments con il link), manifest `asInvoker` + `longPathAware`, icona originale a due pannelli (256, 48, 32 e 16 px; 32 e 48 dalla v1.13). I `.syso` sono generati dallo script e ignorati da git. Build deterministica (verificato).
+- **Note di rilascio**: compilatore, commit e SHA-256 dell'eseguibile. **Build riproducibile**: per la 1.10 verificato che la ricompilazione del commit dia gli stessi byte della Release; per la 1.13 due compilazioni dal tag danno gli stessi byte.
 - **Antivirus**: la 1.10 è stata segnalata da Defender come `Trojan:Win32/Bearfoos.B!ml` (euristica ML, falso positivo tipico dei binari Go non firmati). Testo per Microsoft in `microsoft-false-positive-submission.md`. Soluzione stabile non ancora attiva: **firma del codice** (SignPath Foundation o Azure Trusted Signing, serve un account dell'utente).
 - `go.mod` è standard. Il `go.sum` è stato costruito da mirror GitHub con un metodo verificato, perché `golang.org` e `sum.golang.org` non erano raggiungibili.
-- Compilazione: `GOOS=windows GOARCH=amd64|arm64 go build -trimpath -ldflags="-s -w"`.
+- Compilazione: `GOOS=windows GOARCH=amd64 go build -trimpath -ldflags="-s -w"` (nessuna build ARM64 dalla v1.19).
 - In un ambiente senza accesso a `golang.org` servono i `replace` verso `github.com/golang/*` oppure un proxy locale (`GOPROXY=file://…`, `GONOPROXY=github.com`).
 - Il nome del modulo è `gofm`; per permettere `go install` va cambiato in `github.com/<utente>/gofm`.
 
@@ -421,7 +434,8 @@ La freccia indica il pannello che cambia; nella direzione opposta non succede nu
 - Icone: senza un Nerd Font i glifi sono quadratini e il programma non può accorgersene (serve Alt+I); un'icona per famiglia, non per estensione.
 - Nessun supporto agli archivi con password né alla creazione di 7z.
 - Ricerca per contenuto solo testuale.
-- Solo Windows a 64 bit.
+- Solo Windows a 64 bit x64 (ARM tramite emulazione x64 di Windows 11).
+- Coda: le domande sono modali (mentre una è aperta non si mette in coda altro); nessun blocco sui file in coda; le operazioni fuori coda possono girare insieme a una della coda.
 - Ricerca digitando solo con le minuscole; Blocco Maiuscole sconsigliato.
 - Vista piatta: modifiche nelle sottocartelle visibili solo con Alt+R.
 - Albero: rami letti all'apertura, aggiornati solo con Alt+R o quando il pannello destro rilegge quella cartella; per copiare o spostare si esce dall'albero.
@@ -436,6 +450,7 @@ La freccia indica il pannello che cambia; nella direzione opposta non succede nu
 - icona e proprietà del file in Esplora risorse; effetto dei metadati su Defender (prima verifica con la Release 1.11);
 - v1.12: tipi di unità e bus USB, cancellazione su unità di rete, F4 con Notepad, clic sulla barra, decodifica di Alt+F7, Ctrl+F7, Ctrl+F2, Ctrl+F9 e Ctrl+A nei terminali Windows (nella console classica Ctrl+A potrebbe essere intercettato dalla selezione del testo).
 
+- v1.19: riquadro delle operazioni e clic sui suoi pulsanti nei terminali Windows; avviso ARM dello script di installazione ed esecuzione in emulazione x64.
 - v1.18: doppio clic nei terminali Windows; pausa con `CopyFileExW` e con la copia lato server; Ctrl+R con cambio di sole maiuscole su NTFS e share; Ctrl+R/Ctrl+U nei terminali.
 - v1.17: guadagno della preparazione della copia su share Windows (atteso il maggiore); misura limitata su NAS.
 - v1.16: Ctrl+I (distinto da Tab), Ctrl+O, Ctrl+P, Ctrl+W, Shift+Canc e clic destro nei terminali Windows; nella console classica Ctrl+Tab arriva come Ctrl+I.

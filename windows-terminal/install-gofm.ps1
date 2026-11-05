@@ -13,7 +13,10 @@ param([switch]$AddToPath)
 $ErrorActionPreference = 'Stop'
 
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
-$exe  = if ($env:PROCESSOR_ARCHITECTURE -eq 'ARM64') { 'gofm-arm64.exe' } else { 'gofm.exe' }
+$exe  = 'gofm.exe' # x64 only since v1.19
+if ($env:PROCESSOR_ARCHITECTURE -eq 'ARM64' -or $env:PROCESSOR_ARCHITEW6432 -eq 'ARM64') {
+    Write-Host 'This PC has an ARM processor: gofm.exe is an x64 program and runs through the x64 emulation of Windows 11 (Windows 10 on ARM cannot run it).' -ForegroundColor Yellow
+}
 $src  = Join-Path $here $exe
 if (-not (Test-Path $src)) { $src = Join-Path (Split-Path -Parent $here) $exe } # zip layout: exe one level up
 if (-not (Test-Path $src)) { throw "Cannot find $exe next to this script." }

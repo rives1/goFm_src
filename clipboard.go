@@ -64,12 +64,10 @@ func (fm *FM) paste() {
 		return
 	}
 	cut := fm.clip.cut
-	fm.transfer(items, p.dir, cut, func() {
-		if cut {
-			fm.clip = nil // cut items are pasted once
-		}
-		p.reload()
-	})
+	if cut {
+		fm.clip = nil // cut items are pasted once (v1.19: at once, since the paste may wait in the queue)
+	}
+	fm.transfer(items, p.dir, cut, func() { p.reload() })
 }
 
 // rightClickMark marks or unmarks the row under the pointer and puts the cursor on it.

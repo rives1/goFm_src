@@ -247,7 +247,7 @@ func TestKeyBar(t *testing.T) {
 	}
 	for _, it := range keybarItems {
 		switch it.key {
-		case "F2", "F3", "F5", "F7", "F10", "F8", "Alt+S", "Alt+F", "*":
+		case "F2", "F3", "F5", "F7", "F10", "Alt+S", "Alt+F", "*": // F8: queue pane since v1.19
 			t.Errorf("%s must not be in the bar", it.key)
 		}
 	}

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Builds the downloadable package of a release:
-#   dist/gofm-<version>-windows.zip   gofm-<version>/ with gofm.exe, gofm-arm64.exe,
+#   dist/gofm-<version>-windows.zip   gofm-<version>/ with gofm.exe (x64),
 #                                      README.md, CHANGELOG.md, LICENSE,
 #                                      THIRD_PARTY_NOTICES.md, windows-terminal/
 #   dist/gofm-<version>-windows.zip.sha256
@@ -35,9 +35,8 @@ name="gofm-$version"
 rm -rf dist
 mkdir -p "dist/$name"
 trap 'rm -f rsrc_windows_*.syso' EXIT
-go tool go-winres make --arch amd64,arm64 --product-version "$version" --file-version "$version"
+go tool go-winres make --arch amd64 --product-version "$version" --file-version "$version"
 GOOS=windows GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o "dist/$name/gofm.exe" .
-GOOS=windows GOARCH=arm64 go build -trimpath -ldflags="-s -w" -o "dist/$name/gofm-arm64.exe" .
 cp README.md CHANGELOG.md LICENSE THIRD_PARTY_NOTICES.md "dist/$name/"
 cp -r windows-terminal "dist/$name/"
 (cd dist && zip -qr -X "$name-windows.zip" "$name" && sha256sum "$name-windows.zip" > "$name-windows.zip.sha256")
@@ -47,15 +46,15 @@ awk -v v="## $version " 'index($0, v) == 1 {on = 1; next} /^## / {on = 0} on' CH
 cat >> dist/release-notes.md <<NOTES
 
 ---
-**Download:** \`$name-windows.zip\` (64-bit Windows: \`gofm.exe\` for x64, \`gofm-arm64.exe\` for ARM).
+**Download:** \`$name-windows.zip\` (64-bit Windows x64: \`gofm.exe\`; ARM PCs with Windows 11 run it through x64 emulation).
 Unzip, then run \`windows-terminal\\install-gofm.ps1\` or start \`gofm.exe\` directly — see the README.
 The icons need the *Cascadia Mono NF* font (README, "Font with icons"); without it press Alt+I.
 
 Built with **$goversion** from commit \`$commit\` (\`-trimpath -ldflags="-s -w"\`): the build is reproducible, so anyone can rebuild the same bytes and compare them with the SHA-256 below. If an antivirus reports the executable, see "Antivirus warnings" in the README.
 
-SHA-256 of the executables:
+SHA-256 of the executable:
 \`\`\`
-$(cd "dist/$name" && sha256sum gofm.exe gofm-arm64.exe)
+$(cd "dist/$name" && sha256sum gofm.exe)
 \`\`\`
 NOTES
 echo "dist/$name-windows.zip"

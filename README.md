@@ -13,7 +13,7 @@ free space per panel · remembers your folders.
 
 ## Download
 
-Get **`gofm-<version>-windows.zip`** from the [latest release](https://github.com/rives1/goFm_src/releases/latest) (a `.sha256` checksum is published next to it). The zip contains `gofm.exe` (x64), `gofm-arm64.exe` (ARM), this README, the changelog, the licences and the `windows-terminal` folder with the install script.
+Get **`gofm-<version>-windows.zip`** from the [latest release](https://github.com/rives1/goFm_src/releases/latest) (a `.sha256` checksum is published next to it). The zip contains `gofm.exe` (x64), this README, the changelog, the licences and the `windows-terminal` folder with the install script.
 
 To check a download, compare its hash with the one on the release page (PowerShell):
 
@@ -66,13 +66,13 @@ powershell -ExecutionPolicy Bypass -File windows-terminal\install-gofm.ps1 [-Add
 
 The script copies the right executable to `%LOCALAPPDATA%\Programs\gofm`, installs the profile as a Windows Terminal *fragment* and, with `-AddToPath`, adds the folder to your user PATH. It also tells you if Cascadia Mono NF is not installed (it does not install fonts). No administrator rights are needed. Restart Windows Terminal and pick **gofm** from the drop-down. If Windows blocks the script because the zip came from the Internet, right-click the zip → Properties → Unblock before extracting.
 
-Use `gofm-arm64.exe` only on Windows PCs with an ARM processor (e.g. Snapdragon laptops).
+There is no ARM build since v1.19: on Windows PCs with an ARM processor (e.g. Snapdragon laptops) Windows 11 runs `gofm.exe` through its x64 emulation; Windows 10 on ARM cannot run it.
 
 ## Keys
 
 Typing letters in a panel jumps to the first matching name, so every command
 uses a function key, **Alt+letter**, **Ctrl+letter**, or **Shift+letter** (drives).
-**Ctrl+F2** shows all the keys in the program.
+**Ctrl+F2** shows all the keys in the program, with the version of gofm in its title.
 
 | Key | Action |
 |---|---|
@@ -106,7 +106,8 @@ uses a function key, **Alt+letter**, **Ctrl+letter**, or **Shift+letter** (drive
 | Del | delete: to the **Recycle Bin** on local drives, **permanently** on network drives (see *Deleting*) |
 | Shift+Del | delete **without confirmation** (still a warning for folders with subfolders) |
 | F9 | compress to ZIP |
-| Ctrl+W / Alt+Q | quit (F10 does nothing since 1.16) |
+| F8 | **operations pane**: focus on the running and queued copies/moves/pastes — Pause, Cancel, Remove (see *Progress*) |
+| Ctrl+W / Alt+Q | quit (F10 does nothing since 1.16); with operations running, asks first |
 | Right click | mark or unmark the item under the pointer |
 | F12 | **compare** the two panels by name, size and date: marks, on each side, the files missing on the other side and the **newer** copy of files on both sides (see *Comparing folders*) |
 | Alt+F7 | search subfolders by name and/or content |
@@ -123,7 +124,7 @@ uses a function key, **Alt+letter**, **Ctrl+letter**, or **Shift+letter** (drive
 | Ctrl+F9 | next colour scheme: **navy** (default) → **dark** → **light** (remembered) |
 | Ctrl+F2 | summary of all the keys |
 
-F1, F8 and F10 do nothing. The **key bar** at the bottom shows as many shortcuts as fit the window, operations first (F2, F3, F5 and F7 are never shown there); **click** a shortcut in the bar to run it. To save room, the bar writes Ctrl as **C** and the letter in lower case: `C+a` is Ctrl+A, `C+F7` is Ctrl+F7 (the summary, Ctrl+F2, uses the full names).
+F1 and F10 do nothing. The **key bar** at the bottom shows as many shortcuts as fit the window, operations first (F2, F3, F5 and F7 are never shown there); **click** a shortcut in the bar to run it. To save room, the bar writes Ctrl as **C** and the letter in lower case: `C+a` is Ctrl+A, `C+F7` is Ctrl+F7 (the summary, Ctrl+F2, uses the full names).
 
 Operations act on marked items; if nothing is marked, on the item under the cursor.
 
@@ -264,11 +265,15 @@ Marked folders are measured at most three at a time, so marking hundreds of fold
 
 ## Progress
 
-Copy, move, compress and extract show a progress bar with bytes done, speed (averaged over the last 5 seconds) and an estimate of the time left. Copies, moves and pastes also have a **Pause** button (it becomes *Resume*): a pause stops at once, also in the middle of a big file, and Cancel still works while paused; the speed and the time left are measured again after Resume. (With a server-side copy between folders of the same server, Windows reports progress only at the end of each file, so the pause starts with the next file.) During a parallel copy the file shown is the last one started. Sizes are counted first, so very large folders spend a moment on "Counting files…". A move within the same drive is an instant rename.
+**Copies, moves and pastes** (F5, F6, Ctrl+P) run in the **operations pane** at the bottom of the window: the two panels get shorter and stay usable, so you can keep browsing and start other operations. Each new copy, move or paste is **queued** and starts when the previous one has ended — one at a time, in the order you started them. Its questions (files that already exist, folders to merge, items copied onto themselves) are asked when its turn comes, so they see what the previous operations wrote. The pane shows the running operation and up to three waiting ones (the title says how many more); it closes by itself when the queue is empty, and the result is shown in the status bar (`Done: …`, `Cancelled: …`, or the list of errors).
+
+**F8** moves the focus to the pane, and F8 or Esc goes back to the panels. ↑↓ choose a waiting operation, Tab moves to the buttons: **Pause** (it becomes *Resume*), **Cancel** (the running operation) and **Remove** (the selected waiting one); the buttons also work with the mouse. Ctrl+F2 and quitting work from the pane too. Quitting while operations are running or queued asks first: *Cancel* is the default, *Quit* cancels the running one (its half-written file is removed) and drops the others.
+
+Compress, extract (also F5 inside an archive), delete and the other operations are not queued: they still show a progress window and run at once. Copy, move, compress and extract show a progress bar with bytes done, speed (averaged over the last 5 seconds) and an estimate of the time left. A pause stops at once, also in the middle of a big file, and Cancel still works while paused; the speed and the time left are measured again after Resume. (With a server-side copy between folders of the same server, Windows reports progress only at the end of each file, so the pause starts with the next file.) During a parallel copy the file shown is the last one started. Sizes are counted first, so very large folders spend a moment on "Counting files…". A move within the same drive is an instant rename.
 
 ## Display
 
-- Three **colour schemes**, switched with **Ctrl+F9** and remembered: **navy** (dark blue, the default), **dark** (neutral grey) and **light**. File names are **coloured by type**: archives pink, programs green, images orchid, documents blue, audio/video red, code and config aquamarine, system files grey, folders white (black in the light scheme). The **mark colour is reserved** (yellow; dark gold in the light scheme) and no file type comes close to it. Every scheme is checked by the tests for readable contrast.
+- Three **colour schemes**, switched with **Ctrl+F9** and remembered: **navy** (dark blue, the default), **dark** (neutral grey) and **light**. File names are **coloured by type**: archives pink, programs red, images orchid, documents blue, audio/video green (swapped in 1.19), code and config aquamarine, system files grey, folders white (black in the light scheme). The **mark colour is reserved** (yellow; dark gold in the light scheme) and no file type comes close to it. Every scheme is checked by the tests for readable contrast.
 - An **icon** before each name shows its type: one icon per colour family, plus folder, `..`, share and four kinds of drive (local, network, removable/USB, CD/DVD). The icon keeps the colour of its type **even when the item is marked** (only the name turns yellow); on the cursor row of the active panel it takes the cursor's text colour, because the type colours are unreadable on the cyan cursor. Hidden items have dimmed icons. Nerd Font icons by default, basic symbols with **Alt+I** (see *Font with icons*).
 - Dates: `22/10 16:37` for the current year, `22/10/2024` for older files.
 - Long names are shortened to fit the window, keeping the extension (`a really very extre….pdf`), so size and date always stay visible.
@@ -300,7 +305,7 @@ Both panels refresh by themselves when files are added, removed or changed, usin
 - Password-protected ZIP/7z archives are not supported (a clear error is shown).
 - No creation of 7z archives; no RAR or other formats.
 - Content search is a plain text match: it does not find text in UTF-16 files, inside .docx/.pdf (they are compressed), or accented letters in a different case.
-- 64-bit Windows only (x64 / ARM64).
+- 64-bit Windows x64 only (on ARM, Windows 11 runs it through x64 emulation).
 
 ## Building from source
 

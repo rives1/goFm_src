@@ -73,6 +73,7 @@ var helpSections = []helpSection{
 		{"Ctrl+F9", "next colour scheme: navy → dark → light"},
 	}},
 	{"Program", [][2]string{
+		{"F8", "operations pane: ↑↓ Pause Cancel Remove, Esc back"},
 		{"Ctrl+F2", "this summary"},
 		{"Ctrl+W / Alt+Q", "quit (F10 does nothing since 1.16)"},
 	}},
@@ -87,6 +88,8 @@ func helpText() string {
 		}
 	}
 	var b strings.Builder
+	// v1.19: the version, always the one of the program (const version).
+	fmt.Fprintf(&b, "[%s::b]gofm %s[-::-]  https://github.com/rives1/goFm_src\n\n", tagColor(colLabel), version)
 	for i, s := range helpSections {
 		if i > 0 {
 			b.WriteString("\n")
@@ -105,7 +108,7 @@ func (fm *FM) showKeys() {
 	var name string
 	text := helpText()
 	tv := tview.NewTextView().SetDynamicColors(true).SetScrollable(true).SetWrap(false).SetText(text)
-	tv.SetBorder(true).SetTitle(" Keys — Esc to close ")
+	tv.SetBorder(true).SetTitle(" gofm " + version + " — Keys — Esc to close ")
 	tv.SetInputCapture(func(ev *tcell.EventKey) *tcell.EventKey {
 		switch {
 		case ev.Key() == tcell.KeyEscape, ev.Key() == tcell.KeyEnter, ev.Key() == tcell.KeyF2,
@@ -123,7 +126,7 @@ func (fm *FM) showKeys() {
 	h := len(lines) + 2
 	if _, _, _, sh := fm.pages.GetRect(); sh > 0 && h > sh {
 		h = sh // the text scrolls with the arrows
-		tv.SetTitle(" Keys — ↑↓ to scroll, Esc to close ")
+		tv.SetTitle(" gofm " + version + " — Keys — ↑↓ to scroll, Esc to close ")
 	}
 	name = fm.openModal(tv, w+4, h, nil)
 }
