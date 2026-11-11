@@ -19,3 +19,6 @@ Thumbs.db
 # settings and state written next to a locally built executable (v1.13)
 /gofm.ini
 /state.json
+
+# temporary folders of the tests on Windows (visibleTempDir, v1.21)
+/testtmp-*/

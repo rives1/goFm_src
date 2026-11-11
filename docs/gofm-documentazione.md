@@ -1227,7 +1227,7 @@ Nota storica: il commit "versione 1.9" del repository non conteneva gli aggiorna
 
 Eseguiti su Linux; su Windows è stata verificata solo la compilazione (`go vet` e `go test -c` con `GOOS=windows`).
 
-Dalla v1.20 la suite gira anche su **Windows 11** (Go 1.27.3): tutto passa tranne `TestTreeView`, `TestPasteInTree` e `TestShiftDelete`, che falliscono **allo stesso modo con la v1.19** (quindi non dipendono dalla v1.20; da indagare, vedi §11).
+Dalla v1.20 la suite gira anche su **Windows 11** (Go 1.27.3). Nella v1.20 `TestTreeView`, `TestPasteInTree`, `TestShiftDelete` e (in un clone nuovo) `TestPinnedToolchain` fallivano su Windows, e su Linux `go test -race` trovava una data race in `TestFlatDuplicatesCopy`: la CI era rossa dalla v1.15. Corretti dopo la v1.20 (cause e rimedi in §11, "CI"); tutta la suite passa su Windows 11 e, con `-race`, su Linux (Ubuntu 24.04 in WSL).
 
 | Area | Test |
 |---|---|
@@ -1319,7 +1319,12 @@ Prove precedenti: navigazione con le frecce, ricerca digitando, larghezza delle 
 - Vista piatta: limite di 200 000 file; le modifiche esterne nelle sottocartelle compaiono solo con Alt+R.
 - Eseguibili **non firmati**: alcuni antivirus (es. Defender, rilevazioni `!ml`) possono segnalarli come falsi positivi; la firma del codice non è ancora attiva.
 - Ricostruzione completa delle righe a ogni marcatura: circa 250 ms con 200 000 voci (vista piatta) fino alla v1.19, circa 220 ms stimati dalla v1.20; rimedio possibile con una tabella "virtuale" che costruisce solo le righe visibili (non fatto).
-- Su Windows `TestTreeView`, `TestPasteInTree` e `TestShiftDelete` falliscono (già con la v1.19): probabilmente dipendono dall'ambiente (la radice dell'albero risulta la cartella dell'utente invece della cartella temporanea del test); da indagare.
+- **CI** (correzioni dopo la v1.20, tutte nei test e negli a capo, nessuna nel programma):
+  - `.gitattributes` con `* text=auto eol=lf`: Git per Windows ha `core.autocrlf=true`, quindi i cloni nuovi avevano i file in CRLF; `TestPinnedToolchain` non trovava la riga `toolchain` di `go.mod` e l'eseguibile non era riproducibile (1.20: `7b936c…` invece di `61ba09…`).
+  - `TestTreeView` e `TestPasteInTree`: `t.TempDir` su Windows è sotto `AppData` (nascosta) e nella CI ha il nome corto `RUNNER~1`; l'albero si fermava prima, sulla cartella dell'utente, e il pannello destro, seguendolo, riceveva l'incolla di `TestPasteInTree` (un `a.txt` finiva nella cartella dell'utente). Ora `visibleTempDir`: cartella `testtmp-*` nella cartella del pacchetto, con il nome lungo; test saltato se un antenato è nascosto.
+  - `TestShiftDelete`: il Cestino di Windows toglie il file prima che il compito finisca; il test ora aspetta anche la chiusura della finestra ` Working `.
+  - `TestFlatDuplicatesCopy`: tre FM nello stesso test, ognuno con `runUI` fermato solo a fine test; `applyScheme` del giro successivo scriveva i colori mentre l'interfaccia precedente disegnava. Ora un sotto-test per giro.
+- **Albero e cartelle nascoste o nomi corti** (comportamento del programma, non cambiato): con Ctrl+T da una cartella sotto una cartella nascosta (es. `AppData`) o scritta con nomi corti 8.3, l'albero si ferma all'ultimo antenato raggiungibile e il pannello destro si sposta lì.
 - Appunti interni a gofm (non quelli di Windows), persi all'uscita; Ctrl+C/X/V non usabili (Ctrl+V è dei terminali). Nella console classica Ctrl+Tab arriva come Ctrl+I (riempie solo gli appunti).
 - Albero: i rami si leggono quando si aprono e non si aggiornano da soli (solo con Alt+R o quando il pannello destro rilegge quella cartella); copia e spostamento richiedono di uscire dall'albero.
 - Cartella del programma non scrivibile: nulla viene salvato (scelta dell'utente), quindi ogni avvio riparte dai valori predefiniti.
@@ -1329,7 +1334,7 @@ Prove precedenti: navigazione con le frecce, ricerca digitando, larghezza delle 
 
 **Non verificato su Windows reale** (logica testata solo dove è portabile):
 - v1.20: nessun cambiamento visibile da provare a schermo; benchmark e test eseguiti su Windows 11;
-- v1.19: riquadro delle operazioni in Windows Terminal e nella console classica (ridisegno ogni 250 ms durante la navigazione, clic sui pulsanti); avviso dello script di installazione su un PC ARM e avvio di `gofm.exe` in emulazione x64;
+- v1.19: avviso dello script di installazione su un PC ARM e avvio di `gofm.exe` in emulazione x64. **Verificati dall'utente su Windows il 05/11/2026**, tutti superati: riquadro delle operazioni in Windows Terminal e nella console classica (ridisegno durante la navigazione, clic sui pulsanti Pause/Cancel/Remove), pausa durante una copia grande, due copie in coda verso una share, Ctrl+W con una copia in corso;
 - v1.18: doppio clic in Windows Terminal e nella console classica (intervallo di 500 ms di tview); pausa durante `CopyFileExW` (callback bloccata) e con la copia lato server di SMB; Ctrl+R con cambio di sole maiuscole su NTFS e su share; Ctrl+R e Ctrl+U nei terminali Windows;
 - v1.17: preparazione della copia su share Windows (nessuna stat per file attesa, perché `ReadDir` su Windows fornisce già dimensioni e date: da misurare); misura limitata delle cartelle su NAS;
 - v1.16: decodifica di Ctrl+I (distinto da Tab), Ctrl+O, Ctrl+P, Ctrl+W e Shift+Canc in Windows Terminal e nella console classica; clic destro;

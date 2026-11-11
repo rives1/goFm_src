@@ -11,9 +11,47 @@ import (
 	"github.com/rivo/tview"
 )
 
+// visibleTempDir is a temporary folder that the tree can reach from its root (v1.21).
+// The tree stops at the first hidden folder on the way, and on Windows t.TempDir is
+// under %LOCALAPPDATA%, which is hidden (on the CI also written with a short 8.3 name,
+// RUNNER~1, that matches no listed name). So on Windows the folder is made in the
+// folder of the package (the working directory of the tests), with its long name;
+// the test is skipped if a folder on the way is hidden all the same.
+func visibleTempDir(t *testing.T) string {
+	t.Helper()
+	if !onWindows {
+		return t.TempDir()
+	}
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir, err := os.MkdirTemp(wd, "testtmp-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(dir) })
+	if long, err := filepath.EvalSymlinks(dir); err == nil {
+		dir = long
+	}
+	for p := dir; ; {
+		parent := filepath.Dir(p)
+		if parent == p {
+			break
+		}
+		if fi, err := os.Lstat(p); err == nil {
+			if _, hidden := fileAttrs(fi); hidden || strings.HasPrefix(fi.Name(), ".") {
+				t.Skipf("the tests are in a hidden folder (%s): the tree cannot reach them", p)
+			}
+		}
+		p = parent
+	}
+	return dir
+}
+
 // treeFixture: root/a/b/c, root/a/b/c2, root/a/x, root/a/.hid, root/a/file.txt.
 func treeFixture(t *testing.T) (root string) {
-	root = t.TempDir()
+	root = visibleTempDir(t)
 	for _, d := range []string{"a/b/c", "a/b/c2", "a/x", "a/.hid"} {
 		if err := os.MkdirAll(filepath.Join(root, filepath.FromSlash(d)), 0o755); err != nil {
 			t.Fatal(err)

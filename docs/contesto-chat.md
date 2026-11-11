@@ -8,15 +8,19 @@
 - **Copia locale** (PC dell'utente): `C:\Users\ammin\Documents\Claude CLI\gofm-repo\goFm_src`.
 - **Cartella dei pacchetti**: `C:\Users\ammin\Documents\Claude CLI\gofm-repo\`, con `gofm-<versione>-windows.zip`, `.sha256`, `gofm-<versione>-repo.zip`, `gofm-<versione>-specifiche-compatte.md`, `gofm-<versione>-contesto-chat.md` e `microsoft-false-positive-submission.md`. Nel repository: `docs/contesto-chat.md`.
 - **Stato git all'11/11/2026**:
-  - 1.19 inviata (`main` allineato a `origin/main`; Release `v1.19` da controllare);
-  - commit `versione 1.20` con tag annotato `v1.20` (questo file è nel commit stesso).
+  - 1.20 inviata dall'utente e pubblicata (Release `v1.20` dell'11/11/2026, `origin/main` = `2874965`; questo file, nella forma del commit, ne fa parte);
+  - dopo la 1.20, modifiche non ancora committate in `docs/` (prove della 1.19, stato della CI, build su Windows): vanno nel commit della 1.21. **Non** modificare il commit o il tag `v1.20`: sono già pubblicati.
 - **SHA-256 dell'eseguibile**: nelle note della Release `v1.20` su GitHub e nel file `gofm-1.20-contesto-chat.md` della cartella dei pacchetti (qui non può stare: l'eseguibile incorpora il commit che contiene questo file).
 
 ## B. In sospeso
 
-1. **Push** della 1.20 (commit e tag) e controllo delle Release `v1.19` e `v1.20` (il pacchetto contiene solo `gofm.exe` dalla 1.19). **Pacchetto della 1.20** (`build-release.sh v1.20` in un clone pulito del tag) e file `gofm-1.20-*` della cartella dei pacchetti ancora da produrre.
-   **Tre test falliscono su Windows** (`TestTreeView`, `TestPasteInTree`, `TestShiftDelete`), già con la 1.19: la suite finora girava solo su Linux; da indagare (la radice dell'albero risulta la cartella dell'utente invece di quella temporanea del test).
-2. **Prove su Windows reale** (la 1.20 non ha cambiamenti visibili: benchmark e test già eseguiti su Windows 11) della 1.19: riquadro delle operazioni in Windows Terminal e nella console classica (navigare durante una copia grande, F8, Pause/Resume, Cancel, Remove, clic sui pulsanti), due o tre copie in coda verso una share, domande che arrivano alla partenza, Ctrl+W con una copia in corso; versione nel riepilogo; colori scambiati nei tre schemi; avviso dello script di installazione su un PC ARM.
+1. **CI rossa dalla 1.15** (il workflow `Release` invece riusciva e pubblicava): **corretta dopo la 1.20, da inviare** (modifiche non committate; verificate in locale: suite completa su Windows 11 e con `-race` su Ubuntu 24.04 in WSL, ripetuta 3 volte). Cause e rimedi, tutti nei test e negli a capo (dettagli in `docs/gofm-documentazione.md` §11, "CI"):
+   - `.gitattributes` con `* text=auto eol=lf`: i cloni nuovi su Windows (`core.autocrlf=true`) avevano CRLF → `TestPinnedToolchain` falliva e l'eseguibile non era riproducibile.
+   - `TestTreeView`, `TestPasteInTree`: `t.TempDir` sotto `AppData` nascosta (e `RUNNER~1` nella CI) → l'albero si fermava sulla cartella dell'utente e `TestPasteInTree` vi incollava un `a.txt`. Ora `visibleTempDir` (`testtmp-*` nella cartella del pacchetto, in `.gitignore`).
+   - `TestShiftDelete`: attende anche la fine del compito del Cestino.
+   - `TestFlatDuplicatesCopy` (race con `-race`): un sotto-test per giro, così ogni `runUI` si ferma prima del `newTestFM` successivo.
+   - **Da decidere con l'utente**: l'albero si ferma al primo antenato nascosto o scritto con nome corto 8.3, e il pannello destro lo segue (es. Ctrl+T da una cartella sotto `AppData`). È il comportamento del programma (commento in `tree.go`), non dei test.
+2. **Prove su Windows reale**: la 1.20 non ha cambiamenti visibili (benchmark e test già eseguiti su Windows 11). Della 1.19 le prove sono state **fatte dall'utente il 05/11/2026, tutte superate** (riquadro delle operazioni in Windows Terminal e nella console classica, clic sui pulsanti Pause/Cancel/Remove, pausa durante una copia grande, due copie in coda verso una share, Ctrl+W con una copia in corso); riportate in `docs/gofm-documentazione.md` §11 con la 1.20. Della 1.19 resta da provare solo l'avviso dello script di installazione su un PC ARM.
    Della 1.18: doppio clic in Windows Terminal e nella console classica; Pause/Resume durante una copia grande verso una share (con `CopyFileExW` e, tra cartelle dello stesso server, con la copia lato server: lì la pausa può scattare solo a fine file); Ctrl+R con cambio di sole maiuscole su NTFS e su share; Ctrl+U; vista piatta con nomi doppi.
    Della 1.17: F5/F6 verso una share con molti file già presenti (confronto dei tempi con la 1.16: è il guadagno atteso maggiore); Ctrl+A su molte cartelle di un NAS; barra dei tasti abbreviata.
 3. **Prove delle versioni precedenti** ancora da fare: 1.16 Ctrl+I/O/P/W, Shift+Canc, clic destro; 1.15 barra di scorrimento con il mouse, Shift+frecce; 1.14 Ctrl+T e Ctrl+K, albero su unità di rete lente.
@@ -46,6 +50,11 @@
 - **go-winres** v0.3.3 è registrato come `tool` in `go.mod` e genera versione, manifest *asInvoker* e icona da `winres/winres.json`. Per farlo funzionare servono nel proxy `golang.org/x/image` v0.15.0 e `golang.org/x/text` v0.14.0.
 - **Git sulla cartella connessa**: serve il permesso di cancellazione (git sostituisce i file cancellandoli). Usare `-c safe.directory=* -c maintenance.auto=false -c gc.auto=0`, l'identità `rives1 <rivesone@outlook.com>` e il trailer `Co-Authored-By: Claude …`. Il repository è nato su Windows (`core.filemode=false`), quindi gli script si lanciano con `bash`.
 - **Pacchetto**: `bash scripts/build-release.sh v<x>`, da lanciare in un **clone pulito del tag**. Lo script verifica tag, CHANGELOG e compilatore; produce zip, `.sha256` e note di rilascio con compilatore, commit e SHA-256.
+- **Lavoro direttamente su Windows (dalla 1.20)**: Go 1.27.3 installato, `gh` autenticato, Git Bash e PowerShell 7; manca `zip` (lo script si ferma dopo la compilazione).
+  - Per una build riproducibile il clone va fatto **con a capo LF**: `git clone -c core.autocrlf=false --branch v<x> …`. Con il CRLF predefinito di Git per Windows l'eseguibile cambia (1.20: `7b936c…` invece di `61ba09…`, quello della Release).
+  - Poi gli stessi passi dello script: `go tool go-winres make --arch amd64 --product-version <x> --file-version <x>`, `GOOS=windows GOARCH=amd64 go build -trimpath -ldflags="-s -w"`, togliere i `.syso`.
+  - Se il tag è già pubblicato, il pacchetto ufficiale si scarica con `gh release download v<x>` e si verifica con l'hash dell'exe.
+  - Prima di toccare commit o tag controllare sempre `git status -sb` e `git ls-remote origin`: l'utente può aver già fatto il push.
 - **Prove dell'interfaccia**: `tmux` con `TERM=xterm-256color`, eseguibile in una cartella temporanea propria (dalla 1.13 `gofm.ini` e `state.json` nascono accanto all'eseguibile), oppure `GOFM_STATE`/`GOFM_CONFIG` puntati a file temporanei. Tutta la prova va fatta in **un solo comando**, perché la sessione `tmux` non sopravvive da una chiamata all'altra.
 
 ## E. Storico in breve
@@ -459,7 +468,7 @@ La freccia indica il pannello che cambia; nella direzione opposta non succede nu
 - v1.12: tipi di unità e bus USB, cancellazione su unità di rete, F4 con Notepad, clic sulla barra, decodifica di Alt+F7, Ctrl+F7, Ctrl+F2, Ctrl+F9 e Ctrl+A nei terminali Windows (nella console classica Ctrl+A potrebbe essere intercettato dalla selezione del testo).
 
 - v1.20: nulla di visibile; benchmark e test eseguiti su Windows 11 (3 test falliscono, già con la 1.19: §B).
-- v1.19: riquadro delle operazioni e clic sui suoi pulsanti nei terminali Windows; avviso ARM dello script di installazione ed esecuzione in emulazione x64.
+- v1.19: avviso ARM dello script di installazione ed esecuzione in emulazione x64. (Riquadro, clic sui pulsanti, pausa con una copia reale, coda verso una share e Ctrl+W verificati dall'utente su Windows il 05/11/2026.)
 - v1.18: doppio clic nei terminali Windows; pausa con `CopyFileExW` e con la copia lato server; Ctrl+R con cambio di sole maiuscole su NTFS e share; Ctrl+R/Ctrl+U nei terminali.
 - v1.17: guadagno della preparazione della copia su share Windows (atteso il maggiore); misura limitata su NAS.
 - v1.16: Ctrl+I (distinto da Tab), Ctrl+O, Ctrl+P, Ctrl+W, Shift+Canc e clic destro nei terminali Windows; nella console classica Ctrl+Tab arriva come Ctrl+I.

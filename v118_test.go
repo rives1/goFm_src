@@ -291,49 +291,53 @@ func TestFlatDuplicatesCopy(t *testing.T) {
 	writeFile(t, filepath.Join(src, "a", "x.txt"), "from a", time.Now())
 	writeFile(t, filepath.Join(src, "b", "x.txt"), "from b", time.Now())
 	writeFile(t, filepath.Join(src, "a", "y.txt"), "y", time.Now())
+	// v1.21: one subtest per answer, so that the interface of each round is stopped (its
+	// t.Cleanup) before the next newTestFM sets the colours again (data race with -race).
 	for _, answer := range []string{"skip", "overwrite", "cancel"} {
-		_ = os.RemoveAll(dst)
-		_ = os.Mkdir(dst, 0o755)
-		fm := newTestFM(t)
-		ui := runUI(t, fm)
-		ui(func() {
-			fm.left.chdir(src, "")
-			fm.right.chdir(dst, "")
-			fm.setActive(fm.left, true)
-			fm.toggleFlatSync(t, fm.left)
-			fm.keys(ctrlKey('A'))
-			fm.keys(key(tcell.KeyF5, 0, 0))
-		})
-		waitUI(t, ui, "duplicate question", func() bool { return len(fm.modals) == 1 })
-		ui(func() {
-			switch answer {
-			case "skip":
-				pressEnter(fm) // Skip is the default button
-			case "overwrite": // Skip, Skip all, Overwrite: two Tabs
-				for i := 0; i < 2; i++ {
-					fm.app.GetFocus().InputHandler()(tcell.NewEventKey(tcell.KeyTab, 0, 0), func(tview.Primitive) {})
+		t.Run(answer, func(t *testing.T) {
+			_ = os.RemoveAll(dst)
+			_ = os.Mkdir(dst, 0o755)
+			fm := newTestFM(t)
+			ui := runUI(t, fm)
+			ui(func() {
+				fm.left.chdir(src, "")
+				fm.right.chdir(dst, "")
+				fm.setActive(fm.left, true)
+				fm.toggleFlatSync(t, fm.left)
+				fm.keys(ctrlKey('A'))
+				fm.keys(key(tcell.KeyF5, 0, 0))
+			})
+			waitUI(t, ui, "duplicate question", func() bool { return len(fm.modals) == 1 })
+			ui(func() {
+				switch answer {
+				case "skip":
+					pressEnter(fm) // Skip is the default button
+				case "overwrite": // Skip, Skip all, Overwrite: two Tabs
+					for i := 0; i < 2; i++ {
+						fm.app.GetFocus().InputHandler()(tcell.NewEventKey(tcell.KeyTab, 0, 0), func(tview.Primitive) {})
+					}
+					pressEnter(fm)
+				case "cancel":
+					fm.app.GetFocus().InputHandler()(tcell.NewEventKey(tcell.KeyEscape, 0, 0), func(tview.Primitive) {})
 				}
-				pressEnter(fm)
-			case "cancel":
-				fm.app.GetFocus().InputHandler()(tcell.NewEventKey(tcell.KeyEscape, 0, 0), func(tview.Primitive) {})
+			})
+			if answer == "cancel" {
+				waitUI(t, ui, "cancelled", func() bool { return len(fm.modals) == 0 && len(fm.queue.jobs) == 0 })
+				time.Sleep(100 * time.Millisecond)
+				if des, _ := os.ReadDir(dst); len(des) != 0 {
+					t.Errorf("cancel: copied %v", des)
+				}
+				return
+			}
+			waitUI(t, ui, "copied "+answer, func() bool {
+				// since v1.19 the copy runs in the queue: wait for it to end, not for a dialog
+				return exists(filepath.Join(dst, "x.txt")) && exists(filepath.Join(dst, "y.txt")) && len(fm.modals) == 0 && len(fm.queue.jobs) == 0
+			})
+			want := map[string]string{"skip": "from a", "overwrite": "from b"}[answer]
+			if got := readFile(t, filepath.Join(dst, "x.txt")); got != want {
+				t.Errorf("%s: x.txt = %q, want %q", answer, got, want)
 			}
 		})
-		if answer == "cancel" {
-			waitUI(t, ui, "cancelled", func() bool { return len(fm.modals) == 0 && len(fm.queue.jobs) == 0 })
-			time.Sleep(100 * time.Millisecond)
-			if des, _ := os.ReadDir(dst); len(des) != 0 {
-				t.Errorf("cancel: copied %v", des)
-			}
-			continue
-		}
-		waitUI(t, ui, "copied "+answer, func() bool {
-			// since v1.19 the copy runs in the queue: wait for it to end, not for a dialog
-			return exists(filepath.Join(dst, "x.txt")) && exists(filepath.Join(dst, "y.txt")) && len(fm.modals) == 0 && len(fm.queue.jobs) == 0
-		})
-		want := map[string]string{"skip": "from a", "overwrite": "from b"}[answer]
-		if got := readFile(t, filepath.Join(dst, "x.txt")); got != want {
-			t.Errorf("%s: x.txt = %q, want %q", answer, got, want)
-		}
 	}
 }
 

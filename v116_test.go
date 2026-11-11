@@ -170,7 +170,10 @@ func TestClipboard(t *testing.T) {
 
 // With the tree view, Ctrl+P works in the right panel (the destination is that panel).
 func TestPasteInTree(t *testing.T) {
-	src, dst := t.TempDir(), t.TempDir()
+	// v1.21: dst is opened in the tree, so it must be reachable (visibleTempDir); with
+	// t.TempDir on Windows the tree stopped at the user folder and the right panel,
+	// following it, received the paste there.
+	src, dst := t.TempDir(), visibleTempDir(t)
 	writeFile(t, filepath.Join(src, "a.txt"), "A", time.Now())
 	fm := newTestFM(t)
 	ui := runUI(t, fm)
@@ -208,7 +211,10 @@ func TestShiftDelete(t *testing.T) {
 			t.Error("Shift+Del asked for confirmation")
 		}
 	})
-	waitUI(t, ui, "deleted without a question", func() bool { return !exists(filepath.Join(d, "a.txt")) })
+	// v1.21: wait for the task to end too (its " Working " window closed), not only for
+	// the file to vanish: the Windows Recycle Bin removes the file before the task ends,
+	// and the next Shift+Del then went to the " Working " window.
+	waitUI(t, ui, "deleted without a question", func() bool { return !exists(filepath.Join(d, "a.txt")) && len(fm.modals) == 0 })
 	ui(func() {
 		fm.left.jumpTo("deep")
 		fm.keys(key(tcell.KeyDelete, 0, tcell.ModShift))

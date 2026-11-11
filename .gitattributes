@@ -1,0 +1,13 @@
+# Line endings (v1.21): every checkout has LF, also on Windows, where Git for Windows
+# sets core.autocrlf=true by default. With CRLF files the build is not reproducible
+# (the executable differs from the one of the Release) and TestPinnedToolchain cannot
+# read go.mod. Go, PowerShell and Windows Terminal all read LF files.
+* text=auto eol=lf
+
+# Binary files: never converted.
+*.png binary
+*.ico binary
+*.7z binary
+*.zip binary
+*.exe binary
+*.syso binary
