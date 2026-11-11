@@ -18,7 +18,7 @@ Get **`gofm-<version>-windows.zip`** from the [latest release](https://github.co
 To check a download, compare its hash with the one on the release page (PowerShell):
 
 ```
-Get-FileHash .\gofm-1.17-windows.zip     # the zip: see the .sha256 file
+Get-FileHash .\gofm-1.20-windows.zip     # the zip: see the .sha256 file
 Get-FileHash .\gofm.exe                  # the program: see the release notes
 ```
 
@@ -262,6 +262,8 @@ The 2-second tolerance covers FAT/exFAT drives and many NAS, which store times w
 **Preparing a copy (since 1.17).** Before the first byte is copied, gofm reads each source folder **once** to count the bytes and to find the files that already exist at the destination; when the same folder exists there, it reads that folder once too and compares the names in memory. The copy then uses what was read instead of reading the folders again. Before 1.17 the tree was walked three times and every file cost two separate checks — with 10 000 files already at the destination that is about 20 000 round trips to the server, i.e. minutes on a slow VPN (an estimate: it depends on the latency). A move to a free name on the same drive is a rename and is not read at all.
 
 Marked folders are measured at most three at a time, so marking hundreds of folders on a NAS or a spinning disk does not start hundreds of competing scans.
+
+**Large listings (since 1.20).** Sorting a folder or a flat view is more than twice as fast (200 000 names in about 60 ms), and redrawing the rows after a mark or a refresh is about 20% faster.
 
 ## Progress
 

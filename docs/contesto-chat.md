@@ -1,25 +1,26 @@
-# gofm — contesto per proseguire in una nuova chat (versione 1.19)
+# gofm — contesto per proseguire in una nuova chat (versione 1.20)
 
-> Da allegare all'inizio di una nuova chat. Contiene: stato del progetto, cose in sospeso, regole di lavoro, note tecniche sull'ambiente di sviluppo e, in fondo, le **specifiche compatte complete della 1.19**. Il dettaglio di ogni scelta, con motivazioni e storico, è in `docs/gofm-documentazione.md` nel repository.
+> Da allegare all'inizio di una nuova chat. Contiene: stato del progetto, cose in sospeso, regole di lavoro, note tecniche sull'ambiente di sviluppo e, in fondo, le **specifiche compatte complete della 1.20**. Il dettaglio di ogni scelta, con motivazioni e storico, è in `docs/gofm-documentazione.md` nel repository.
 
 ## A. Dove sono le cose
 
 - **Repository GitHub**: <https://github.com/rives1/goFm_src> (ramo `main`).
 - **Copia locale** (PC dell'utente): `C:\Users\ammin\Documents\Claude CLI\gofm-repo\goFm_src`.
 - **Cartella dei pacchetti**: `C:\Users\ammin\Documents\Claude CLI\gofm-repo\`, con `gofm-<versione>-windows.zip`, `.sha256`, `gofm-<versione>-repo.zip`, `gofm-<versione>-specifiche-compatte.md`, `gofm-<versione>-contesto-chat.md` e `microsoft-false-positive-submission.md`. Nel repository: `docs/contesto-chat.md`.
-- **Stato git al 05/11/2026**:
-  - 1.18 inviata dall'utente e pubblicata (Release `v1.18`);
-  - commit `versione 1.19` con tag annotato `v1.19` (questo file è nel commit stesso).
-- **SHA-256 dell'eseguibile**: nelle note della Release `v1.19` su GitHub e nel file `gofm-1.19-contesto-chat.md` della cartella dei pacchetti (qui non può stare: l'eseguibile incorpora il commit che contiene questo file).
+- **Stato git all'11/11/2026**:
+  - 1.19 inviata (`main` allineato a `origin/main`; Release `v1.19` da controllare);
+  - commit `versione 1.20` con tag annotato `v1.20` (questo file è nel commit stesso).
+- **SHA-256 dell'eseguibile**: nelle note della Release `v1.20` su GitHub e nel file `gofm-1.20-contesto-chat.md` della cartella dei pacchetti (qui non può stare: l'eseguibile incorpora il commit che contiene questo file).
 
 ## B. In sospeso
 
-1. **Push** della 1.19 e controllo della Release (il pacchetto ora contiene solo `gofm.exe`).
-2. **Prove su Windows reale** della 1.19: riquadro delle operazioni in Windows Terminal e nella console classica (navigare durante una copia grande, F8, Pause/Resume, Cancel, Remove, clic sui pulsanti), due o tre copie in coda verso una share, domande che arrivano alla partenza, Ctrl+W con una copia in corso; versione nel riepilogo; colori scambiati nei tre schemi; avviso dello script di installazione su un PC ARM.
+1. **Push** della 1.20 (commit e tag) e controllo delle Release `v1.19` e `v1.20` (il pacchetto contiene solo `gofm.exe` dalla 1.19). **Pacchetto della 1.20** (`build-release.sh v1.20` in un clone pulito del tag) e file `gofm-1.20-*` della cartella dei pacchetti ancora da produrre.
+   **Tre test falliscono su Windows** (`TestTreeView`, `TestPasteInTree`, `TestShiftDelete`), già con la 1.19: la suite finora girava solo su Linux; da indagare (la radice dell'albero risulta la cartella dell'utente invece di quella temporanea del test).
+2. **Prove su Windows reale** (la 1.20 non ha cambiamenti visibili: benchmark e test già eseguiti su Windows 11) della 1.19: riquadro delle operazioni in Windows Terminal e nella console classica (navigare durante una copia grande, F8, Pause/Resume, Cancel, Remove, clic sui pulsanti), due o tre copie in coda verso una share, domande che arrivano alla partenza, Ctrl+W con una copia in corso; versione nel riepilogo; colori scambiati nei tre schemi; avviso dello script di installazione su un PC ARM.
    Della 1.18: doppio clic in Windows Terminal e nella console classica; Pause/Resume durante una copia grande verso una share (con `CopyFileExW` e, tra cartelle dello stesso server, con la copia lato server: lì la pausa può scattare solo a fine file); Ctrl+R con cambio di sole maiuscole su NTFS e su share; Ctrl+U; vista piatta con nomi doppi.
    Della 1.17: F5/F6 verso una share con molti file già presenti (confronto dei tempi con la 1.16: è il guadagno atteso maggiore); Ctrl+A su molte cartelle di un NAS; barra dei tasti abbreviata.
 3. **Prove delle versioni precedenti** ancora da fare: 1.16 Ctrl+I/O/P/W, Shift+Canc, clic destro; 1.15 barra di scorrimento con il mouse, Shift+frecce; 1.14 Ctrl+T e Ctrl+K, albero su unità di rete lente.
-4. **Ottimizzazioni valutate e non ancora fatte** (valutazione del 02/11/2026): ricerca per contenuto in parallelo (punto 4), tabella "virtuale" che costruisce solo le righe visibili (punto 6: render ≈ 250 ms con 200 000 voci), archivi grandi (9), lettura asincrona dei rami dell'albero (10).
+4. **Ottimizzazioni valutate e non ancora fatte** (valutazione dell'11/11/2026, fatti i punti 2 e 3 nella 1.20): tabella "virtuale" che costruisce solo le righe visibili (punto 1, il guadagno maggiore: render ≈ 220 ms con 200 000 voci, a ogni marcatura); piccoli interventi (punto 4: nome base minuscolo per la ricerca digitando in vista piatta, voci passate per puntatore a icone e colori, buffer della copia Go riusato); lettura parallela delle cartelle in vista piatta e preparazione della copia su share (punto 5, da valutare). Dalla valutazione del 02/11/2026: ricerca per contenuto in parallelo (punto 4), tabella "virtuale" che costruisce solo le righe visibili (punto 6: render ≈ 250 ms con 200 000 voci), archivi grandi (9), lettura asincrona dei rami dell'albero (10).
 5. **Scelte di Claude da confermare**: (1.19) estrazione con F5 in un archivio, ZIP e cancellazione restano fuori coda (finestra modale, possono girare insieme a una copia della coda); mentre una domanda è aperta non si mette in coda altro (la domanda è modale); Ctrl+F2, Ctrl+W e Alt+Q funzionano anche dal riquadro e una finestra aperta da lì gli rende il focus; il riquadro mostra al massimo 3 operazioni in attesa (le altre con ↑↓); F8 senza operazioni dà solo un avviso. (1.18) (1.18) chiudendo l'albero il pannello destro, se era già sulla stessa cartella, mantiene il suo cursore; con nomi doppi in vista piatta il "primo" è il primo nell'ordine dell'elenco; Ctrl+U rifiutato con l'albero aperto; Pause ha il focus (Invio mette in pausa, Esc annulla). (1.17) un file aggiunto nella sorgente dopo la preparazione della copia non viene copiato; 3 misure di cartelle in parallelo. (1.16) dopo Ctrl+O/Ctrl+I le marcature restano; Ctrl+O/I/P subito dopo Ctrl+A nella barra. (1.15) Shift+PgUp/PgDn/Home/End includono la riga d'arrivo solo se è la prima o l'ultima; nell'albero Shift+frecce sono movimenti normali. (1.14) Ctrl+T rifiutato anche dall'elenco share; albero non ricordato; nessuna ricerca digitando nell'albero. (1.13) `gofm.ini` letto anche in una cartella non scrivibile; `networkDelete` + `networkDeleteDefault`; *Merge* predefinito.
 6. **Defender**: segnalazione a Microsoft (`microsoft-false-positive-submission.md`); soluzione stabile = firma del codice (serve un account dell'utente).
 7. **Prove su Windows della 1.12** ancora da fare (tipi di unità, Canc in rete, F4, clic sulla barra dei tasti, decodifica di Alt+F7, Ctrl+F7, Ctrl+F2, Ctrl+F9, Ctrl+A).
@@ -54,6 +55,7 @@
 | 1.9 | icone per tipo di file (Nerd Font / simboli, Alt+I) |
 | 1.10 | correzione del focus alla chiusura delle finestre; seconda conferma per cartelle con sottocartelle; riepilogo dei tasti; F12 per nome+dimensione+data; Release GitHub con pacchetto |
 | 1.11 | Go 1.27.3 fissato; metadati Windows (versione, manifest, icona); build riproducibile; nota sui falsi positivi degli antivirus |
+| 1.20 | prestazioni: ordinamento per indici (200 000 voci 145 → 62 ms per nome, 126 → 47 ms per dimensione, stesso ordine), escape delle righe solo con `[` (render −18%); misure su Windows |
 | 1.19 | riquadro delle operazioni in basso con coda (copia, spostamento, incolla una alla volta, pannelli utilizzabili, domande alla partenza); F8 Pause/Cancel/Remove; conferma all'uscita; multimediali verdi e programmi rossi; versione nel riepilogo; niente ARM64 |
 | 1.18 | cursore sul primo elemento entrando e chiudendo vista piatta/albero; doppio clic = Invio; Ctrl+R iniziali maiuscole; nomi doppi in vista piatta con domanda Skip/Overwrite; Ctrl+U scambia i pannelli; Pause/Resume in copia, spostamento e incolla |
 | 1.17 | prestazioni: preparazione della copia in un solo percorso, misura delle cartelle 3 alla volta, ordinamento e totali senza ricalcoli; benchmark; barra dei tasti con `C+` |
@@ -65,9 +67,9 @@
 
 ---
 
-## Specifiche compatte 1.19
+## Specifiche compatte 1.20
 
-Riepilogo per riprendere il lavoro in una nuova chat. Il codice completo è nel repository <https://github.com/rives1/goFm_src> (copia locale: `C:\Users\ammin\Documents\Claude CLI\gofm-repo\goFm_src`) e in `gofm-1.19-repo.zip`; la documentazione estesa (con motivazioni, storico e prompt di rigenerazione) è in `docs/gofm-documentazione.md`.
+Riepilogo per riprendere il lavoro in una nuova chat. Il codice completo è nel repository <https://github.com/rives1/goFm_src> (copia locale: `C:\Users\ammin\Documents\Claude CLI\gofm-repo\goFm_src`) e in `gofm-1.20-repo.zip`; la documentazione estesa (con motivazioni, storico e prompt di rigenerazione) è in `docs/gofm-documentazione.md`.
 
 ### 0. Regole di lavoro
 
@@ -86,7 +88,7 @@ Riepilogo per riprendere il lavoro in una nuova chat. Il codice completo è nel 
 
 File manager a **doppio pannello** per il terminale di Windows (Windows Terminal consigliato, funziona anche nella console classica), stile Norton/Midnight/Total Commander. **Go** (minimo 1.24; release compilate con **Go 1.27.3**, fissato in `go.mod` con `toolchain go1.27.3` e nei workflow), un solo eseguibile senza dipendenze: `gofm.exe` (x64, circa 7 MB; nessuna build ARM64 dalla v1.19). Librerie: tview v0.42, tcell v2.13.10, uniseg, bodgit/sevenzip v1.6 (7z in sola lettura), fsnotify v1.8, x/sys, x/text. Compila e gira anche su Linux e macOS, per sviluppo e test.
 
-Avvio: `gofm [left_folder] [right_folder]`; `-h`, `--help` o `/?` stampa `gofm 1.19 — usage: …`. Senza argomenti riapre le ultime cartelle (§5.13).
+Avvio: `gofm [left_folder] [right_folder]`; `-h`, `--help` o `/?` stampa `gofm 1.20 — usage: …`. Senza argomenti riapre le ultime cartelle (§5.13).
 
 ### 2. Interfaccia
 
@@ -294,7 +296,7 @@ La freccia indica il pannello che cambia; nella direzione opposta non succede nu
 - `GetDriveType`: rete, rimovibile, CD/DVD; i dischi **fissi** su bus USB/1394/SD/MMC (letto con `DeviceIoControl(IOCTL_STORAGE_QUERY_PROPERTY)` su `\\.\X:` aperto con accesso 0) sono **rimovibili**; il resto locale.
 
 #### 5.12c Ordinamento (v1.12)
-- `..` in cima, cartelle prima, poi per tipo nel senso del pannello; a parità per nome A→Z. Alt+O cambia tipo e riparte dal senso naturale (nome ↑, dimensione e data ↓); Alt+D inverte. Il senso non viene salvato.
+- `..` in cima, cartelle prima, poi per tipo nel senso del pannello; a parità per nome A→Z (`entryCmp` a tre vie; `entryLess` = `entryCmp < 0`, v1.20). Alt+O cambia tipo e riparte dal senso naturale (nome ↑, dimensione e data ↓); Alt+D inverte. Il senso non viene salvato.
 
 #### 5.13 Memoria delle cartelle
 - File (v1.13): `state.json` **nella cartella dell'eseguibile** (sostituibile con `GOFM_STATE`); fino alla v1.12 `%APPDATA%\gofm\state.json`, **non importato**. Mai scritto se la cartella non è scrivibile.
@@ -362,6 +364,11 @@ La freccia indica il pannello che cambia; nella direzione opposta non succede nu
 - Fuori coda (finestra ` Working `): estrazione (anche F5 in archivio), ZIP, cancellazione, vista piatta, ricerca, rinomine. Nessun blocco sui file coinvolti (scelta dell'utente).
 - **Colori**: programmi e multimediali scambiati (multimediali verdi). **Versione** nel riepilogo. **Niente ARM64**: solo `gofm.exe` x64; `install-gofm.ps1` avvisa sui PC ARM (emulazione x64 di Windows 11).
 
+##### 5.22 Novità della v1.20 (prestazioni)
+- **Ordinamento per indici** (`sortEntries`): `[]int32` di indici ordinato con `slices.SortStableFunc` ed `entryCmp` (tre vie), poi voci messe al loro posto sul posto seguendo i cicli della permutazione (`idx[k] = -1` = già fatto). Con `sort.SliceStable` il 75% del tempo era lo spostamento delle voci (~120 byte, O(n log² n) spostamenti, via reflection). Stesso ordine (`TestSortPointersSameOrder`, `TestSortKeysSameOrder`).
+- **`escapeName`** per il testo delle righe di pannelli e albero: `tview.Escape` (espressione regolare) solo se il testo contiene `[`.
+- Benchmark su Windows 11 (Ryzen 9 9900X), v1.19 → v1.20: ordinamento di 200 000 voci per nome 145 → 62 ms, per dimensione 126 → 47 ms (memoria invariata); render di 20 000 righe 27 → 22 ms, 400 k → 340 k allocazioni; fotogramma e preparazione della copia invariati.
+
 ### 6. Codice
 
 | File | Contenuto |
@@ -400,6 +407,7 @@ La freccia indica il pannello che cambia; nella direzione opposta non succede nu
 | scripts/make-small-icons.py | icone a 32 e 48 px disegnate a pixel (Pillow) |
 | v111_test.go | compilatore fissato, risorse Windows |
 | v112_test.go | schemi, unità, ordinamento, tasti, barra e clic, editor, conflitti, cancellazione definitiva |
+| v120_test.go | ordinamento per indici uguale al precedente (5 000 voci con chiavi uguali), `escapeName` uguale a `tview.Escape` |
 | v119_test.go | colori scambiati, versione nel riepilogo, niente ARM, coda in sequenza, domande alla partenza, riquadro (F8, Pause, Cancel, Remove), uscita con coda, tasti globali dal riquadro |
 | v118_test.go | cursore sul primo elemento, doppio clic, Ctrl+R, nomi doppi, Ctrl+U, pausa del motore |
 | v117_test.go | scan, copia/spostamento con l'albero, stesso ordinamento, cache delle voci, totali, misura limitata, barra abbreviata |
@@ -450,6 +458,7 @@ La freccia indica il pannello che cambia; nella direzione opposta non succede nu
 - icona e proprietà del file in Esplora risorse; effetto dei metadati su Defender (prima verifica con la Release 1.11);
 - v1.12: tipi di unità e bus USB, cancellazione su unità di rete, F4 con Notepad, clic sulla barra, decodifica di Alt+F7, Ctrl+F7, Ctrl+F2, Ctrl+F9 e Ctrl+A nei terminali Windows (nella console classica Ctrl+A potrebbe essere intercettato dalla selezione del testo).
 
+- v1.20: nulla di visibile; benchmark e test eseguiti su Windows 11 (3 test falliscono, già con la 1.19: §B).
 - v1.19: riquadro delle operazioni e clic sui suoi pulsanti nei terminali Windows; avviso ARM dello script di installazione ed esecuzione in emulazione x64.
 - v1.18: doppio clic nei terminali Windows; pausa con `CopyFileExW` e con la copia lato server; Ctrl+R con cambio di sole maiuscole su NTFS e share; Ctrl+R/Ctrl+U nei terminali.
 - v1.17: guadagno della preparazione della copia su share Windows (atteso il maggiore); misura limitata su NAS.

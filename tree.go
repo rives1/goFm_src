@@ -294,7 +294,7 @@ func (t *treeView) render() {
 			name += " ~"
 		}
 		text := strings.Repeat("  ", n.depth) + t.marker(n) + " " + string(iconFor(e, t.fm.basicIcons)) + " " + name
-		tb.SetCell(i, 0, tview.NewTableCell(tview.Escape(text)).SetTextColor(color).SetAttributes(attr).SetExpansion(1))
+		tb.SetCell(i, 0, tview.NewTableCell(escapeName(text)).SetTextColor(color).SetAttributes(attr).SetExpansion(1))
 	}
 	if row >= len(t.rows) {
 		row = len(t.rows) - 1

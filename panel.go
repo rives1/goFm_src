@@ -1,13 +1,14 @@
 package main
 
 import (
+	"cmp"
 	"fmt"
 	"io"
 	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 	"time"
 
@@ -377,38 +378,73 @@ func (p *Panel) followTree(moved bool) {
 
 // sortEntries sorts a listing: folders first, then by the panel's sort type and
 // direction; equal keys fall back to the name, always A→Z.
+//
+// v1.20: the sort moves indexes, not entries. A stable sort moves its elements
+// O(n log² n) times, and an entry is about 120 bytes: moving them (through
+// reflection, with sort.SliceStable) took three quarters of the time. The indexes
+// are sorted with one three-way comparison, then the entries are moved to their
+// place once each, in place (cycle by cycle, no second copy of the listing).
 func (p *Panel) sortEntries(list []entry) {
+	idx := make([]int32, len(list))
 	for i := range list {
 		list[i].lower() // one lower-case copy per entry, not two per comparison
+		idx[i] = int32(i)
 	}
-	sort.SliceStable(list, func(i, j int) bool {
-		return entryLess(&list[i], &list[j], p.sortMode, p.sortAsc)
-	})
+	mode, asc := p.sortMode, p.sortAsc
+	slices.SortStableFunc(idx, func(i, j int32) int { return entryCmp(&list[i], &list[j], mode, asc) })
+	// Position k receives list[idx[k]]; idx[k] = -1 marks a position already filled.
+	for start := range idx {
+		if idx[start] < 0 {
+			continue
+		}
+		first, k := list[start], start
+		for {
+			j := int(idx[k])
+			idx[k] = -1
+			if j == start {
+				list[k] = first
+				break
+			}
+			list[k] = list[j]
+			k = j
+		}
+	}
 }
 
-func entryLess(a, b *entry, mode int, asc bool) bool {
+// entryLess reports whether a comes before b (see entryCmp).
+func entryLess(a, b *entry, mode int, asc bool) bool { return entryCmp(a, b, mode, asc) < 0 }
+
+// entryCmp orders two entries: ".." first, then folders, then files; inside each
+// group by the sort type and direction; equal keys by name, always A→Z.
+func entryCmp(a, b *entry, mode int, asc bool) int {
 	if a.isUp != b.isUp {
-		return a.isUp
+		if a.isUp {
+			return -1
+		}
+		return 1
 	}
 	if a.isDir != b.isDir {
-		return a.isDir // folders first
+		if a.isDir { // folders first
+			return -1
+		}
+		return 1
 	}
-	byName := func() bool { return a.lower() < b.lower() }
+	var c int
 	switch mode {
 	case sortSize:
-		if a.size != b.size {
-			return (a.size < b.size) == asc
-		}
+		c = cmp.Compare(a.size, b.size)
 	case sortDate:
-		if !a.mod.Equal(b.mod) {
-			return a.mod.Before(b.mod) == asc
-		}
+		c = a.mod.Compare(b.mod)
 	default:
-		if a.lower() != b.lower() {
-			return byName() == asc
-		}
+		c = strings.Compare(a.lower(), b.lower())
 	}
-	return byName()
+	if !asc {
+		c = -c
+	}
+	if c != 0 {
+		return c
+	}
+	return strings.Compare(a.lower(), b.lower())
 }
 
 // styleCursorIcon gives the icon on the cursor row its colours. The table paints
@@ -478,7 +514,7 @@ func (p *Panel) render() {
 		}
 		t.SetCell(i, colMark, tview.NewTableCell(mark).SetTextColor(color).SetAttributes(attr))
 		t.SetCell(i, colIcon, tview.NewTableCell(string(iconFor(e, basic))).SetTextColor(iconColor(e)))
-		t.SetCell(i, colName, tview.NewTableCell(tview.Escape(text)).
+		t.SetCell(i, colName, tview.NewTableCell(escapeName(text)).
 			SetTextColor(color).SetAttributes(attr).SetExpansion(1))
 		t.SetCell(i, colSize, tview.NewTableCell(fmt.Sprintf("%*s", sizeColW, size)).SetTextColor(color))
 		t.SetCell(i, colDate, tview.NewTableCell(fmt.Sprintf("%-*s", dateColW, date)).SetTextColor(color))
@@ -500,6 +536,16 @@ func shortDate(t, now time.Time) string {
 		return t.Format("02/01 15:04")
 	}
 	return t.Format("02/01/2006")
+}
+
+// escapeName is tview.Escape for the text of a row (v1.20). tview.Escape runs a
+// regular expression on every string; only text containing "[" can hold a colour
+// tag, so the other names, nearly all of them, are used as they are.
+func escapeName(s string) string {
+	if !strings.Contains(s, "[") {
+		return s
+	}
+	return tview.Escape(s)
 }
 
 // truncateName shortens s to at most w cells, keeping a short extension visible:

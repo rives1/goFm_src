@@ -1,6 +1,6 @@
 # gofm — Documentazione di progetto e specifiche
 
-**Versione documentata:** 1.19 · **Data:** 05/11/2026 · **Licenza:** MIT, © 2026 rives
+**Versione documentata:** 1.20 · **Data:** 11/11/2026 · **Licenza:** MIT, © 2026 rives
 **Linguaggio:** Go (minimo 1.24; release compilate con **Go 1.27.3**) · **Piattaforma bersaglio:** Windows 64 bit x64 (su ARM tramite l'emulazione x64 di Windows 11; build ARM64 fino alla v1.18) · **Interfaccia:** inglese
 
 ---
@@ -80,7 +80,7 @@ Avvio:
 gofm.exe                        :: entrambi i pannelli nella cartella corrente
 gofm.exe C:\Progetti D:\Backup  :: pannello sinistro e destro
 gofm.exe \\nas                  :: un pannello sull'elenco delle share di \\nas
-gofm.exe -h | --help | /?       :: stampa "gofm 1.19 — usage: gofm [left_folder] [right_folder]"
+gofm.exe -h | --help | /?       :: stampa "gofm 1.20 — usage: gofm [left_folder] [right_folder]"
 ```
 
 Un argomento non valido (inesistente o non cartella) viene sostituito dalla cartella corrente.
@@ -116,6 +116,7 @@ Ogni scelta è stata presa con l'utente o motivata esplicitamente.
 | Cancellazione sulle unità di rete (v1.12) | Percorsi UNC e unità mappate: **cancellazione definitiva** (`removeTree`), con conferma esplicita (`PERMANENTLY`; pulsante predefinito `Cancel` nella v1.12, `Delete` dalla v1.13, impostabile); unità locali: Cestino | Richiesta dell'utente (v1.12). Le cartelle di rete non hanno Cestino: Windows le cancellerebbe comunque in modo definitivo, ma con un proprio avviso dopo la conferma di gofm; ora la conferma di gofm dice la verità prima. |
 | Programma portatile (v1.13) | `gofm.ini` e `state.json` **nella cartella dell'eseguibile** (`os.Executable` + `EvalSymlinks`), non più in `%APPDATA%\gofm`. Se la cartella **non è scrivibile** non si salva nulla (né stato né impostazioni): i file già presenti si leggono, nessuno viene creato o aggiornato, avviso all'avvio. Nessuna migrazione dal vecchio `state.json`. `GOFM_STATE` e `GOFM_CONFIG` sostituiscono i due percorsi | Richiesta dell'utente (v1.13), con le scelte sul ripiego e sulla migrazione. La scrivibilità si verifica **creando un file di prova**: su Windows i permessi (ACL) non si vedono nei bit del file, e con il manifest *asInvoker* la virtualizzazione di UAC è disattivata, quindi una scrittura in `C:\Program Files` fallisce davvero invece di finire nel VirtualStore. Il profilo di Windows Terminal resta nella cartella `Fragments`: Windows Terminal lo legge solo lì. Interpretazione da confermare: un `gofm.ini` messo a mano in una cartella di sola lettura viene letto. |
 | File di impostazioni `gofm.ini` (v1.13) | Testo `chiave = valore`, commenti `#`/`;`, sezioni ignorate, chiavi e valori senza maiuscole, virgolette facoltative; **creato commentato** se manca (righe CRLF, molti commenti per ogni parametro), **mai riscritto** da gofm; separato da `state.json`. Chiavi: `editor`, `colorScheme`, `icons`, `showHidden`, `sortBy`, `deleteDefault`, `networkDelete`, `networkDeleteDefault`. Letto all'avvio e con **Alt+R**, che applica **solo i valori cambiati nel file**. `GOFM_EDITOR` prevale su `editor` | Scelte dell'utente (v1.13). Formato INI perché ammette commenti ed è facile da modificare in Notepad (JSON non ha commenti); nessuna libreria aggiuntiva. File separato da `state.json` perché gofm scrive lo stato a ogni cambio di cartella e cancellerebbe i commenti dell'utente. Con Alt+R si applica solo ciò che è cambiato nel file, altrimenti un semplice aggiornamento annullerebbe Alt+H, Alt+O, Ctrl+F9 o Alt+I. `colorScheme` e `icons` non impostati = ultima scelta salvata in `state.json`; impostati = valgono a ogni avvio. Valori sbagliati e chiavi sconosciute: avviso nella barra di stato con il numero di riga, le altre righe valgono. |
+| Prestazioni (v1.20) | **Ordinamento per indici** (`[]int32` con `slices.SortStableFunc` ed `entryCmp` a tre vie, poi permutazione sul posto) invece di `sort.SliceStable` sulle voci; **`escapeName`**: `tview.Escape` solo per il testo delle righe che contiene `[` | Valutazione richiesta dall'utente (11/11/2026), punti scelti: 2 e 3 (rapidi e misurati). Rimandati: tabella "virtuale" con le sole righe visibili (1, il guadagno maggiore), piccoli interventi (4: nome base in minuscolo per la ricerca digitando in vista piatta, voci passate per puntatore, buffer della copia Go riusato), lettura parallela delle cartelle su share (5). |
 | Prestazioni (v1.17) | **Preparazione di copia/spostamento in un solo percorso** (`scan`): ogni cartella sorgente letta una volta e, se esiste la cartella omonima nella destinazione, anche questa letta una volta con confronto dei nomi in memoria; il motore riusa l'albero letto; spostamento verso un nome libero sulla stessa unità non letto affatto. **Misura delle cartelle selezionate** al massimo 3 alla volta e ridisegni raggruppati. **Chiavi di ordinamento** in minuscolo calcolate una volta per voce; **totali** di bordi e barra di stato calcolati una volta per modifica; **famiglia** del file calcolata una volta per voce | Valutazione richiesta dall'utente (02/11/2026), punti scelti: 1, 2, 3, 5, 7, 8. Misure prima/dopo con `bench_test.go` (§10). Esclusi per ora: ricerca per contenuto in parallelo (4), tabella "virtuale" che costruisce solo le righe visibili (6, il guadagno maggiore sugli elenchi enormi ma invasivo), archivi grandi (9), lettura asincrona dei rami dell'albero (10). |
 | Barra dei tasti abbreviata (v1.17) | `Ctrl+` scritto **`C+`**, lettera minuscola (`C+a`, `C+F7`); il riepilogo Ctrl+F2 mantiene i nomi completi | Richiesta dell'utente (v1.17): più voci nella stessa larghezza. |
 | Appunti di gofm (v1.16) | **Ctrl+O** copia e **Ctrl+I** taglia i selezionati (o l'elemento sotto il cursore) in appunti **interni**; **Ctrl+P** li incolla nella cartella del **pannello attivo**, con tutti i controlli e le domande di F5/F6; dopo un taglio incollato gli appunti si svuotano; avviso nella barra di stato; persi all'uscita | Richiesta e scelte dell'utente (v1.16). Ctrl+C/X/V, chiesti inizialmente, sono stati scartati: **Windows Terminal e la console classica usano Ctrl+V per incollare testo**, quindi il tasto non arriverebbe a gofm, e la libreria del terminale su Windows non segnala l'incolla all'applicazione (`EnablePaste` vuoto in `console_win.go`). Appunti interni e non di Windows (scelta dell'utente): verificabili qui e senza interazioni con Esplora risorse. Ctrl+I in molti terminali vale Tab; su Windows gofm lo distingue, ma nella console classica Ctrl+Tab arriva come Ctrl+I. |
@@ -830,7 +831,7 @@ Vedi §6.3, punti 5–8. In sintesi: `findConflicts` elenca i file della selezio
 
 ### 6.31 Ordinamento (v1.12)
 
-- `entryLess(a, b, tipo, crescente)`: `..` prima, poi le cartelle, poi i file; dentro ciascun gruppo per tipo e senso; a parità di chiave per nome A→Z (senza maiuscole), sempre.
+- `entryCmp(a, b, tipo, crescente)` (confronto a tre vie, v1.20; `entryLess` = `entryCmp < 0`): `..` prima, poi le cartelle, poi i file; dentro ciascun gruppo per tipo e senso; a parità di chiave per nome A→Z (senza maiuscole), sempre.
 - Senso iniziale a ogni Alt+O (`defaultAsc`): nome crescente, dimensione e data decrescenti (come fino alla v1.11). Alt+D lo inverte. Il senso è per pannello e non viene salvato.
 - Titolo: `sort: name ↑`, `sort: size ↓`, ecc., sempre presente (↑ crescente: A→Z, dal più piccolo, dal più vecchio; ↓ decrescente).
 
@@ -956,6 +957,24 @@ Il conteggio delle stat è fatto con `strace -c` su un test che esegue solo la p
 
 **Limiti.** Le domande sono finestre modali: mentre una è aperta i tasti vanno a lei (per mettere in coda un'altra operazione si risponde prima). Le operazioni non in coda (cancellazione, ZIP, estrazione…) aprono ancora la finestra ` Working ` e possono girare insieme a una copia della coda.
 
+### 6.41 Prestazioni (v1.20)
+
+Due punti della valutazione dell'11/11/2026 (profilazione dei benchmark di `bench_test.go`); nessun cambiamento di comportamento.
+
+- **Ordinamento per indici** (`sortEntries`). Il profilo mostrava che con `sort.SliceStable` il 75% del tempo andava a **spostare le voci**: un ordinamento stabile (inserzione + fusione `symMerge`) sposta gli elementi O(n log² n) volte, ogni `entry` è circa 120 byte e lo scambio passava dalla reflection (`reflectlite.Swapper`). Ora si ordina un `[]int32` di indici con `slices.SortStableFunc` e il confronto a tre vie `entryCmp` (una chiamata per confronto invece delle due che servirebbero con `entryLess`); poi le voci vanno al loro posto **sul posto**, ciclo per ciclo della permutazione (`idx[k] = -1` segna le posizioni già riempite): ogni voce si copia una volta e non serve una seconda copia dell'elenco. Ordine identico a prima (stabile, stessi criteri): `TestSortPointersSameOrder` e `TestSortKeysSameOrder`.
+- **`escapeName`** al posto di `tview.Escape` per il testo delle righe dei pannelli (`render`) e dell'albero (`treeView.render`). `tview.Escape` applica un'espressione regolare a ogni stringa; un tag di colore richiede `[`, quindi i nomi senza `[` (quasi tutti) si usano così come sono, gli altri passano per `tview.Escape`. Risultato identico (`TestEscapeName`). Le altre chiamate a `tview.Escape` (titoli, finestre, barra di stato) restano: sono poche stringhe per fotogramma.
+- **Misure** (`go test -run XXX -bench . -benchmem`, **Windows 11**, Ryzen 9 9900X; prima e dopo sulla stessa macchina):
+
+| Benchmark | v1.19 | v1.20 |
+|---|---|---|
+| Ordinamento per nome di 200 000 voci | 145 ms | **62 ms** |
+| Ordinamento per dimensione di 200 000 voci | 126 ms | **47 ms** |
+| Ricostruzione di 20 000 righe (`render`) | 27 ms · 400 k allocazioni | **22 ms** · 340 k |
+| Fotogramma con 200 000 voci e 1 000 selezionate | 1,2 ms | 1,1 ms (invariato) |
+| Preparazione di F5 (10 000 file, metà già presenti) | 10,5 ms | invariato (77% del tempo in chiamate di sistema) |
+
+La memoria dell'ordinamento resta quella di prima (le nuove allocazioni sono solo gli indici, 4 byte per voce). La ricostruzione completa delle righe a ogni marcatura resta il costo maggiore sugli elenchi enormi (circa 220 ms stimati con 200 000 voci): il rimedio è la tabella "virtuale" (punto 1 della valutazione, non fatto).
+
 ---
 
 ## 7. Architettura del codice
@@ -998,6 +1017,7 @@ gofm/
 ├── v19_test.go      test: icone (larghezza, insiemi, tipi, colori, contrasto, layout della riga, memoria)
 ├── v110_test.go     test: confronto nome/dimensione/data, cartelle con sottocartelle, riepilogo dei tasti, focus alla chiusura delle finestre
 ├── v111_test.go     test: compilatore fissato uguale in go.mod e nei workflow, risorse Windows (manifest, versione, icone)
+├── v120_test.go     test: ordinamento per indici uguale al precedente, escapeName uguale a tview.Escape (v1.20)
 ├── v112_test.go     test: schemi leggibili, unità, ordinamento, tasti nuovi e tolti, barra e clic, editor, conflitti, cancellazione definitiva
 ├── v117_test.go     test: scan (conflitti, dimensioni, albero), copia e spostamento con l'albero, rinomina non letta, stesso ordinamento di prima, cache delle voci, totali, misura delle cartelle limitata, barra abbreviata
 ├── v118_test.go     test: firstRow e cursore (entrata, risalita, cartella vuota, vista piatta, albero), doppio clic, iniziali maiuscole (casi, renameEach con stesso file, finestra), nomi doppi (resolveDuplicates, testo, F5 reale in vista piatta), Ctrl+U, pausa (motore, lettore, testo, pulsante nella finestra reale), tasti nuovi
@@ -1207,6 +1227,8 @@ Nota storica: il commit "versione 1.9" del repository non conteneva gli aggiorna
 
 Eseguiti su Linux; su Windows è stata verificata solo la compilazione (`go vet` e `go test -c` con `GOOS=windows`).
 
+Dalla v1.20 la suite gira anche su **Windows 11** (Go 1.27.3): tutto passa tranne `TestTreeView`, `TestPasteInTree` e `TestShiftDelete`, che falliscono **allo stesso modo con la v1.19** (quindi non dipendono dalla v1.20; da indagare, vedi §11).
+
 | Area | Test |
 |---|---|
 | Copia/sposta | copia di un albero; fusione con spostamento (origine rimossa solo se completa); rinomina; conteggio di byte e file |
@@ -1220,6 +1242,7 @@ Eseguiti su Linux; su Windows è stata verificata solo la compilazione (`go vet`
 | Tasti | Ctrl+lettera nelle due codifiche, Ctrl+H/I/M, Backspace/Tab/Invio non scambiati, AltGr escluso, Alt+lettera |
 | Selezione | `treeStats` (file regolari e byte, ricorsivo), `plural` |
 | Confronto | `onlyOnOneSide`: cartelle e `..` ignorate, maiuscole indifferenti e distinte, cartella identica senza differenze |
+| v1.20 | `TestSortPointersSameOrder` (5 000 voci con molte chiavi uguali, nomi che differiscono solo per le maiuscole, cartelle e `..`; 3 tipi × 2 sensi: voci identiche, campo per campo, all'ordinamento stabile con `sort.SliceStable` ed `entryLess`); `TestEscapeName` (nomi senza `[`, con `[`, tag di colore, `[[`, CJK: stesso risultato di `tview.Escape`). Benchmark in `bench_test.go` (§6.41) |
 | v1.19 | `TestColoursSwapped` (multimediali e programmi nei tre schemi); `TestHelpVersion` (versione nel testo e nel titolo del riepilogo, sezione del CHANGELOG); `TestNoARMBuild` (script di pacchetto, workflow e script di installazione senza build ARM64); `TestPaneHeight`; `TestQueueSequential` (due copie reali rallentate: marcature tolte subito, avviso `Queued:`, riquadro visibile senza finestre, cursore del pannello che si muove durante la copia, lista `2. … queued`, seconda copia partita solo dopo la fine della prima, riquadro chiuso, `Done:`); `TestQueueQuestionsAtStart` (seconda copia dello stesso file: la domanda arriva alla sua partenza, con `Waiting for your answer` nel riquadro; Esc a una domanda fa partire l'operazione successiva); `TestQueuePane` (F8 senza operazioni, tre copie, altezza, focus sulla lista, lettere non alla ricerca, Remove della seconda, Pause → Resume e nessun file copiato in pausa, Cancel in pausa, partenza della terza, Esc ai pannelli, la rimossa non copia nulla); `TestQuitWithQueue` (Ctrl+W chiede, Cancel resta, Quit annulla ed esce); `TestPaneGlobalKeys` (Ctrl+F2 e Alt+Q dal riquadro, focus restituito al riquadro, poi al pannello alla chiusura). Tolto `TestPauseButton` (finestra modale non più usata). `runUI` non richiama `Stop` se il programma è già uscito (race con `Run`); i test di copia e incolla esistenti aspettano anche la coda vuota (prima aspettavano la chiusura della finestra di avanzamento). Race detector superato, anche con 15 ripetizioni dei test della coda |
 | v1.18 | `TestFirstRow` (nome esatto, senza maiuscole, assente, vuoto, cartella vuota, elenco unità); `TestCursorOnFirstItem` (FM reale: chdir, →, ← sulla cartella lasciata, cartella vuota su `..`, apertura e chiusura della vista piatta, chiusura dell'albero); `TestDoubleClick` (doppio clic su un'altra riga = solo spostamento, sulla riga del cursore = Invio in una cartella, su `..` = risalita, sotto l'elenco nulla, focus al pannello); `TestCapitalize` (11 casi: `_`, `-`, spazi doppi, cifre, estensioni maiuscole e doppie, nome con punto iniziale, lettere accentate, cartelle con punto); `TestRenameEach` (sottocartella della vista piatta, nome esistente saltato, **stesso file** con un collegamento fisico che simula un file system senza maiuscole: rinominato); `TestCapitalizeDialog` (applicazione in esecuzione: Ctrl+A, Ctrl+R, Invio = Rename, cartella compresa, nome già a posto lasciato, avviso; nulla da cambiare = solo avviso); `TestResolveDuplicates` (tre file con un nome e due con un altro: Skip, Overwrite/Skip, Overwrite all, Skip all, Esc, nessun doppio = nessuna domanda); `TestDupText`; `TestFlatDuplicatesCopy` (vista piatta reale, Ctrl+A, F5: Skip → resta il primo, due Tab + Invio = Overwrite → il secondo, Esc → nulla copiato); `TestSwapPanels` (lati, evidenziazione, focus, cartella, cursore, selezioni, senso, filtro, layout, `state.json`, avviso, ritorno, rifiuto con l'albero); `TestPauseEngine` (in pausa nessun byte e nessun file, ripresa completa, Cancel durante la pausa, lettore fermo a metà file); `TestPauseText`; `TestPauseButton` (copia reale rallentata: pulsanti Pause/Cancel, Pause → Resume, nessun file copiato durante la pausa, ripresa fino alla fine; un'operazione non sospendibile ha solo Cancel); `TestKeysV118`. Race detector superato |
 | v1.17 | `TestScanPlan` (conflitti al primo livello e annidati nello stesso ordine, file contro cartella escluso, totale e dimensioni per coppia, albero conservato; `findConflicts` uguale e senza effetti sulle coppie); `TestCopyUsesPlan` (con l'albero un file creato dopo la preparazione non viene copiato, senza albero sì: prova che nulla viene riletto); `TestMovePlan` (fusione con l'albero e origine rimossa; spostamento verso nome libero sulla stessa unità non letto e rinominato; `sameVolume`); `TestSortKeysSameOrder` (2 000 voci casuali, 3 tipi × 2 sensi: ordine identico al confronto della v1.16); `TestEntryCaches`; `TestPanelTotalsCache` (totali dopo Ins, marcature cambiate senza render, rilettura); `TestFolderSizesPool` (Ctrl+A su 12 cartelle con l'applicazione in esecuzione: tutte misurate, posti liberati); `TestBarKey` (`C+a`, `C+F7`, Alt e F invariati; barra disegnata con `C+aSelect` e senza `Ctrl+`; riepilogo con i nomi completi). Benchmark in `bench_test.go` (§6.38) |
@@ -1295,7 +1318,8 @@ Prove precedenti: navigazione con le frecce, ricerca digitando, larghezza delle 
 - Nessuna richiesta di credenziali per le share.
 - Vista piatta: limite di 200 000 file; le modifiche esterne nelle sottocartelle compaiono solo con Alt+R.
 - Eseguibili **non firmati**: alcuni antivirus (es. Defender, rilevazioni `!ml`) possono segnalarli come falsi positivi; la firma del codice non è ancora attiva.
-- Ricostruzione completa delle righe a ogni marcatura: circa 250 ms con 200 000 voci (vista piatta); rimedio possibile con una tabella "virtuale" (non fatto).
+- Ricostruzione completa delle righe a ogni marcatura: circa 250 ms con 200 000 voci (vista piatta) fino alla v1.19, circa 220 ms stimati dalla v1.20; rimedio possibile con una tabella "virtuale" che costruisce solo le righe visibili (non fatto).
+- Su Windows `TestTreeView`, `TestPasteInTree` e `TestShiftDelete` falliscono (già con la v1.19): probabilmente dipendono dall'ambiente (la radice dell'albero risulta la cartella dell'utente invece della cartella temporanea del test); da indagare.
 - Appunti interni a gofm (non quelli di Windows), persi all'uscita; Ctrl+C/X/V non usabili (Ctrl+V è dei terminali). Nella console classica Ctrl+Tab arriva come Ctrl+I (riempie solo gli appunti).
 - Albero: i rami si leggono quando si aprono e non si aggiornano da soli (solo con Alt+R o quando il pannello destro rilegge quella cartella); copia e spostamento richiedono di uscire dall'albero.
 - Cartella del programma non scrivibile: nulla viene salvato (scelta dell'utente), quindi ogni avvio riparte dai valori predefiniti.
@@ -1304,6 +1328,7 @@ Prove precedenti: navigazione con le frecce, ricerca digitando, larghezza delle 
 - `go.sum` costruito con un metodo verificato ma senza accesso a `sum.golang.org` (§9.2): la prima compilazione su una macchina normale, o la CI, lo confermano.
 
 **Non verificato su Windows reale** (logica testata solo dove è portabile):
+- v1.20: nessun cambiamento visibile da provare a schermo; benchmark e test eseguiti su Windows 11;
 - v1.19: riquadro delle operazioni in Windows Terminal e nella console classica (ridisegno ogni 250 ms durante la navigazione, clic sui pulsanti); avviso dello script di installazione su un PC ARM e avvio di `gofm.exe` in emulazione x64;
 - v1.18: doppio clic in Windows Terminal e nella console classica (intervallo di 500 ms di tview); pausa durante `CopyFileExW` (callback bloccata) e con la copia lato server di SMB; Ctrl+R con cambio di sole maiuscole su NTFS e su share; Ctrl+R e Ctrl+U nei terminali Windows;
 - v1.17: preparazione della copia su share Windows (nessuna stat per file attesa, perché `ReadDir` su Windows fornisce già dimensioni e date: da misurare); misura limitata delle cartelle su NAS;
@@ -1329,6 +1354,7 @@ Prove precedenti: navigazione con le frecce, ricerca digitando, larghezza delle 
 |---|---|
 | 1.0 | Doppio pannello, operazioni di base, Cestino, ZIP, ricerca, filtro, anteprima; interfaccia in italiano |
 | 1.1 | Frecce ←/→, interfaccia in inglese, anteprima ed estrazione 7z |
+| 1.20 | **Prestazioni**: ordinamento per indici con permutazione sul posto (200 000 voci per nome 145 → 62 ms, per dimensione 126 → 47 ms, stesso ordine, nessuna memoria in più); testo delle righe di pannelli e albero senza l'espressione regolare di `tview.Escape` per i nomi senza `[` (render di 20 000 righe 27 → 22 ms); misure su Windows |
 | 1.19 | **Riquadro delle operazioni** in basso con **coda**: copia, spostamento e incolla una alla volta mentre i pannelli restano utilizzabili, domande alla partenza; **F8** sul riquadro (Pause/Resume, Cancel, Remove); conferma all'uscita con operazioni; colori **multimediali verdi e programmi rossi**; **versione** nel riepilogo Ctrl+F2; **niente build ARM64** |
 | 1.18 | **Cursore sul primo elemento** entrando in una cartella e chiudendo vista piatta e albero (risalendo resta sulla cartella lasciata); **doppio clic = Invio**; **Ctrl+R** iniziali maiuscole (spazio `_` `-`, resto ed estensione invariati, anteprima, nomi esistenti saltati); **nomi doppi in vista piatta** con domanda Skip/Overwrite invece del rifiuto; **Ctrl+U** scambia i pannelli; **Pause/Resume** in copia, spostamento e incolla |
 | 1.17 | **Prestazioni**: preparazione di copia/spostamento in un solo percorso (stat per file dimezzate su Linux, azzerate su Windows), misura delle cartelle 3 alla volta con ridisegni raggruppati, ordinamento 3,7× più veloce, totali per fotogramma 3× più veloci; benchmark in `bench_test.go`; **barra dei tasti** con `C+` al posto di `Ctrl+` |
@@ -1352,7 +1378,7 @@ Prove precedenti: navigazione con le frecce, ricerca digitando, larghezza delle 
 
 ## 13. Prompt per rigenerare il programma
 
-Il prompt seguente è autosufficiente: incollato a un assistente di programmazione con accesso a Go, dovrebbe produrre un programma equivalente alla versione 1.19. Le stringhe dell'interfaccia sono indicate testualmente.
+Il prompt seguente è autosufficiente: incollato a un assistente di programmazione con accesso a Go, dovrebbe produrre un programma equivalente alla versione 1.20. Le stringhe dell'interfaccia sono indicate testualmente.
 
 ````text
 Crea "gofm", un file manager a doppio pannello per il terminale di Windows, in Go (go.mod:
@@ -1363,10 +1389,10 @@ golang.org/x/text (charmap CP437/850/852/858/866 e Windows1252, unicode UTF-16),
 github.com/rivo/uniseg e github.com/bodgit/sevenzip v1.6 (7z in sola lettura).
 Interfaccia interamente in INGLESE. Deve compilare e girare anche su Linux per i test
 (file sys_windows.go e sys_other.go con build tag). Scrivi test unitari per tutta la
-logica portabile. Versione "1.19".
+logica portabile. Versione "1.20".
 
 AVVIO: gofm [left_folder] [right_folder]; -h/--help//? stampa
-"gofm 1.18 — usage: gofm [left_folder] [right_folder]". Argomento non valido -> cartella corrente.
+"gofm 1.20 — usage: gofm [left_folder] [right_folder]". Argomento non valido -> cartella corrente.
 Un argomento \\server apre l'elenco share.
 MEMORIA (state.go): stato JSON {version:1, left, right, active "left"|"right", driveDirs
 {lettera: cartella}, basicIcons bool omitempty, colorScheme "dark"|"light" omitempty} in state.json NELLA CARTELLA DELL'ESEGUIBILE
@@ -1460,7 +1486,7 @@ e.g. Cascadia Mono NF) — Alt+I for basic symbols", salva lo stato. Colonna dim
 "<DIR>" ma, se SELEZIONATA, il suo totale ricorsivo ("…" durante la misurazione); file:
 dimensione leggibile (B, KB, MB… base 1024, una cifra decimale).
 Data: "02/01 15:04" se dell'anno corrente, altrimenti "02/01/2006"; vuota se sconosciuta.
-Colori: vedi SCHEMI; tutta la riga usa il colore dell'elemento. Ordinamento (entryLess): ".."
+Colori: vedi SCHEMI; tutta la riga usa il colore dell'elemento. Ordinamento (entryCmp a tre vie; entryLess = entryCmp < 0): ".."
 in cima, cartelle prima, poi per tipo (nome senza maiuscole | dimensione | data) nel senso del
 pannello (sortAsc), a parità per nome A→Z. ALT+O cambia tipo nome→dimensione→data e riparte
 dal senso naturale (nome crescente, dimensione e data decrescenti); ALT+D inverte il senso;
@@ -1586,7 +1612,11 @@ sempre. Il risultato fa ridisegnare la riga e il totale sul bordo.
   se cambia il numero di voci o di marcature, non a ogni fotogramma; misura delle cartelle
   selezionate con al massimo 3 percorsi insieme (semaforo, liberato prima di avvisare
   l'interfaccia) e un solo ridisegno per un gruppo di risultati. bench_test.go con i
-  benchmark di ordinamento, render, fotogramma e preparazione della copia.
+  benchmark di ordinamento, render, fotogramma e preparazione della copia. (v1.20) sortEntries
+  ordina un []int32 di indici con slices.SortStableFunc ed entryCmp, poi mette le voci al loro
+  posto sul posto seguendo i cicli della permutazione (nessuno spostamento di voci intere
+  durante l'ordinamento, nessuna seconda copia dell'elenco); il testo delle righe di pannelli
+  e albero passa per escapeName: tview.Escape solo se contiene "[".
 - BARRA DEI TASTI: "Ctrl+" scritto "C+" con la lettera minuscola (C+a, C+F7); il riepilogo
   Ctrl+F2 usa i nomi completi.
 - BARRA DI SCORRIMENTO (scrollbar.go): dopo il disegno di pannelli e albero, se le righe n
@@ -1927,7 +1957,7 @@ barra tasti (priorità, larghezza, clic simulati); cambio di schema e salvataggi
 editorCommand e F4 con uno script come editor; conflitti annidati in copia e spostamento
 (Skip/Overwrite, file saltati rimasti nella sorgente), resolveConflicts; cancellazione
 definitiva di file di sola lettura; scan (conflitti, dimensioni, albero riusato, rinomina non letta), stesso ordinamento della
-versione precedente, totali in cache, misura limitata delle cartelle, barra abbreviata;
+versione precedente (anche per l'ordinamento per indici della v1.20, su 5 000 voci con chiavi uguali; escapeName uguale a tview.Escape), totali in cache, misura limitata delle cartelle, barra abbreviata;
 applicazione in esecuzione su schermo simulato (runUI) per appunti,
 Shift+Canc, ultimo prefisso; tasti di uscita; clic destro; firstRow e cursore sul primo
 elemento, doppio clic, iniziali maiuscole (casi, stesso file, finestra), nomi doppi in vista

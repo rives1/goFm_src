@@ -2,6 +2,13 @@
 
 All notable changes to gofm. Versions follow the order in which features were added.
 
+## 1.20 — 2026-11-11
+
+Faster with large listings, same behaviour. Measured on Windows (Ryzen 9 9900X) with the benchmarks in `bench_test.go`:
+
+- **Sorting** moves indexes instead of whole entries, then puts each entry in its place once: 200 000 names 145 → 62 ms, by size 126 → 47 ms, with no extra memory. The order is exactly the same as before (checked by a test).
+- **Building the rows** of a panel or of the tree skips the colour-tag escaping for names without `[` (nearly all of them): 20 000 rows 27 → 22 ms, 60 000 fewer allocations. This is the work done after every mark (Ins, Space, Ctrl+A) and every automatic refresh.
+
 ## 1.19 — 2026-11-05
 
 - **Operations pane and queue**: copies, moves and pastes (F5, F6, Ctrl+P) no longer open a progress window. They run in a pane at the bottom of the window, under the two panels (which get shorter), so you can keep browsing and start other operations meanwhile. A new copy, move or paste waits in a **queue** and starts when the previous one ends, one at a time; its questions (conflicts, folders to merge, items copied onto themselves) are asked when its turn comes. The pane shows the running operation (bar, bytes, speed, time left, current file) and up to 3 waiting ones; it closes by itself when the queue is empty.
