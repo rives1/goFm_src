@@ -105,3 +105,6 @@ func sameVolume(a, b string) bool {
 	}
 	return sa.Dev == sb.Dev
 }
+
+// longName: short 8.3 names exist only on Windows.
+func longName(p string) string { return p }

@@ -1,6 +1,6 @@
 # gofm — Documentazione di progetto e specifiche
 
-**Versione documentata:** 1.20 · **Data:** 11/11/2026 · **Licenza:** MIT, © 2026 rives
+**Versione documentata:** 1.21 · **Data:** 11/11/2026 · **Licenza:** MIT, © 2026 rives
 **Linguaggio:** Go (minimo 1.24; release compilate con **Go 1.27.3**) · **Piattaforma bersaglio:** Windows 64 bit x64 (su ARM tramite l'emulazione x64 di Windows 11; build ARM64 fino alla v1.18) · **Interfaccia:** inglese
 
 ---
@@ -80,7 +80,7 @@ Avvio:
 gofm.exe                        :: entrambi i pannelli nella cartella corrente
 gofm.exe C:\Progetti D:\Backup  :: pannello sinistro e destro
 gofm.exe \\nas                  :: un pannello sull'elenco delle share di \\nas
-gofm.exe -h | --help | /?       :: stampa "gofm 1.20 — usage: gofm [left_folder] [right_folder]"
+gofm.exe -h | --help | /?       :: stampa "gofm 1.21 — usage: gofm [left_folder] [right_folder]"
 ```
 
 Un argomento non valido (inesistente o non cartella) viene sostituito dalla cartella corrente.
@@ -117,6 +117,7 @@ Ogni scelta è stata presa con l'utente o motivata esplicitamente.
 | Programma portatile (v1.13) | `gofm.ini` e `state.json` **nella cartella dell'eseguibile** (`os.Executable` + `EvalSymlinks`), non più in `%APPDATA%\gofm`. Se la cartella **non è scrivibile** non si salva nulla (né stato né impostazioni): i file già presenti si leggono, nessuno viene creato o aggiornato, avviso all'avvio. Nessuna migrazione dal vecchio `state.json`. `GOFM_STATE` e `GOFM_CONFIG` sostituiscono i due percorsi | Richiesta dell'utente (v1.13), con le scelte sul ripiego e sulla migrazione. La scrivibilità si verifica **creando un file di prova**: su Windows i permessi (ACL) non si vedono nei bit del file, e con il manifest *asInvoker* la virtualizzazione di UAC è disattivata, quindi una scrittura in `C:\Program Files` fallisce davvero invece di finire nel VirtualStore. Il profilo di Windows Terminal resta nella cartella `Fragments`: Windows Terminal lo legge solo lì. Interpretazione da confermare: un `gofm.ini` messo a mano in una cartella di sola lettura viene letto. |
 | File di impostazioni `gofm.ini` (v1.13) | Testo `chiave = valore`, commenti `#`/`;`, sezioni ignorate, chiavi e valori senza maiuscole, virgolette facoltative; **creato commentato** se manca (righe CRLF, molti commenti per ogni parametro), **mai riscritto** da gofm; separato da `state.json`. Chiavi: `editor`, `colorScheme`, `icons`, `showHidden`, `sortBy`, `deleteDefault`, `networkDelete`, `networkDeleteDefault`. Letto all'avvio e con **Alt+R**, che applica **solo i valori cambiati nel file**. `GOFM_EDITOR` prevale su `editor` | Scelte dell'utente (v1.13). Formato INI perché ammette commenti ed è facile da modificare in Notepad (JSON non ha commenti); nessuna libreria aggiuntiva. File separato da `state.json` perché gofm scrive lo stato a ogni cambio di cartella e cancellerebbe i commenti dell'utente. Con Alt+R si applica solo ciò che è cambiato nel file, altrimenti un semplice aggiornamento annullerebbe Alt+H, Alt+O, Ctrl+F9 o Alt+I. `colorScheme` e `icons` non impostati = ultima scelta salvata in `state.json`; impostati = valgono a ogni avvio. Valori sbagliati e chiavi sconosciute: avviso nella barra di stato con il numero di riga, le altre righe valgono. |
 | Prestazioni (v1.20) | **Ordinamento per indici** (`[]int32` con `slices.SortStableFunc` ed `entryCmp` a tre vie, poi permutazione sul posto) invece di `sort.SliceStable` sulle voci; **`escapeName`**: `tview.Escape` solo per il testo delle righe che contiene `[` | Valutazione richiesta dall'utente (11/11/2026), punti scelti: 2 e 3 (rapidi e misurati). Rimandati: tabella "virtuale" con le sole righe visibili (1, il guadagno maggiore), piccoli interventi (4: nome base in minuscolo per la ricerca digitando in vista piatta, voci passate per puntatore, buffer della copia Go riusato), lettura parallela delle cartelle su share (5). |
+| Albero fino alla cartella (v1.21) | Le **cartelle nascoste sul percorso** della cartella aperta sono sempre elencate (attenuate), le altre seguono Alt+H; i percorsi con **nomi corti 8.3** sono convertiti nei nomi lunghi (`GetLongPathName`) prima di aprire l'albero, e il pannello destro li mostra con i nomi lunghi | Scelte dell'utente (11/11/2026): prima gli antenati nascosti, poi i nomi corti. Così l'albero arriva sempre alla cartella senza cambiare Alt+H; prima si fermava all'ultimo antenato visibile e il pannello destro, seguendo il cursore, cambiava cartella. |
 | Prestazioni (v1.17) | **Preparazione di copia/spostamento in un solo percorso** (`scan`): ogni cartella sorgente letta una volta e, se esiste la cartella omonima nella destinazione, anche questa letta una volta con confronto dei nomi in memoria; il motore riusa l'albero letto; spostamento verso un nome libero sulla stessa unità non letto affatto. **Misura delle cartelle selezionate** al massimo 3 alla volta e ridisegni raggruppati. **Chiavi di ordinamento** in minuscolo calcolate una volta per voce; **totali** di bordi e barra di stato calcolati una volta per modifica; **famiglia** del file calcolata una volta per voce | Valutazione richiesta dall'utente (02/11/2026), punti scelti: 1, 2, 3, 5, 7, 8. Misure prima/dopo con `bench_test.go` (§10). Esclusi per ora: ricerca per contenuto in parallelo (4), tabella "virtuale" che costruisce solo le righe visibili (6, il guadagno maggiore sugli elenchi enormi ma invasivo), archivi grandi (9), lettura asincrona dei rami dell'albero (10). |
 | Barra dei tasti abbreviata (v1.17) | `Ctrl+` scritto **`C+`**, lettera minuscola (`C+a`, `C+F7`); il riepilogo Ctrl+F2 mantiene i nomi completi | Richiesta dell'utente (v1.17): più voci nella stessa larghezza. |
 | Appunti di gofm (v1.16) | **Ctrl+O** copia e **Ctrl+I** taglia i selezionati (o l'elemento sotto il cursore) in appunti **interni**; **Ctrl+P** li incolla nella cartella del **pannello attivo**, con tutti i controlli e le domande di F5/F6; dopo un taglio incollato gli appunti si svuotano; avviso nella barra di stato; persi all'uscita | Richiesta e scelte dell'utente (v1.16). Ctrl+C/X/V, chiesti inizialmente, sono stati scartati: **Windows Terminal e la console classica usano Ctrl+V per incollare testo**, quindi il tasto non arriverebbe a gofm, e la libreria del terminale su Windows non segnala l'incolla all'applicazione (`EnablePaste` vuoto in `console_win.go`). Appunti interni e non di Windows (scelta dell'utente): verificabili qui e senza interazioni con Esplora risorse. Ctrl+I in molti terminali vale Tab; su Windows gofm lo distingue, ma nella console classica Ctrl+Tab arriva come Ctrl+I. |
@@ -876,6 +877,8 @@ Vedi §6.3, punti 5–8. In sintesi: `findConflicts` elenca i file della selezio
 - **Con il focus sul pannello destro** tutto funziona come sempre, salvo F5, F6, F12 e l'estrazione della selezione di un archivio, che mostrano `This needs the two panels:\nleave the tree view with Ctrl+T first.`; `destFolder` non restituisce destinazioni (F9 e Alt+U propongono la cartella corrente). Tab torna all'albero.
 - **Uscita** (`closeTree`, Ctrl+T da qualunque lato): annulla l'aggiornamento in sospeso, rimette il pannello sinistro nel layout, porta **entrambi i pannelli sulla cartella evidenziata** nell'albero, mantiene attivo il lato che lo era.
 - **Stato**: la modalità non viene salvata; durante l'albero `state.json` registra come cartella sinistra quella evidenziata. La barra di stato, con il focus sull'albero, mostra il percorso della cartella evidenziata.
+- **Antenati nascosti** (v1.21; scelta dell'utente): `treeView.pin` è la cartella fino a cui l'albero è stato aperto l'ultima volta (`reveal`). `treeNode.load(nascosti, pin)` elenca sempre le cartelle nascoste che stanno sul percorso verso `pin` (`isWithin(cartella, pin)`), attenuate come ogni cartella nascosta; le altre seguono Alt+H. Se un ramo era già stato letto senza la cartella nascosta, `reveal` lo rilegge con `refreshNode` (ciò che era aperto sotto resta aperto). Prima l'albero si fermava al primo antenato nascosto (es. la cartella dell'utente per una cartella sotto `AppData`) e il pannello destro, seguendo il cursore, si spostava lì. Test: `TestTreeHiddenAncestor`, `TestTreeRevealReadsBranchAgain` (`v121_test.go`).
+- **Nomi corti 8.3** (v1.21; scelta dell'utente): `reveal` e Ctrl+T convertono il percorso con `longName` (Windows: `GetLongPathName`, solo se il percorso contiene `~`; altrove restituisce il percorso invariato). Così da `C:\PROGRA~1\...` l'albero arriva alla cartella sotto i nomi lunghi, e il pannello destro mostra anch'esso i nomi lunghi. Prima l'albero si fermava all'ultimo antenato con lo stesso nome e il pannello destro, seguendo il cursore, si spostava lì. Se il percorso non esiste resta com'è. Test: `TestTreeShortNames` (`v121_windows_test.go`, saltato se il volume non ha nomi corti).
 
 ### 6.35 Prefisso ai nomi (Ctrl+K, v1.14)
 
@@ -1018,6 +1021,8 @@ gofm/
 ├── v110_test.go     test: confronto nome/dimensione/data, cartelle con sottocartelle, riepilogo dei tasti, focus alla chiusura delle finestre
 ├── v111_test.go     test: compilatore fissato uguale in go.mod e nei workflow, risorse Windows (manifest, versione, icone)
 ├── v120_test.go     test: ordinamento per indici uguale al precedente, escapeName uguale a tview.Escape (v1.20)
+├── v121_test.go     test: albero con cartelle nascoste sul percorso, ramo riletto, cartella mancante (v1.21)
+├── v121_windows_test.go test (solo Windows): albero da un percorso con nomi corti 8.3 (v1.21)
 ├── v112_test.go     test: schemi leggibili, unità, ordinamento, tasti nuovi e tolti, barra e clic, editor, conflitti, cancellazione definitiva
 ├── v117_test.go     test: scan (conflitti, dimensioni, albero), copia e spostamento con l'albero, rinomina non letta, stesso ordinamento di prima, cache delle voci, totali, misura delle cartelle limitata, barra abbreviata
 ├── v118_test.go     test: firstRow e cursore (entrata, risalita, cartella vuota, vista piatta, albero), doppio clic, iniziali maiuscole (casi, renameEach con stesso file, finestra), nomi doppi (resolveDuplicates, testo, F5 reale in vista piatta), Ctrl+U, pausa (motore, lettore, testo, pulsante nella finestra reale), tasti nuovi
@@ -1227,7 +1232,7 @@ Nota storica: il commit "versione 1.9" del repository non conteneva gli aggiorna
 
 Eseguiti su Linux; su Windows è stata verificata solo la compilazione (`go vet` e `go test -c` con `GOOS=windows`).
 
-Dalla v1.20 la suite gira anche su **Windows 11** (Go 1.27.3). Nella v1.20 `TestTreeView`, `TestPasteInTree`, `TestShiftDelete` e (in un clone nuovo) `TestPinnedToolchain` fallivano su Windows, e su Linux `go test -race` trovava una data race in `TestFlatDuplicatesCopy`: la CI era rossa dalla v1.15. Corretti dopo la v1.20 (cause e rimedi in §11, "CI"); tutta la suite passa su Windows 11 e, con `-race`, su Linux (Ubuntu 24.04 in WSL).
+Dalla v1.20 la suite gira anche su **Windows 11** (Go 1.27.3); dalla v1.21 passa anche nella CI di GitHub. Nella v1.20 `TestTreeView`, `TestPasteInTree`, `TestShiftDelete` e (in un clone nuovo) `TestPinnedToolchain` fallivano su Windows, e su Linux `go test -race` trovava una data race in `TestFlatDuplicatesCopy`: la CI era rossa dalla v1.15. Corretti nella v1.21 (commit separato prima della versione; cause e rimedi in §11, "CI"); tutta la suite passa su Windows 11 e, con `-race`, su Linux (Ubuntu 24.04 in WSL).
 
 | Area | Test |
 |---|---|
@@ -1242,6 +1247,7 @@ Dalla v1.20 la suite gira anche su **Windows 11** (Go 1.27.3). Nella v1.20 `Test
 | Tasti | Ctrl+lettera nelle due codifiche, Ctrl+H/I/M, Backspace/Tab/Invio non scambiati, AltGr escluso, Alt+lettera |
 | Selezione | `treeStats` (file regolari e byte, ricorsivo), `plural` |
 | Confronto | `onlyOnOneSide`: cartelle e `..` ignorate, maiuscole indifferenti e distinte, cartella identica senza differenze |
+| v1.21 | `TestTreeHiddenAncestor` (Ctrl+T da `a/.hid/inner`: albero e pannello destro su `inner`, `.hid` elencata come nascosta, `.other` no, `b` sì; Ctrl+T di nuovo: i due pannelli su `inner`); `TestTreeRevealReadsBranchAgain` (ramo `a` già letto senza `.hid`: `reveal` di `inner` lo rilegge; Alt+R conserva il percorso; cartella mancante: cursore sull'antenato più vicino); `TestTreeShortNames` (solo Windows, `v121_windows_test.go`: `longName` del nome corto = nome lungo, percorso inesistente invariato, Ctrl+T da un nome corto: albero e pannello destro sul nome lungo; saltato se il volume non ha nomi corti). I tre test falliscono con l'albero della v1.20. Correzioni ai test per la CI in §11 ("CI"); `visibleTempDir` per i test che aprono l'albero. Suite completa su Windows 11 e, con `-race`, su Ubuntu 24.04 (WSL) |
 | v1.20 | `TestSortPointersSameOrder` (5 000 voci con molte chiavi uguali, nomi che differiscono solo per le maiuscole, cartelle e `..`; 3 tipi × 2 sensi: voci identiche, campo per campo, all'ordinamento stabile con `sort.SliceStable` ed `entryLess`); `TestEscapeName` (nomi senza `[`, con `[`, tag di colore, `[[`, CJK: stesso risultato di `tview.Escape`). Benchmark in `bench_test.go` (§6.41) |
 | v1.19 | `TestColoursSwapped` (multimediali e programmi nei tre schemi); `TestHelpVersion` (versione nel testo e nel titolo del riepilogo, sezione del CHANGELOG); `TestNoARMBuild` (script di pacchetto, workflow e script di installazione senza build ARM64); `TestPaneHeight`; `TestQueueSequential` (due copie reali rallentate: marcature tolte subito, avviso `Queued:`, riquadro visibile senza finestre, cursore del pannello che si muove durante la copia, lista `2. … queued`, seconda copia partita solo dopo la fine della prima, riquadro chiuso, `Done:`); `TestQueueQuestionsAtStart` (seconda copia dello stesso file: la domanda arriva alla sua partenza, con `Waiting for your answer` nel riquadro; Esc a una domanda fa partire l'operazione successiva); `TestQueuePane` (F8 senza operazioni, tre copie, altezza, focus sulla lista, lettere non alla ricerca, Remove della seconda, Pause → Resume e nessun file copiato in pausa, Cancel in pausa, partenza della terza, Esc ai pannelli, la rimossa non copia nulla); `TestQuitWithQueue` (Ctrl+W chiede, Cancel resta, Quit annulla ed esce); `TestPaneGlobalKeys` (Ctrl+F2 e Alt+Q dal riquadro, focus restituito al riquadro, poi al pannello alla chiusura). Tolto `TestPauseButton` (finestra modale non più usata). `runUI` non richiama `Stop` se il programma è già uscito (race con `Run`); i test di copia e incolla esistenti aspettano anche la coda vuota (prima aspettavano la chiusura della finestra di avanzamento). Race detector superato, anche con 15 ripetizioni dei test della coda |
 | v1.18 | `TestFirstRow` (nome esatto, senza maiuscole, assente, vuoto, cartella vuota, elenco unità); `TestCursorOnFirstItem` (FM reale: chdir, →, ← sulla cartella lasciata, cartella vuota su `..`, apertura e chiusura della vista piatta, chiusura dell'albero); `TestDoubleClick` (doppio clic su un'altra riga = solo spostamento, sulla riga del cursore = Invio in una cartella, su `..` = risalita, sotto l'elenco nulla, focus al pannello); `TestCapitalize` (11 casi: `_`, `-`, spazi doppi, cifre, estensioni maiuscole e doppie, nome con punto iniziale, lettere accentate, cartelle con punto); `TestRenameEach` (sottocartella della vista piatta, nome esistente saltato, **stesso file** con un collegamento fisico che simula un file system senza maiuscole: rinominato); `TestCapitalizeDialog` (applicazione in esecuzione: Ctrl+A, Ctrl+R, Invio = Rename, cartella compresa, nome già a posto lasciato, avviso; nulla da cambiare = solo avviso); `TestResolveDuplicates` (tre file con un nome e due con un altro: Skip, Overwrite/Skip, Overwrite all, Skip all, Esc, nessun doppio = nessuna domanda); `TestDupText`; `TestFlatDuplicatesCopy` (vista piatta reale, Ctrl+A, F5: Skip → resta il primo, due Tab + Invio = Overwrite → il secondo, Esc → nulla copiato); `TestSwapPanels` (lati, evidenziazione, focus, cartella, cursore, selezioni, senso, filtro, layout, `state.json`, avviso, ritorno, rifiuto con l'albero); `TestPauseEngine` (in pausa nessun byte e nessun file, ripresa completa, Cancel durante la pausa, lettore fermo a metà file); `TestPauseText`; `TestPauseButton` (copia reale rallentata: pulsanti Pause/Cancel, Pause → Resume, nessun file copiato durante la pausa, ripresa fino alla fine; un'operazione non sospendibile ha solo Cancel); `TestKeysV118`. Race detector superato |
@@ -1319,12 +1325,12 @@ Prove precedenti: navigazione con le frecce, ricerca digitando, larghezza delle 
 - Vista piatta: limite di 200 000 file; le modifiche esterne nelle sottocartelle compaiono solo con Alt+R.
 - Eseguibili **non firmati**: alcuni antivirus (es. Defender, rilevazioni `!ml`) possono segnalarli come falsi positivi; la firma del codice non è ancora attiva.
 - Ricostruzione completa delle righe a ogni marcatura: circa 250 ms con 200 000 voci (vista piatta) fino alla v1.19, circa 220 ms stimati dalla v1.20; rimedio possibile con una tabella "virtuale" che costruisce solo le righe visibili (non fatto).
-- **CI** (correzioni dopo la v1.20, tutte nei test e negli a capo, nessuna nel programma):
+- **CI** (correzioni della v1.21, prima in un commit a sé, tutte nei test e negli a capo, nessuna nel programma):
   - `.gitattributes` con `* text=auto eol=lf`: Git per Windows ha `core.autocrlf=true`, quindi i cloni nuovi avevano i file in CRLF; `TestPinnedToolchain` non trovava la riga `toolchain` di `go.mod` e l'eseguibile non era riproducibile (1.20: `7b936c…` invece di `61ba09…`).
   - `TestTreeView` e `TestPasteInTree`: `t.TempDir` su Windows è sotto `AppData` (nascosta) e nella CI ha il nome corto `RUNNER~1`; l'albero si fermava prima, sulla cartella dell'utente, e il pannello destro, seguendolo, riceveva l'incolla di `TestPasteInTree` (un `a.txt` finiva nella cartella dell'utente). Ora `visibleTempDir`: cartella `testtmp-*` nella cartella del pacchetto, con il nome lungo; test saltato se un antenato è nascosto.
   - `TestShiftDelete`: il Cestino di Windows toglie il file prima che il compito finisca; il test ora aspetta anche la chiusura della finestra ` Working `.
   - `TestFlatDuplicatesCopy`: tre FM nello stesso test, ognuno con `runUI` fermato solo a fine test; `applyScheme` del giro successivo scriveva i colori mentre l'interfaccia precedente disegnava. Ora un sotto-test per giro.
-- **Albero e cartelle nascoste o nomi corti** (comportamento del programma, non cambiato): con Ctrl+T da una cartella sotto una cartella nascosta (es. `AppData`) o scritta con nomi corti 8.3, l'albero si ferma all'ultimo antenato raggiungibile e il pannello destro si sposta lì.
+- **Albero e percorsi irraggiungibili**: con Ctrl+T da una cartella che non si può leggere lungo il percorso (permessi), l'albero si ferma all'ultimo antenato leggibile. Le cartelle **nascoste** sul percorso e i **nomi corti 8.3** (`C:\PROGRA~1`) sono invece gestiti dalla v1.21 (§6.34).
 - Appunti interni a gofm (non quelli di Windows), persi all'uscita; Ctrl+C/X/V non usabili (Ctrl+V è dei terminali). Nella console classica Ctrl+Tab arriva come Ctrl+I (riempie solo gli appunti).
 - Albero: i rami si leggono quando si aprono e non si aggiornano da soli (solo con Alt+R o quando il pannello destro rilegge quella cartella); copia e spostamento richiedono di uscire dall'albero.
 - Cartella del programma non scrivibile: nulla viene salvato (scelta dell'utente), quindi ogni avvio riparte dai valori predefiniti.
@@ -1333,6 +1339,7 @@ Prove precedenti: navigazione con le frecce, ricerca digitando, larghezza delle 
 - `go.sum` costruito con un metodo verificato ma senza accesso a `sum.golang.org` (§9.2): la prima compilazione su una macchina normale, o la CI, lo confermano.
 
 **Non verificato su Windows reale** (logica testata solo dove è portabile):
+- v1.21: albero sotto `AppData` e da un percorso con nomi corti (`C:\PROGRA~1`) in Windows Terminal (logica provata con i test su Windows 11);
 - v1.20: nessun cambiamento visibile da provare a schermo; benchmark e test eseguiti su Windows 11;
 - v1.19: avviso dello script di installazione su un PC ARM e avvio di `gofm.exe` in emulazione x64. **Verificati dall'utente su Windows il 05/11/2026**, tutti superati: riquadro delle operazioni in Windows Terminal e nella console classica (ridisegno durante la navigazione, clic sui pulsanti Pause/Cancel/Remove), pausa durante una copia grande, due copie in coda verso una share, Ctrl+W con una copia in corso;
 - v1.18: doppio clic in Windows Terminal e nella console classica (intervallo di 500 ms di tview); pausa durante `CopyFileExW` (callback bloccata) e con la copia lato server di SMB; Ctrl+R con cambio di sole maiuscole su NTFS e su share; Ctrl+R e Ctrl+U nei terminali Windows;
@@ -1359,6 +1366,7 @@ Prove precedenti: navigazione con le frecce, ricerca digitando, larghezza delle 
 |---|---|
 | 1.0 | Doppio pannello, operazioni di base, Cestino, ZIP, ricerca, filtro, anteprima; interfaccia in italiano |
 | 1.1 | Frecce ←/→, interfaccia in inglese, anteprima ed estrazione 7z |
+| 1.21 | **Albero (Ctrl+T)** sotto le cartelle nascoste (cartelle nascoste sul percorso elencate, attenuate) e da percorsi con **nomi corti 8.3** (convertiti nei nomi lunghi); **CI** di nuovo verde: a capo LF con `.gitattributes` (build riproducibile anche da un clone su Windows), test indipendenti dalla cartella temporanea e senza data race |
 | 1.20 | **Prestazioni**: ordinamento per indici con permutazione sul posto (200 000 voci per nome 145 → 62 ms, per dimensione 126 → 47 ms, stesso ordine, nessuna memoria in più); testo delle righe di pannelli e albero senza l'espressione regolare di `tview.Escape` per i nomi senza `[` (render di 20 000 righe 27 → 22 ms); misure su Windows |
 | 1.19 | **Riquadro delle operazioni** in basso con **coda**: copia, spostamento e incolla una alla volta mentre i pannelli restano utilizzabili, domande alla partenza; **F8** sul riquadro (Pause/Resume, Cancel, Remove); conferma all'uscita con operazioni; colori **multimediali verdi e programmi rossi**; **versione** nel riepilogo Ctrl+F2; **niente build ARM64** |
 | 1.18 | **Cursore sul primo elemento** entrando in una cartella e chiudendo vista piatta e albero (risalendo resta sulla cartella lasciata); **doppio clic = Invio**; **Ctrl+R** iniziali maiuscole (spazio `_` `-`, resto ed estensione invariati, anteprima, nomi esistenti saltati); **nomi doppi in vista piatta** con domanda Skip/Overwrite invece del rifiuto; **Ctrl+U** scambia i pannelli; **Pause/Resume** in copia, spostamento e incolla |
@@ -1383,7 +1391,7 @@ Prove precedenti: navigazione con le frecce, ricerca digitando, larghezza delle 
 
 ## 13. Prompt per rigenerare il programma
 
-Il prompt seguente è autosufficiente: incollato a un assistente di programmazione con accesso a Go, dovrebbe produrre un programma equivalente alla versione 1.20. Le stringhe dell'interfaccia sono indicate testualmente.
+Il prompt seguente è autosufficiente: incollato a un assistente di programmazione con accesso a Go, dovrebbe produrre un programma equivalente alla versione 1.21. Le stringhe dell'interfaccia sono indicate testualmente.
 
 ````text
 Crea "gofm", un file manager a doppio pannello per il terminale di Windows, in Go (go.mod:
@@ -1394,10 +1402,10 @@ golang.org/x/text (charmap CP437/850/852/858/866 e Windows1252, unicode UTF-16),
 github.com/rivo/uniseg e github.com/bodgit/sevenzip v1.6 (7z in sola lettura).
 Interfaccia interamente in INGLESE. Deve compilare e girare anche su Linux per i test
 (file sys_windows.go e sys_other.go con build tag). Scrivi test unitari per tutta la
-logica portabile. Versione "1.20".
+logica portabile. Versione "1.21".
 
 AVVIO: gofm [left_folder] [right_folder]; -h/--help//? stampa
-"gofm 1.20 — usage: gofm [left_folder] [right_folder]". Argomento non valido -> cartella corrente.
+"gofm 1.21 — usage: gofm [left_folder] [right_folder]". Argomento non valido -> cartella corrente.
 Un argomento \\server apre l'elenco share.
 MEMORIA (state.go): stato JSON {version:1, left, right, active "left"|"right", driveDirs
 {lettera: cartella}, basicIcons bool omitempty, colorScheme "dark"|"light" omitempty} in state.json NELLA CARTELLA DELL'ESEGUIBILE
@@ -1594,7 +1602,11 @@ sempre. Il risultato fa ridisegnare la riga e il totale sul bordo.
   sottocartelle + icona cartella + nome, colore delle cartelle, nascoste attenuate; titolo
   " Tree  <radice> " + "  [hidden shown]") al posto del pannello sinistro nel Flex; figli
   letti alla prima apertura (solo cartelle, link a cartelle con " ~", nascoste secondo
-  showHidden del pannello sinistro, ordine per nome senza maiuscole). Pannello destro sulla
+  showHidden del pannello sinistro, ordine per nome senza maiuscole). (v1.21) Le cartelle
+  nascoste sul percorso della cartella aperta (pin = ultima cartella di reveal) sono sempre
+  elencate, attenuate; un ramo già letto senza di esse viene riletto; il percorso passa prima
+  per longName (Windows: GetLongPathName se contiene "~"; altrove invariato), così i nomi
+  corti 8.3 arrivano ai nomi lunghi, anche nel pannello destro. Pannello destro sulla
   cartella; avviso "Tree: → ← open and close folders · Tab or Enter to the files · Ctrl+T
   back to two panels". Con il focus sull'albero: frecce/PgUp/PgDn/Home/End alla tabella; ad
   ogni cambio di riga un timer di 150 ms (un movimento più recente annulla il precedente,
@@ -1962,7 +1974,9 @@ barra tasti (priorità, larghezza, clic simulati); cambio di schema e salvataggi
 editorCommand e F4 con uno script come editor; conflitti annidati in copia e spostamento
 (Skip/Overwrite, file saltati rimasti nella sorgente), resolveConflicts; cancellazione
 definitiva di file di sola lettura; scan (conflitti, dimensioni, albero riusato, rinomina non letta), stesso ordinamento della
-versione precedente (anche per l'ordinamento per indici della v1.20, su 5 000 voci con chiavi uguali; escapeName uguale a tview.Escape), totali in cache, misura limitata delle cartelle, barra abbreviata;
+versione precedente (anche per l'ordinamento per indici della v1.20, su 5 000 voci con chiavi uguali; escapeName uguale a tview.Escape), albero sotto una cartella nascosta e con
+nomi corti 8.3 (v1.21; i test che aprono l'albero usano una cartella temporanea senza
+antenati nascosti), totali in cache, misura limitata delle cartelle, barra abbreviata;
 applicazione in esecuzione su schermo simulato (runUI) per appunti,
 Shift+Canc, ultimo prefisso; tasti di uscita; clic destro; firstRow e cursore sul primo
 elemento, doppio clic, iniziali maiuscole (casi, stesso file, finestra), nomi doppi in vista

@@ -1,6 +1,6 @@
-# gofm — contesto per proseguire in una nuova chat (versione 1.20)
+# gofm — contesto per proseguire in una nuova chat (versione 1.21)
 
-> Da allegare all'inizio di una nuova chat. Contiene: stato del progetto, cose in sospeso, regole di lavoro, note tecniche sull'ambiente di sviluppo e, in fondo, le **specifiche compatte complete della 1.20**. Il dettaglio di ogni scelta, con motivazioni e storico, è in `docs/gofm-documentazione.md` nel repository.
+> Da allegare all'inizio di una nuova chat. Contiene: stato del progetto, cose in sospeso, regole di lavoro, note tecniche sull'ambiente di sviluppo e, in fondo, le **specifiche compatte complete della 1.21**. Il dettaglio di ogni scelta, con motivazioni e storico, è in `docs/gofm-documentazione.md` nel repository.
 
 ## A. Dove sono le cose
 
@@ -8,19 +8,16 @@
 - **Copia locale** (PC dell'utente): `C:\Users\ammin\Documents\Claude CLI\gofm-repo\goFm_src`.
 - **Cartella dei pacchetti**: `C:\Users\ammin\Documents\Claude CLI\gofm-repo\`, con `gofm-<versione>-windows.zip`, `.sha256`, `gofm-<versione>-repo.zip`, `gofm-<versione>-specifiche-compatte.md`, `gofm-<versione>-contesto-chat.md` e `microsoft-false-positive-submission.md`. Nel repository: `docs/contesto-chat.md`.
 - **Stato git all'11/11/2026**:
-  - 1.20 inviata dall'utente e pubblicata (Release `v1.20` dell'11/11/2026, `origin/main` = `2874965`; questo file, nella forma del commit, ne fa parte);
-  - dopo la 1.20, modifiche non ancora committate in `docs/` (prove della 1.19, stato della CI, build su Windows): vanno nel commit della 1.21. **Non** modificare il commit o il tag `v1.20`: sono già pubblicati.
-- **SHA-256 dell'eseguibile**: nelle note della Release `v1.20` su GitHub e nel file `gofm-1.20-contesto-chat.md` della cartella dei pacchetti (qui non può stare: l'eseguibile incorpora il commit che contiene questo file).
+  - 1.20 pubblicata (Release `v1.20`); dopo, commit separato `f237c54` "CI: a capo LF e test indipendenti dall'ambiente", inviato dall'utente: **CI verde** (prima volta dalla 1.15);
+  - commit `versione 1.21` con tag annotato `v1.21` (questo file è nel commit stesso). **Non** modificare commit o tag già inviati (`v1.20` e precedenti).
+- **SHA-256 dell'eseguibile**: nelle note della Release `v1.21` su GitHub e nel file `gofm-1.21-contesto-chat.md` della cartella dei pacchetti (qui non può stare: l'eseguibile incorpora il commit che contiene questo file).
 
 ## B. In sospeso
 
-1. **CI rossa dalla 1.15** (il workflow `Release` invece riusciva e pubblicava): **corretta dopo la 1.20, da inviare** (modifiche non committate; verificate in locale: suite completa su Windows 11 e con `-race` su Ubuntu 24.04 in WSL, ripetuta 3 volte). Cause e rimedi, tutti nei test e negli a capo (dettagli in `docs/gofm-documentazione.md` §11, "CI"):
-   - `.gitattributes` con `* text=auto eol=lf`: i cloni nuovi su Windows (`core.autocrlf=true`) avevano CRLF → `TestPinnedToolchain` falliva e l'eseguibile non era riproducibile.
-   - `TestTreeView`, `TestPasteInTree`: `t.TempDir` sotto `AppData` nascosta (e `RUNNER~1` nella CI) → l'albero si fermava sulla cartella dell'utente e `TestPasteInTree` vi incollava un `a.txt`. Ora `visibleTempDir` (`testtmp-*` nella cartella del pacchetto, in `.gitignore`).
-   - `TestShiftDelete`: attende anche la fine del compito del Cestino.
-   - `TestFlatDuplicatesCopy` (race con `-race`): un sotto-test per giro, così ogni `runUI` si ferma prima del `newTestFM` successivo.
-   - **Da decidere con l'utente**: l'albero si ferma al primo antenato nascosto o scritto con nome corto 8.3, e il pannello destro lo segue (es. Ctrl+T da una cartella sotto `AppData`). È il comportamento del programma (commento in `tree.go`), non dei test.
-2. **Prove su Windows reale**: la 1.20 non ha cambiamenti visibili (benchmark e test già eseguiti su Windows 11). Della 1.19 le prove sono state **fatte dall'utente il 05/11/2026, tutte superate** (riquadro delle operazioni in Windows Terminal e nella console classica, clic sui pulsanti Pause/Cancel/Remove, pausa durante una copia grande, due copie in coda verso una share, Ctrl+W con una copia in corso); riportate in `docs/gofm-documentazione.md` §11 con la 1.20. Della 1.19 resta da provare solo l'avviso dello script di installazione su un PC ARM.
+1. **Push** della 1.21 (commit e tag) e controllo della Release `v1.21`; **pacchetto della 1.21** (`build-release.sh v1.21` in un clone pulito del tag, con a capo LF) e file `gofm-1.21-*` della cartella dei pacchetti ancora da produrre.
+   - **CI** corretta nel commit `f237c54` (prima della 1.21) e verde su GitHub. Cause e rimedi, tutti nei test e negli a capo (dettagli in `docs/gofm-documentazione.md` §11, "CI"): `.gitattributes` con `* text=auto eol=lf` (i cloni CRLF facevano fallire `TestPinnedToolchain` e cambiavano l'eseguibile); `visibleTempDir` per i test che aprono l'albero (`t.TempDir` sotto `AppData` nascosta, `RUNNER~1` nella CI); `TestShiftDelete` attende la fine del compito del Cestino; `TestFlatDuplicatesCopy` con un sotto-test per giro (data race con `-race`).
+2. **Prove su Windows reale** della 1.21: Ctrl+T da una cartella sotto `AppData` (l'albero arriva alla cartella, `AppData` attenuata, le altre nascoste secondo Alt+H) e da un percorso con nomi corti (es. avvio con `gofm C:\PROGRA~1`), in Windows Terminal; logica già provata con i test su Windows 11.
+   La 1.20 non ha cambiamenti visibili (benchmark e test già eseguiti su Windows 11). Della 1.19 le prove sono state **fatte dall'utente il 05/11/2026, tutte superate** (riquadro delle operazioni in Windows Terminal e nella console classica, clic sui pulsanti Pause/Cancel/Remove, pausa durante una copia grande, due copie in coda verso una share, Ctrl+W con una copia in corso); riportate in `docs/gofm-documentazione.md` §11 con la 1.20. Della 1.19 resta da provare solo l'avviso dello script di installazione su un PC ARM.
    Della 1.18: doppio clic in Windows Terminal e nella console classica; Pause/Resume durante una copia grande verso una share (con `CopyFileExW` e, tra cartelle dello stesso server, con la copia lato server: lì la pausa può scattare solo a fine file); Ctrl+R con cambio di sole maiuscole su NTFS e su share; Ctrl+U; vista piatta con nomi doppi.
    Della 1.17: F5/F6 verso una share con molti file già presenti (confronto dei tempi con la 1.16: è il guadagno atteso maggiore); Ctrl+A su molte cartelle di un NAS; barra dei tasti abbreviata.
 3. **Prove delle versioni precedenti** ancora da fare: 1.16 Ctrl+I/O/P/W, Shift+Canc, clic destro; 1.15 barra di scorrimento con il mouse, Shift+frecce; 1.14 Ctrl+T e Ctrl+K, albero su unità di rete lente.
@@ -51,7 +48,7 @@
 - **Git sulla cartella connessa**: serve il permesso di cancellazione (git sostituisce i file cancellandoli). Usare `-c safe.directory=* -c maintenance.auto=false -c gc.auto=0`, l'identità `rives1 <rivesone@outlook.com>` e il trailer `Co-Authored-By: Claude …`. Il repository è nato su Windows (`core.filemode=false`), quindi gli script si lanciano con `bash`.
 - **Pacchetto**: `bash scripts/build-release.sh v<x>`, da lanciare in un **clone pulito del tag**. Lo script verifica tag, CHANGELOG e compilatore; produce zip, `.sha256` e note di rilascio con compilatore, commit e SHA-256.
 - **Lavoro direttamente su Windows (dalla 1.20)**: Go 1.27.3 installato, `gh` autenticato, Git Bash e PowerShell 7; manca `zip` (lo script si ferma dopo la compilazione).
-  - Per una build riproducibile il clone va fatto **con a capo LF**: `git clone -c core.autocrlf=false --branch v<x> …`. Con il CRLF predefinito di Git per Windows l'eseguibile cambia (1.20: `7b936c…` invece di `61ba09…`, quello della Release).
+  - Per una build riproducibile il clone va fatto **con a capo LF**: `git clone -c core.autocrlf=false --branch v<x> …`. Con il CRLF predefinito di Git per Windows l'eseguibile cambia (1.20: `7b936c…` invece di `61ba09…`, quello della Release). Dalla 1.21 (`.gitattributes` con `eol=lf`) i cloni sono comunque in LF.
   - Poi gli stessi passi dello script: `go tool go-winres make --arch amd64 --product-version <x> --file-version <x>`, `GOOS=windows GOARCH=amd64 go build -trimpath -ldflags="-s -w"`, togliere i `.syso`.
   - Se il tag è già pubblicato, il pacchetto ufficiale si scarica con `gh release download v<x>` e si verifica con l'hash dell'exe.
   - Prima di toccare commit o tag controllare sempre `git status -sb` e `git ls-remote origin`: l'utente può aver già fatto il push.
@@ -64,6 +61,7 @@
 | 1.9 | icone per tipo di file (Nerd Font / simboli, Alt+I) |
 | 1.10 | correzione del focus alla chiusura delle finestre; seconda conferma per cartelle con sottocartelle; riepilogo dei tasti; F12 per nome+dimensione+data; Release GitHub con pacchetto |
 | 1.11 | Go 1.27.3 fissato; metadati Windows (versione, manifest, icona); build riproducibile; nota sui falsi positivi degli antivirus |
+| 1.21 | albero (Ctrl+T) sotto le cartelle nascoste (antenati nascosti elencati, attenuati) e da percorsi con nomi corti 8.3 (nomi lunghi); CI di nuovo verde (a capo LF con `.gitattributes`, test indipendenti dall'ambiente) |
 | 1.20 | prestazioni: ordinamento per indici (200 000 voci 145 → 62 ms per nome, 126 → 47 ms per dimensione, stesso ordine), escape delle righe solo con `[` (render −18%); misure su Windows |
 | 1.19 | riquadro delle operazioni in basso con coda (copia, spostamento, incolla una alla volta, pannelli utilizzabili, domande alla partenza); F8 Pause/Cancel/Remove; conferma all'uscita; multimediali verdi e programmi rossi; versione nel riepilogo; niente ARM64 |
 | 1.18 | cursore sul primo elemento entrando e chiudendo vista piatta/albero; doppio clic = Invio; Ctrl+R iniziali maiuscole; nomi doppi in vista piatta con domanda Skip/Overwrite; Ctrl+U scambia i pannelli; Pause/Resume in copia, spostamento e incolla |
@@ -76,9 +74,9 @@
 
 ---
 
-## Specifiche compatte 1.20
+## Specifiche compatte 1.21
 
-Riepilogo per riprendere il lavoro in una nuova chat. Il codice completo è nel repository <https://github.com/rives1/goFm_src> (copia locale: `C:\Users\ammin\Documents\Claude CLI\gofm-repo\goFm_src`) e in `gofm-1.20-repo.zip`; la documentazione estesa (con motivazioni, storico e prompt di rigenerazione) è in `docs/gofm-documentazione.md`.
+Riepilogo per riprendere il lavoro in una nuova chat. Il codice completo è nel repository <https://github.com/rives1/goFm_src> (copia locale: `C:\Users\ammin\Documents\Claude CLI\gofm-repo\goFm_src`) e in `gofm-1.21-repo.zip`; la documentazione estesa (con motivazioni, storico e prompt di rigenerazione) è in `docs/gofm-documentazione.md`.
 
 ### 0. Regole di lavoro
 
@@ -97,7 +95,7 @@ Riepilogo per riprendere il lavoro in una nuova chat. Il codice completo è nel 
 
 File manager a **doppio pannello** per il terminale di Windows (Windows Terminal consigliato, funziona anche nella console classica), stile Norton/Midnight/Total Commander. **Go** (minimo 1.24; release compilate con **Go 1.27.3**, fissato in `go.mod` con `toolchain go1.27.3` e nei workflow), un solo eseguibile senza dipendenze: `gofm.exe` (x64, circa 7 MB; nessuna build ARM64 dalla v1.19). Librerie: tview v0.42, tcell v2.13.10, uniseg, bodgit/sevenzip v1.6 (7z in sola lettura), fsnotify v1.8, x/sys, x/text. Compila e gira anche su Linux e macOS, per sviluppo e test.
 
-Avvio: `gofm [left_folder] [right_folder]`; `-h`, `--help` o `/?` stampa `gofm 1.20 — usage: …`. Senza argomenti riapre le ultime cartelle (§5.13).
+Avvio: `gofm [left_folder] [right_folder]`; `-h`, `--help` o `/?` stampa `gofm 1.21 — usage: …`. Senza argomenti riapre le ultime cartelle (§5.13).
 
 ### 2. Interfaccia
 
@@ -332,6 +330,7 @@ La freccia indica il pannello che cambia; nella direzione opposta non succede nu
 - Tasti sull'albero: frecce/PgUp/PgDn/Home/End; → apre o va alla prima sottocartella; ← chiude o va al padre; Backspace padre; Invio/Tab al pannello destro (subito); Shift+lettera altra unità; Alt+H, Alt+R (rilettura), Alt+I, Ctrl+F9, Ctrl+F2, Ctrl+W, Alt+Q; gli altri tasti solo l'avviso `Tree: Tab or Enter moves to the files on the right · Ctrl+T back to two panels`.
 - A destra tutto normale salvo F5, F6, F12 ed estrazione della selezione: `This needs the two panels:\nleave the tree view with Ctrl+T first.`. L'albero segue il pannello destro (cambio di cartella → `reveal`; rilettura → ramo riletto); Alt+E/Ctrl+← rivelano la sua cartella.
 - Ctrl+T di nuovo: due pannelli, **entrambi sulla cartella evidenziata**. Modalità non salvata; `state.json` registra a sinistra la cartella dell'albero.
+- **Fino alla cartella (v1.21)**: `treeView.pin` = ultima cartella di `reveal`; `treeNode.load(nascosti, pin)` elenca sempre le cartelle nascoste sul percorso verso `pin` (`isWithin`), attenuate; le altre seguono Alt+H. Un ramo già letto senza la cartella cercata viene riletto (`refreshNode`, ciò che è aperto sotto resta aperto). `reveal` e Ctrl+T passano il percorso per `longName` (Windows: `GetLongPathName` se contiene `~`; altrove invariato): da `C:\PROGRA~1\...` albero e pannello destro con i nomi lunghi. Prima l'albero si fermava all'ultimo antenato visibile o con lo stesso nome e il pannello destro lo seguiva.
 
 ##### 5.16 Prefisso ai nomi (Ctrl+K, v1.14, `prefix.go`)
 - Elementi: selezionati (file e cartelle) o quello sotto il cursore; fuori da una cartella su disco i messaggi di sola lettura.
@@ -378,6 +377,10 @@ La freccia indica il pannello che cambia; nella direzione opposta non succede nu
 - **`escapeName`** per il testo delle righe di pannelli e albero: `tview.Escape` (espressione regolare) solo se il testo contiene `[`.
 - Benchmark su Windows 11 (Ryzen 9 9900X), v1.19 → v1.20: ordinamento di 200 000 voci per nome 145 → 62 ms, per dimensione 126 → 47 ms (memoria invariata); render di 20 000 righe 27 → 22 ms, 400 k → 340 k allocazioni; fotogramma e preparazione della copia invariati.
 
+##### 5.23 Novità della v1.21
+- **Albero fino alla cartella**: cartelle nascoste sul percorso elencate e nomi corti 8.3 convertiti nei nomi lunghi (§5.15).
+- **CI verde** (commit `f237c54`, prima della versione): `.gitattributes` con `* text=auto eol=lf` (build riproducibile anche da un clone su Windows), `visibleTempDir` nei test che aprono l'albero, attese e sotto-test che tolgono una corsa e una data race.
+
 ### 6. Codice
 
 | File | Contenuto |
@@ -416,6 +419,8 @@ La freccia indica il pannello che cambia; nella direzione opposta non succede nu
 | scripts/make-small-icons.py | icone a 32 e 48 px disegnate a pixel (Pillow) |
 | v111_test.go | compilatore fissato, risorse Windows |
 | v112_test.go | schemi, unità, ordinamento, tasti, barra e clic, editor, conflitti, cancellazione definitiva |
+| v121_test.go | albero con cartelle nascoste sul percorso (Ctrl+T e ritorno, ramo già letto riletto, Alt+R, cartella mancante) |
+| v121_windows_test.go | (solo Windows) albero e pannello destro da un percorso con nomi corti 8.3 |
 | v120_test.go | ordinamento per indici uguale al precedente (5 000 voci con chiavi uguali), `escapeName` uguale a `tview.Escape` |
 | v119_test.go | colori scambiati, versione nel riepilogo, niente ARM, coda in sequenza, domande alla partenza, riquadro (F8, Pause, Cancel, Remove), uscita con coda, tasti globali dal riquadro |
 | v118_test.go | cursore sul primo elemento, doppio clic, Ctrl+R, nomi doppi, Ctrl+U, pausa del motore |
@@ -456,6 +461,7 @@ La freccia indica il pannello che cambia; nella direzione opposta non succede nu
 - Ricerca digitando solo con le minuscole; Blocco Maiuscole sconsigliato.
 - Vista piatta: modifiche nelle sottocartelle visibili solo con Alt+R.
 - Albero: rami letti all'apertura, aggiornati solo con Alt+R o quando il pannello destro rilegge quella cartella; per copiare o spostare si esce dall'albero.
+- Albero: con Ctrl+T da una cartella con un antenato illeggibile (permessi) si ferma all'ultimo antenato leggibile (nascoste e nomi corti 8.3 gestiti dalla v1.21).
 - Cartella del programma non scrivibile: nulla viene salvato. Con Alt+R, commentare un valore di `gofm.ini` non ripristina il predefinito fino al riavvio.
 
 **Non verificato su Windows reale** (solo compilato e testato su Linux):
@@ -467,7 +473,8 @@ La freccia indica il pannello che cambia; nella direzione opposta non succede nu
 - icona e proprietà del file in Esplora risorse; effetto dei metadati su Defender (prima verifica con la Release 1.11);
 - v1.12: tipi di unità e bus USB, cancellazione su unità di rete, F4 con Notepad, clic sulla barra, decodifica di Alt+F7, Ctrl+F7, Ctrl+F2, Ctrl+F9 e Ctrl+A nei terminali Windows (nella console classica Ctrl+A potrebbe essere intercettato dalla selezione del testo).
 
-- v1.20: nulla di visibile; benchmark e test eseguiti su Windows 11 (3 test falliscono, già con la 1.19: §B).
+- v1.21: albero sotto `AppData` e da un percorso con nomi corti nei terminali Windows (logica provata con i test su Windows 11).
+- v1.20: nulla di visibile; benchmark e test eseguiti su Windows 11.
 - v1.19: avviso ARM dello script di installazione ed esecuzione in emulazione x64. (Riquadro, clic sui pulsanti, pausa con una copia reale, coda verso una share e Ctrl+W verificati dall'utente su Windows il 05/11/2026.)
 - v1.18: doppio clic nei terminali Windows; pausa con `CopyFileExW` e con la copia lato server; Ctrl+R con cambio di sole maiuscole su NTFS e share; Ctrl+R/Ctrl+U nei terminali.
 - v1.17: guadagno della preparazione della copia su share Windows (atteso il maggiore); misura limitata su NAS.

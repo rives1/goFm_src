@@ -15,7 +15,7 @@ import (
 	"github.com/rivo/tview"
 )
 
-const version = "1.20"
+const version = "1.21"
 
 type FM struct {
 	app     *tview.Application

@@ -2,6 +2,12 @@
 
 All notable changes to gofm. Versions follow the order in which features were added.
 
+## 1.21 — 2026-11-11
+
+- **Tree view (Ctrl+T) under hidden folders**: opening the tree from a folder under a hidden one (e.g. inside `AppData`) now reaches that folder. The hidden folders on the way are listed, dimmed like every hidden folder, even when hidden files are not shown; the other hidden folders still follow Alt+H. Before, the tree stopped at the last visible folder (the user folder) and the right panel moved there.
+- **Tree view and 8.3 short names**: a folder whose path is written with short names (`C:\PROGRA~1\...`) opens the tree down to it under the long names, and the right panel shows the long names too. Before, the tree stopped at the last folder whose name matched.
+- **Tests and CI**: the automatic tests pass again on GitHub (they had failed since 1.15, while the release builds were fine): files are checked out with LF line endings (`.gitattributes`), so a build from a Windows clone is reproducible too, and the tests no longer depend on the temporary folder of the machine.
+
 ## 1.20 — 2026-11-11
 
 Faster with large listings, same behaviour. Measured on Windows (Ryzen 9 9900X) with the benchmarks in `bench_test.go`:

@@ -18,7 +18,7 @@ Get **`gofm-<version>-windows.zip`** from the [latest release](https://github.co
 To check a download, compare its hash with the one on the release page (PowerShell):
 
 ```
-Get-FileHash .\gofm-1.20-windows.zip     # the zip: see the .sha256 file
+Get-FileHash .\gofm-1.21-windows.zip     # the zip: see the .sha256 file
 Get-FileHash .\gofm.exe                  # the program: see the release notes
 ```
 
@@ -176,6 +176,7 @@ Ctrl+T replaces the left panel with the **folder tree** of the current drive, op
 - Work on the files in the **right panel** as usual: rename, delete, edit, view, Ctrl+K, open subfolders (the tree follows). **Copy, move and compare (F5, F6, F12) need two panels** and are refused while the tree is shown.
 - Branches show Nerd Font chevrons (closed › / open ⌄), or `+`/`-` with the basic symbols (Alt+I). A branch that turns out to have no subfolders loses its marker.
 - Folders created or deleted in the right panel appear in the tree when that panel is re-read.
+- The tree always reaches the current folder (since 1.21): **hidden folders on the way** (e.g. `AppData`) are listed, dimmed, even when hidden files are not shown (the other hidden folders follow Alt+H), and a path written with **8.3 short names** (`C:\PROGRA~1`) is opened under the long names.
 - Ctrl+T is not available from the drive list, a share list, an archive or the flat view. The tree view is not remembered at exit (the left panel reopens on the folder of the tree).
 
 ## Copy, cut and paste (Ctrl+O, Ctrl+I, Ctrl+P)

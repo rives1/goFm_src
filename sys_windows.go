@@ -391,3 +391,27 @@ func detach(cmd *exec.Cmd) {
 func sameVolume(a, b string) bool {
 	return strings.EqualFold(filepath.VolumeName(a), filepath.VolumeName(b))
 }
+
+// longName turns the 8.3 short names in an existing path into the long ones
+// (C:\PROGRA~1 → C:\Program Files), so the tree can find each part among the folders it
+// lists (v1.21). The path is returned unchanged when it has no "~" or cannot be read.
+func longName(p string) string {
+	if !strings.Contains(p, "~") {
+		return p
+	}
+	in, err := windows.UTF16PtrFromString(p)
+	if err != nil {
+		return p
+	}
+	buf := make([]uint16, 260)
+	for {
+		n, err := windows.GetLongPathName(in, &buf[0], uint32(len(buf)))
+		if err != nil || n == 0 {
+			return p
+		}
+		if int(n) < len(buf) { // fits (n excludes the final NUL; when too small, n includes it)
+			return windows.UTF16ToString(buf[:n])
+		}
+		buf = make([]uint16, n)
+	}
+}

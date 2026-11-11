@@ -54,6 +54,10 @@ type treeView struct {
 	gen   int          // generation of the pending update; a newer cursor move cancels it
 	queue func(func()) // runs a function on the interface goroutine (tests replace it)
 	after func(func()) *time.Timer
+	// pin is the folder the tree was last opened down to (v1.21): the hidden folders on
+	// the way to it are listed, dimmed, even when hidden folders are not shown, so a
+	// folder under AppData or a dot folder can be reached.
+	pin string
 }
 
 // treeRoot is the root folder of a path: C:\ for C:\x\y, \\server\share\ for a UNC
@@ -91,7 +95,7 @@ func (fm *FM) toggleTree() {
 		fm.showMessage("Tree", why)
 		return
 	}
-	dir := p.dir
+	dir := longName(p.dir) // the right panel shows the long names, as the tree does
 	t := newTreeView(fm)
 	fm.tree = t
 	t.quiet = true
@@ -148,8 +152,9 @@ func newTreeView(fm *FM) *treeView {
 func (t *treeView) showHidden() bool { return t.fm.left.showHidden }
 
 // load reads the subfolders of a node, sorted by name. Links to folders are listed
-// (and can be opened); hidden folders follow Alt+H.
-func (t *treeNode) load(showHidden bool) {
+// (and can be opened); hidden folders follow Alt+H, except those on the way to pin
+// (v1.21), which are always listed.
+func (t *treeNode) load(showHidden bool, pin string) {
 	t.loaded, t.children = true, nil
 	des, err := os.ReadDir(t.path)
 	if err != nil {
@@ -173,7 +178,7 @@ func (t *treeNode) load(showHidden bool) {
 		}
 		_, winHidden := fileAttrs(info)
 		hidden := winHidden || strings.HasPrefix(de.Name(), ".")
-		if hidden && !showHidden {
+		if hidden && !showHidden && (pin == "" || !isWithin(full, pin)) {
 			continue
 		}
 		t.children = append(t.children, &treeNode{path: full, name: de.Name(), depth: t.depth + 1,
@@ -193,9 +198,12 @@ func sameName(a, b string) bool {
 }
 
 // reveal opens the tree down to dir and puts the cursor on it (on its nearest listed
-// ancestor if a part is hidden or missing). A dir on another drive gets a new root.
+// ancestor if a part is missing). Hidden folders on the way are listed (v1.21: before,
+// the tree stopped at the first one, e.g. at the user folder for a folder under
+// AppData, and the right panel moved there). A dir on another drive gets a new root.
 func (t *treeView) reveal(dir string) {
-	dir = filepath.Clean(dir)
+	dir = longName(filepath.Clean(dir)) // v1.21: 8.3 short names → long names
+	t.pin = dir
 	root := treeRoot(dir)
 	if t.root == nil || !samePath(t.root.path, root) {
 		t.root = &treeNode{path: root, name: root}
@@ -207,14 +215,25 @@ func (t *treeView) reveal(dir string) {
 			if part == "" {
 				continue
 			}
-			if !n.loaded {
-				n.load(t.showHidden())
+			fresh := !n.loaded
+			if fresh {
+				n.load(t.showHidden(), t.pin)
 			}
-			var next *treeNode
-			for _, c := range n.children {
-				if sameName(c.name, part) {
-					next = c
+			child := func() *treeNode {
+				var next *treeNode
+				for _, c := range n.children {
+					if sameName(c.name, part) {
+						next = c
+					}
 				}
+				return next
+			}
+			next := child()
+			if next == nil && !fresh {
+				// The branch may have been read before, without this hidden folder:
+				// read it again (what was open below it stays open).
+				t.refreshNode(n)
+				next = child()
 			}
 			if next == nil {
 				break
@@ -224,7 +243,7 @@ func (t *treeView) reveal(dir string) {
 		}
 	}
 	if !t.root.loaded {
-		t.root.load(t.showHidden())
+		t.root.load(t.showHidden(), t.pin)
 	}
 	t.root.expanded = true
 	t.selectNode(n)
@@ -385,7 +404,7 @@ func (t *treeView) open() {
 		return
 	}
 	if !n.loaded {
-		n.load(t.showHidden())
+		n.load(t.showHidden(), t.pin)
 	}
 	switch {
 	case len(n.children) == 0:
@@ -439,7 +458,7 @@ func (t *treeView) refreshNode(n *treeNode) {
 	for _, c := range n.children {
 		old[c.name] = c
 	}
-	n.load(t.showHidden())
+	n.load(t.showHidden(), t.pin)
 	for i, c := range n.children {
 		if o, ok := old[c.name]; ok && o.loaded {
 			o.path, o.depth, o.parent, o.hidden, o.isLink = c.path, c.depth, n, c.hidden, c.isLink
