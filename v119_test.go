@@ -219,6 +219,16 @@ func TestQueuePane(t *testing.T) {
 	src, d1, d2, d3 := t.TempDir(), t.TempDir(), t.TempDir(), t.TempDir()
 	fill(t, src, 8)
 	slowCopies(t, 60*time.Millisecond)
+	// The files wait at this gate until the test has paused: with 4 workers, a pause
+	// arriving after the first 60 ms (a busy CI runner) found the second 4 files already
+	// started, and all 8 were in d1 (8 → 8). Now the first 4 stop inside the copy, the
+	// others before starting.
+	gate := make(chan struct{})
+	openGate := sync.OnceFunc(func() { close(gate) })
+	t.Cleanup(openGate)
+	slow := copyOneFile
+	copyOneFile = func(o *opCtx, s, dst string, fi fs.FileInfo) error { <-gate; return slow(o, s, dst, fi) }
+	t.Cleanup(func() { copyOneFile = slow })
 	fm := newTestFM(t)
 	ui := runUI(t, fm)
 	ui(func() {
@@ -258,6 +268,7 @@ func TestQueuePane(t *testing.T) {
 			t.Fatal("Pause")
 		}
 	})
+	openGate()
 	time.Sleep(150 * time.Millisecond)
 	n1 := len(mustRead(d1))
 	time.Sleep(400 * time.Millisecond)
